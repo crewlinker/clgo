@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:14.5-alpine
+    ports:
+      - "5435:5435"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    command:
+      - "postgres"
+      - "-c"
+      - "wal_level=logical"
+      - "-p"
+      - "5435"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-p", "5435"]
+      interval: 1s
+      timeout: 5s
+      retries: 10
