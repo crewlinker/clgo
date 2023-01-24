@@ -50,9 +50,9 @@ func NewReadWriteConfig(cfg Config, logs *zap.Logger) (*pgxpool.Config, error) {
 
 // newPoolConfig will turn environment configuration in a way that allows
 // database credentials to be provided
-func newPoolConfig(cfg Config, logs *zap.Logger, ep string) (pcfg *pgxpool.Config, err error) {
+func newPoolConfig(cfg Config, logs *zap.Logger, host string) (pcfg *pgxpool.Config, err error) {
 	connString := fmt.Sprintf(`postgres://%s:%s@%s:%d/%s?application_name=cl.%s&sslmode=%s`,
-		cfg.Username, url.QueryEscape(cfg.Password), ep, cfg.Port, cfg.DatabaseName, cfg.DatabaseName, cfg.SSLMode)
+		cfg.Username, url.QueryEscape(cfg.Password), host, cfg.Port, cfg.DatabaseName, cfg.DatabaseName, cfg.SSLMode)
 	pcfg, err = pgxpool.ParseConfig(connString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config from conn string: %w", err)
@@ -74,5 +74,12 @@ func newPoolConfig(cfg Config, logs *zap.Logger, ep string) (pcfg *pgxpool.Confi
 		pcfg.ConnConfig.RuntimeParams["search_path"] = cfg.TemporarySchemaName
 	}
 
+	logs.Info("initialized postgres connection config",
+		zap.Any("runtime_params", pcfg.ConnConfig.RuntimeParams),
+		zap.String("ssl_mode", cfg.SSLMode),
+		zap.String("user", pcfg.ConnConfig.User),
+		zap.String("database", pcfg.ConnConfig.Database),
+		zap.String("host", pcfg.ConnConfig.Host),
+		zap.Uint16("port", pcfg.ConnConfig.Port))
 	return
 }
