@@ -6,3 +6,4 @@ Opinionated but Re-usable Go libraries for the Crewlinker platform
 
 - Setup the development environment `mage -v dev`
 - Run the full test suite: `mage -v test`
+- To release a new version: `mage -v release v0.1.1`

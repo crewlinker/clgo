@@ -41,7 +41,7 @@ func Release(version string) error {
 	if err := sh.Run("git", "tag", version); err != nil {
 		return fmt.Errorf("failed to tag version: %w", err)
 	}
-	if err := sh.Run("git", "push", "origin", "v0.1.0"); err != nil {
+	if err := sh.Run("git", "push", "origin", version); err != nil {
 		return fmt.Errorf("failed to push version tag: %w", err)
 	}
 
