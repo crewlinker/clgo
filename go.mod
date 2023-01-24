@@ -3,6 +3,7 @@ module github.com/crewlinker/clgo
 go 1.19
 
 require (
+	github.com/aws/aws-lambda-go v1.37.0
 	github.com/caarlos0/env/v6 v6.10.1
 	github.com/jackc/pgx/v5 v5.2.0
 	github.com/joho/godotenv v1.4.0
