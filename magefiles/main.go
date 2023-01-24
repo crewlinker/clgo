@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"regexp"
 
 	"github.com/magefile/mage/sh"
 )
@@ -29,6 +30,22 @@ func Test() error {
 func Dev() error {
 	return sh.Run("docker", "compose", "-f", "docker-compose.dev.yml", "-p", "clgo-dev", "up",
 		"-d", "--build", "--remove-orphans", "--force-recreate")
+}
+
+// Release tags a new version and pushes it
+func Release(version string) error {
+	if !regexp.MustCompile(`^v([0-9]+).([0-9]+).([0-9]+)$`).Match([]byte(version)) {
+		return fmt.Errorf("version must be in format vX,Y,Z")
+	}
+
+	if err := sh.Run("git", "tag", version); err != nil {
+		return fmt.Errorf("failed to tag version: %w", err)
+	}
+	if err := sh.Run("git", "push", "origin", "v0.1.0"); err != nil {
+		return fmt.Errorf("failed to push version tag: %w", err)
+	}
+
+	return nil
 }
 
 // mustBeInRoot checks that the command is run in the project root
