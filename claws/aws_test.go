@@ -16,7 +16,7 @@ import (
 
 func TestAwsclient(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "internal/awsclient")
+	RunSpecs(t, "claws")
 }
 
 var _ = Describe("config", Serial, func() {
