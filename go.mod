@@ -6,6 +6,7 @@ require (
 	github.com/aws/aws-lambda-go v1.37.0
 	github.com/aws/aws-sdk-go-v2 v1.17.3
 	github.com/aws/aws-sdk-go-v2/config v1.18.9
+	github.com/aws/aws-sdk-go-v2/feature/rds/auth v1.2.5
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.18.1
 	github.com/caarlos0/env/v6 v6.10.1
 	github.com/jackc/pgx/v5 v5.2.0
