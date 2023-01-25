@@ -16,12 +16,14 @@ import (
 
 // Config configures the code in this package.
 type Config struct {
+	// ApplicationName allows the application to indicate its name so connections can be more easily debugged
+	ApplicationName string `env:"APPLICATION_NAME" envDefault:"unknown"`
 	// DatabaseName names the database the connection will be made to
 	DatabaseName string `env:"DATABASE_NAME" envDefault:"postgres"`
 	// ReadWriteHostname endpoint allows configuration of a endpoint that can read and write
 	ReadWriteHostname string `env:"RW_HOSTNAME" envDefault:"localhost"`
 	// ReadOnlyHostname endpoint allows configuration of a endpoint that can read and write
-	ReadOnlyHostname string `env:"RW_HOSTNAME" envDefault:"localhost"`
+	ReadOnlyHostname string `env:"RO_HOSTNAME" envDefault:"localhost"`
 	// Port for to the database connection(s)
 	Port int `env:"PORT" envDefault:"5432"`
 	// Username configures the username to connect to the postgres instance
@@ -68,8 +70,8 @@ func newPoolConfig(cfg Config, logs *zap.Logger, host string, awsc aws.Config) (
 		}
 	}
 
-	connString := fmt.Sprintf(`postgres://%s:%s@%s:%d/%s?application_name=cl.%s&sslmode=%s`,
-		cfg.Username, url.QueryEscape(cfg.Password), host, cfg.Port, cfg.DatabaseName, cfg.DatabaseName, cfg.SSLMode)
+	connString := fmt.Sprintf(`postgres://%s:%s@%s:%d/%s?application_name=%s&sslmode=%s`,
+		cfg.Username, url.QueryEscape(cfg.Password), host, cfg.Port, cfg.DatabaseName, cfg.ApplicationName, cfg.SSLMode)
 	pcfg, err = pgxpool.ParseConfig(connString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config from conn string: %w", err)
