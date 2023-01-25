@@ -7,3 +7,8 @@ Opinionated but Re-usable Go libraries for the Crewlinker platform
 - Setup the development environment `mage -v dev`
 - Run the full test suite: `mage -v test`
 - To release a new version: `mage -v release v0.1.1`
+
+## backlog
+
+- [ ] SHOULD Allow configuration of the postgres application name to diagnose connections
+- [ ] SHOULD allow iam authentication to a database

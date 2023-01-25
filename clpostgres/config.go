@@ -3,7 +3,6 @@ package clpostgres
 import (
 	"fmt"
 	"net/url"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/tracelog"
@@ -24,8 +23,6 @@ type Config struct {
 	Username string `env:"USERNAME" envDefault:"postgres"`
 	// Password configures the postgres password for authenticating with the instance
 	Password string `env:"PASSWORD"`
-	// IamAuthTimeout bounds the time it takes to geht the IAM auth token
-	IamAuthTimeout time.Duration `env:"IAM_AUTH_TIMEOUT" envDefault:"100ms"`
 	// PgxLogLevel is provided to pgx to determine the level of logging of postgres interactions
 	PgxLogLevel string `env:"PGX_LOG_LEVEL" envDefault:"info"`
 	// SchemaName sets the schema to which the connections search_path will be set
