@@ -14,7 +14,7 @@ import (
 
 func TestCLLambda(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "internal/cllambda")
+	RunSpecs(t, "cllambda")
 }
 
 var _ = Describe("full app dependencies", func() {

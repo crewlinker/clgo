@@ -18,7 +18,7 @@ import (
 
 func TestLogging(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "internal/logging")
+	RunSpecs(t, "clzap")
 }
 
 var _ = Describe("regular logging", func() {

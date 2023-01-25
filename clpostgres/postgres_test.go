@@ -17,7 +17,7 @@ import (
 
 func TestPostgres(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "internal/clpostgres")
+	RunSpecs(t, "clpostgres")
 }
 
 var _ = BeforeSuite(func() {

@@ -1,10 +1,14 @@
 package clpostgres
 
 import (
+	"context"
 	"fmt"
 	"net/url"
+	"strconv"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/tracelog"
 	"go.uber.org/zap"
@@ -24,8 +28,6 @@ type Config struct {
 	Username string `env:"USERNAME" envDefault:"postgres"`
 	// Password configures the postgres password for authenticating with the instance
 	Password string `env:"PASSWORD"`
-	// IamAuthTimeout bounds the time it takes to geht the IAM auth token
-	IamAuthTimeout time.Duration `env:"IAM_AUTH_TIMEOUT" envDefault:"100ms"`
 	// PgxLogLevel is provided to pgx to determine the level of logging of postgres interactions
 	PgxLogLevel string `env:"PGX_LOG_LEVEL" envDefault:"info"`
 	// SchemaName sets the schema to which the connections search_path will be set
@@ -34,23 +36,38 @@ type Config struct {
 	TemporarySchemaName string `env:"TEMPORARY_SCHEMA_NAME"`
 	// SSLMode sets tls encryption on the database connection
 	SSLMode string `env:"SSL_MODE" envDefault:"disable"`
+	// IamAuth will cause the password to be set to an IAM token for authentication
+	IamAuth bool `env:"IAM_AUTH"`
+	// IamAuthTimeout bounds the time it takes to geht the IAM auth token
+	IamAuthTimeout time.Duration `env:"IAM_AUTH_TIMEOUT" envDefault:"100ms"`
 }
 
 // NewReadOnlyConfig constructs a config for a read-only database connecion. The aws config is optional
 // and is only used when IamAuth option is set.
-func NewReadOnlyConfig(cfg Config, logs *zap.Logger) (*pgxpool.Config, error) {
-	return newPoolConfig(cfg, logs.Named("ro"), cfg.ReadOnlyHostname)
+func NewReadOnlyConfig(cfg Config, logs *zap.Logger, awsc aws.Config) (*pgxpool.Config, error) {
+	return newPoolConfig(cfg, logs.Named("ro"), cfg.ReadOnlyHostname, awsc)
 }
 
 // NewReadWriteConfig constructs a config for a read-write database connecion. The aws config is optional
 // and only used when the IamAuth option is set
-func NewReadWriteConfig(cfg Config, logs *zap.Logger) (*pgxpool.Config, error) {
-	return newPoolConfig(cfg, logs.Named("rw"), cfg.ReadWriteHostname)
+func NewReadWriteConfig(cfg Config, logs *zap.Logger, awsc aws.Config) (*pgxpool.Config, error) {
+	return newPoolConfig(cfg, logs.Named("rw"), cfg.ReadWriteHostname, awsc)
 }
 
 // newPoolConfig will turn environment configuration in a way that allows
 // database credentials to be provided
-func newPoolConfig(cfg Config, logs *zap.Logger, host string) (pcfg *pgxpool.Config, err error) {
+func newPoolConfig(cfg Config, logs *zap.Logger, host string, awsc aws.Config) (pcfg *pgxpool.Config, err error) {
+	if cfg.IamAuth {
+		if awsc.Credentials == nil {
+			return nil, fmt.Errorf("IAM auth requiested but optional AWS config dependency not provided")
+		}
+
+		// if we use iam auth we replac the password with a token
+		if cfg.Password, err = buildIamAuthToken(cfg, awsc, host); err != nil {
+			return nil, fmt.Errorf("failed to build IAM auth token: %w", err)
+		}
+	}
+
 	connString := fmt.Sprintf(`postgres://%s:%s@%s:%d/%s?application_name=cl.%s&sslmode=%s`,
 		cfg.Username, url.QueryEscape(cfg.Password), host, cfg.Port, cfg.DatabaseName, cfg.DatabaseName, cfg.SSLMode)
 	pcfg, err = pgxpool.ParseConfig(connString)
@@ -82,4 +99,12 @@ func newPoolConfig(cfg Config, logs *zap.Logger, host string) (pcfg *pgxpool.Con
 		zap.String("host", pcfg.ConnConfig.Host),
 		zap.Uint16("port", pcfg.ConnConfig.Port))
 	return
+}
+
+// buildIamAuthToken will construct a RDS proxy authentication token. We don't run this during the
+// lifecycle phase so we timeout manually with our own context.
+func buildIamAuthToken(cfg Config, awsc aws.Config, ep string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.IamAuthTimeout)
+	defer cancel()
+	return auth.BuildAuthToken(ctx, ep+":"+strconv.Itoa(cfg.Port), awsc.Region, cfg.Username, awsc.Credentials)
 }

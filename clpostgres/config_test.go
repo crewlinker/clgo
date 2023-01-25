@@ -2,7 +2,9 @@ package clpostgres_test
 
 import (
 	"context"
+	"os"
 
+	"github.com/crewlinker/clgo/claws"
 	"github.com/crewlinker/clgo/clpostgres"
 	"github.com/crewlinker/clgo/clzap"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -36,6 +38,32 @@ var _ = Describe("config", func() {
 
 		It("should have build configs", func() {
 			Expect(cfgs.ReadWrite.ConnConfig.Password).To(Equal("my-p&assword"))
+			Expect(cfgs.ReadWrite.ConnConfig.Host).To(Equal("foo.read-write"))
+			Expect(cfgs.ReadOnly.ConnConfig.Host).To(Equal("foo.read-only"))
+		})
+	})
+	Describe("iam config", Serial, func() {
+		BeforeEach(func(ctx context.Context) {
+			os.Setenv("AWS_ACCESS_KEY_ID", "a")
+			os.Setenv("AWS_SECRET_ACCESS_KEY", "b")
+			os.Setenv("AWS_SESSION_TOKEN", "c")
+
+			app := fx.New(
+				fx.Populate(&cfgs),
+				fx.Decorate(func(c clpostgres.Config) clpostgres.Config {
+					c.IamAuth = true
+					c.Password = "my-p&assword"
+					c.ReadOnlyHostname = "foo.read-only"
+					c.ReadWriteHostname = "foo.read-write"
+					return c
+				}),
+				clzap.Test, claws.Prod, clpostgres.Prod)
+			Expect(app.Start(ctx)).To(Succeed())
+			DeferCleanup(app.Stop)
+		})
+
+		It("should have build configs", func() {
+			Expect(cfgs.ReadWrite.ConnConfig.Password).To(MatchRegexp(`^foo.read-write:([0-9]+)\?Action=connect`))
 			Expect(cfgs.ReadWrite.ConnConfig.Host).To(Equal("foo.read-write"))
 			Expect(cfgs.ReadOnly.ConnConfig.Host).To(Equal("foo.read-only"))
 		})
