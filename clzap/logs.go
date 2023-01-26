@@ -31,7 +31,7 @@ var Prod = fx.Module(moduleName,
 	fx.Provide(func(cfg Config) zapcore.LevelEnabler { return cfg.Level }),
 	// provide the zapper, make sure everything is synced on shutdown
 	fx.Provide(fx.Annotate(zap.New, fx.OnStop(func(ctx context.Context, l *zap.Logger) error { return l.Sync() }))),
-	// provide depependencies to build the prod logger
+	// provide dependencies to build the prod logger
 	fx.Provide(zapcore.NewCore, zapcore.NewJSONEncoder, zap.NewProductionEncoderConfig),
 	// allow environment to configure where logs are being synced to
 	fx.Provide(func(cfg Config) (w zapcore.WriteSyncer, err error) {

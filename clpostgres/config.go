@@ -61,7 +61,7 @@ func NewReadWriteConfig(cfg Config, logs *zap.Logger, awsc aws.Config) (*pgxpool
 func newPoolConfig(cfg Config, logs *zap.Logger, host string, awsc aws.Config) (pcfg *pgxpool.Config, err error) {
 	if cfg.IamAuth {
 		if awsc.Credentials == nil {
-			return nil, fmt.Errorf("IAM auth requiested but optional AWS config dependency not provided")
+			return nil, fmt.Errorf("IAM auth requested but optional AWS config dependency not provided")
 		}
 
 		// if we use iam auth we replac the password with a token
