@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 
+	"ariga.io/atlas/sql/migrate"
 	"github.com/crewlinker/clgo/clpostgres"
 	"github.com/crewlinker/clgo/clzap"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -19,6 +20,7 @@ var _ = Describe("migrater", func() {
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(
 			fx.Populate(&db, &dbcfg),
+			fx.Provide(func() (migrate.Dir, error) { return migrate.NewLocalDir("test_data") }),
 			clzap.Test, clpostgres.Test)
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(func(ctx context.Context) {
@@ -28,7 +30,7 @@ var _ = Describe("migrater", func() {
 		DeferCleanup(app.Stop)
 	})
 
-	It("should create temp schema and allow insert with search path", func(ctx context.Context) {
+	It("should create temp db and allow insert in migrated table", func(ctx context.Context) {
 		Expect(dbcfg.ConnConfig.Database).To(HavePrefix("temp_"))
 		_, err := db.ExecContext(ctx, "insert into profiles (id) values (1);")
 		Expect(err).To(Succeed())
