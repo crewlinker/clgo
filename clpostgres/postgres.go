@@ -12,14 +12,10 @@ import (
 	"go.uber.org/zap"
 )
 
-// Migrated can be provided as an optional dependency to the database connecetion constructor
-// to force it's lifecycle logic (migrating the database) to be run before being connected to.
-type Migrated any
-
 // New inits a stdlib sql connection. Any other dependency can optionall ybe provided as migrated
 // to force it's lifecycle to be run before the database is connected. This is mostly usefull to
 // run migration logic (such as initializing the database)
-func New(pcfg *pgxpool.Config, m Migrated) (db *sql.DB) {
+func New(pcfg *pgxpool.Config, m *Migrater) (db *sql.DB) {
 	c := stdlib.GetConnector(*pcfg.ConnConfig)
 	db = sql.OpenDB(c)
 	return
@@ -83,6 +79,15 @@ var Prod = fx.Module(moduleName,
 
 // Test configures the DI for a test environment
 var Test = fx.Options(Prod,
+	// Provide migrater which will now always run before connecting. If auto-migrate and temporary database
+	// configuration is set this can provide a fully isolated and migrated database for each test.
+	fx.Provide(fx.Annotate(
+		NewMigrater,
+		fx.OnStart(func(ctx context.Context, m *Migrater) error { return m.Migrate(ctx) }),
+		fx.OnStop(func(ctx context.Context, m *Migrater) error { return m.DropDatabase(ctx) }),
+		fx.ParamTags(``, ``, `name:"rw"`)),
+	),
+
 	// we re-provide the read-write sql db as an unnamed *sql.DB and config because that is
 	// what we usually want in tests.
 	fx.Provide(fx.Annotate(func(rw *sql.DB) *sql.DB { return rw }, fx.ParamTags(`name:"rw"`))),

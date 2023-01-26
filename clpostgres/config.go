@@ -40,6 +40,16 @@ type Config struct {
 	IamAuth bool `env:"IAM_AUTH"`
 	// IamAuthTimeout bounds the time it takes to geht the IAM auth token
 	IamAuthTimeout time.Duration `env:"IAM_AUTH_TIMEOUT" envDefault:"100ms"`
+
+	// TemporaryDatabase can be set to cause the logic to create a random database name and initialize
+	// it when running auto-migration. This is mostly usefull for automated tests
+	TemporaryDatabase bool `env:"TEMPORARY_DATABASE" envDefault:"false"`
+	// AutoMigration can be set to true to cause the logic to automatically run migrations when started. This
+	// is mostly usefull for automated tests.
+	AutoMigration bool `env:"AUTO_MIGRATION" envDefault:"false"`
+	// MigrationsDir configures from what directory the migrations are read. By default it will read from
+	// a directory called "migrations"
+	MigrationsDir string `env:"MIGRATIONS_DIR" envDefault:"migrations"`
 }
 
 // NewReadOnlyConfig constructs a config for a read-only database connecion. The aws config is optional
