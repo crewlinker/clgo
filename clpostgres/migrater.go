@@ -19,6 +19,7 @@ type Migrater struct {
 	cfg   Config
 	dbcfg *pgxpool.Config
 	logs  *zap.Logger
+	dir   migrate.Dir
 
 	databases struct {
 		original *pgxpool.Config
@@ -27,8 +28,13 @@ type Migrater struct {
 }
 
 // NewMigrator inits the migrater
-func NewMigrater(cfg Config, logs *zap.Logger, dbcfg *pgxpool.Config) (*Migrater, error) {
-	m := &Migrater{cfg: cfg, dbcfg: dbcfg, logs: logs.Named("migrater")}
+func NewMigrater(
+	cfg Config,
+	logs *zap.Logger,
+	dbcfg *pgxpool.Config,
+	dir migrate.Dir,
+) (*Migrater, error) {
+	m := &Migrater{cfg: cfg, dbcfg: dbcfg, logs: logs.Named("migrater"), dir: dir}
 	if cfg.TemporaryDatabase {
 		var rngd [6]byte
 		if _, err := rand.Read(rngd[:]); err != nil {
@@ -66,18 +72,12 @@ func (m Migrater) Migrate(ctx context.Context) error {
 		return nil // without auto-migration enabled, there is nothing left to do
 	}
 
-	ldir, err := migrate.NewLocalDir(m.cfg.MigrationsDir)
-	if err != nil {
-		return fmt.Errorf("failed to init migration dir: %w", err)
-	}
-
-	checksum, err := ldir.Checksum()
+	checksum, err := m.dir.Checksum()
 	if err != nil {
 		return fmt.Errorf("failed to determine local dir checksum: %w", err)
 	}
 
-	m.logs.Info("auto-migrating from local directory",
-		zap.String("dir", ldir.Path()),
+	m.logs.Info("auto-migrating from migrate dir",
 		zap.String("checksum", checksum.Sum()))
 
 	db := stdlib.OpenDB(*m.dbcfg.ConnConfig)
@@ -91,7 +91,7 @@ func (m Migrater) Migrate(ctx context.Context) error {
 		return fmt.Errorf("failed to init atlas driver: %w", err)
 	}
 
-	exec, err := migrate.NewExecutor(drv, ldir, migrate.NopRevisionReadWriter{})
+	exec, err := migrate.NewExecutor(drv, m.dir, migrate.NopRevisionReadWriter{})
 	if err != nil {
 		return fmt.Errorf("failed to init executor: %w", err)
 	}
