@@ -10,5 +10,9 @@ Opinionated but Re-usable Go libraries for the Crewlinker platform
 
 ## backlog
 
-- [ ] SHOULD Allow configuration of the postgres application name to diagnose connections
-- [ ] SHOULD allow iam authentication to a database
+- [ ] MUST include a mechanism to provide isolated schemas to tests, using a "versioned" migration strategy
+      in a migraiton directory
+- [ ] MUST include tracing, and re-add the test for contextual postgres logging (from the old 'back' repo)
+- [ ] SHOULD add the Atlasgo github integration for checking migrations
+- [x] SHOULD Allow configuration of the postgres application name to diagnose connections
+- [x] SHOULD allow iam authentication to a database

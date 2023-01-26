@@ -16,8 +16,6 @@ import (
 
 // Config configures the code in this package.
 type Config struct {
-	// ApplicationName allows the application to indicate its name so connections can be more easily debugged
-	ApplicationName string `env:"APPLICATION_NAME" envDefault:"unknown"`
 	// DatabaseName names the database the connection will be made to
 	DatabaseName string `env:"DATABASE_NAME" envDefault:"postgres"`
 	// ReadWriteHostname endpoint allows configuration of a endpoint that can read and write
@@ -30,18 +28,28 @@ type Config struct {
 	Username string `env:"USERNAME" envDefault:"postgres"`
 	// Password configures the postgres password for authenticating with the instance
 	Password string `env:"PASSWORD"`
+
+	// ApplicationName allows the application to indicate its name so connections can be more easily debugged
+	ApplicationName string `env:"APPLICATION_NAME" envDefault:"unknown"`
 	// PgxLogLevel is provided to pgx to determine the level of logging of postgres interactions
 	PgxLogLevel string `env:"PGX_LOG_LEVEL" envDefault:"info"`
-	// SchemaName sets the schema to which the connections search_path will be set
-	SchemaName string `env:"SCHEMA_NAME" envDefault:"public"`
-	// TemporarySchemaName can be set to non-empty to cause schema name to indicate it is temporary schema
-	TemporarySchemaName string `env:"TEMPORARY_SCHEMA_NAME"`
+
 	// SSLMode sets tls encryption on the database connection
 	SSLMode string `env:"SSL_MODE" envDefault:"disable"`
 	// IamAuth will cause the password to be set to an IAM token for authentication
 	IamAuth bool `env:"IAM_AUTH"`
 	// IamAuthTimeout bounds the time it takes to geht the IAM auth token
 	IamAuthTimeout time.Duration `env:"IAM_AUTH_TIMEOUT" envDefault:"100ms"`
+
+	// TemporaryDatabase can be set to cause the logic to create a random database name and initialize
+	// it when running auto-migration. This is mostly usefull for automated tests
+	TemporaryDatabase bool `env:"TEMPORARY_DATABASE" envDefault:"false"`
+	// AutoMigration can be set to true to cause the logic to automatically run migrations when started. This
+	// is mostly usefull for automated tests.
+	AutoMigration bool `env:"AUTO_MIGRATION" envDefault:"false"`
+	// MigrationsDir configures from what directory the migrations are read. By default it will read from
+	// a directory called "migrations"
+	MigrationsDir string `env:"MIGRATIONS_DIR" envDefault:"migrations"`
 }
 
 // NewReadOnlyConfig constructs a config for a read-only database connecion. The aws config is optional
@@ -86,12 +94,6 @@ func newPoolConfig(cfg Config, logs *zap.Logger, host string, awsc aws.Config) (
 	pcfg.ConnConfig.Tracer = &tracelog.TraceLog{
 		Logger:   NewLogger(logs),
 		LogLevel: ll}
-
-	// if a temporary schema prefix is configured we assume to customize the connections search
-	// path wich will trigger the migration code to setup in a temporary schema.
-	if cfg.TemporarySchemaName != "" {
-		pcfg.ConnConfig.RuntimeParams["search_path"] = cfg.TemporarySchemaName
-	}
 
 	logs.Info("initialized postgres connection config",
 		zap.Any("runtime_params", pcfg.ConnConfig.RuntimeParams),
