@@ -24,6 +24,8 @@ var _ = BeforeSuite(func() {
 	Expect(godotenv.Load(filepath.Join("..", ".test.env")))
 })
 
+type testMigrated struct{}
+
 var _ = Describe("connect", func() {
 	var obs *observer.ObservedLogs
 	var pg struct {
@@ -55,5 +57,27 @@ var _ = Describe("connect", func() {
 		Expect(pg.ReadWrite.PingContext(ctx))
 		Expect(pg.ReadOnly.PingContext(ctx))
 		Expect(obs.FilterMessage("Query").Len()).To(BeNumerically(">=", 4))
+	})
+})
+
+var _ = Describe("connect with migrated", func() {
+	var obs *observer.ObservedLogs
+	var db *sql.DB
+	var didStartMigrate bool
+	BeforeEach(func(ctx context.Context) {
+		app := fx.New(
+			fx.Populate(&db, &obs),
+			fx.Supply(fx.Annotate(testMigrated{},
+				fx.As(new(clpostgres.Migrated)), fx.OnStart(func() {
+					didStartMigrate = true
+				})),
+			),
+			clzap.Test, clpostgres.Test)
+		Expect(app.Start(ctx)).To(Succeed())
+		DeferCleanup(app.Stop)
+	})
+
+	It("should start migrate lifecycle if provided", func() {
+		Expect(didStartMigrate).To(BeTrue())
 	})
 })

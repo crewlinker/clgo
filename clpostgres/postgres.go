@@ -2,9 +2,7 @@ package clpostgres
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"fmt"
 	"strings"
 
 	"github.com/caarlos0/env/v6"
@@ -14,8 +12,14 @@ import (
 	"go.uber.org/zap"
 )
 
-// New inits a stdlib sql connection
-func New(pcfg *pgxpool.Config) (db *sql.DB) {
+// Migrated can be provided as an optional dependency to the database connecetion constructor
+// to force it's lifecycle logic (migrating the database) to be run before being connected to.
+type Migrated any
+
+// New inits a stdlib sql connection. Any other dependency can optionall ybe provided as migrated
+// to force it's lifecycle to be run before the database is connected. This is mostly usefull to
+// run migration logic (such as initializing the database)
+func New(pcfg *pgxpool.Config, m Migrated) (db *sql.DB) {
 	c := stdlib.GetConnector(*pcfg.ConnConfig)
 	db = sql.OpenDB(c)
 	return
@@ -37,12 +41,14 @@ var Prod = fx.Module(moduleName,
 		fx.ParamTags(`optional:"true"`))),
 
 	// provide read/write configuration
-	fx.Provide(fx.Annotate(NewReadOnlyConfig, fx.ParamTags(``, ``, `optional:"true"`), fx.ResultTags(`name:"ro"`))),
-	fx.Provide(fx.Annotate(NewReadWriteConfig, fx.ParamTags(``, ``, `optional:"true"`), fx.ResultTags(`name:"rw"`))),
+	fx.Provide(fx.Annotate(NewReadOnlyConfig,
+		fx.ParamTags(``, ``, `optional:"true"`), fx.ResultTags(`name:"ro"`))),
+	fx.Provide(fx.Annotate(NewReadWriteConfig,
+		fx.ParamTags(``, ``, `optional:"true"`), fx.ResultTags(`name:"rw"`))),
 
 	// setup read-only connection
 	fx.Provide(fx.Annotate(New,
-		fx.ParamTags(`name:"ro"`), fx.ResultTags(`name:"ro"`),
+		fx.ParamTags(`name:"ro"`, `optional:"true"`), fx.ResultTags(`name:"ro"`),
 		fx.OnStart(func(ctx context.Context, in struct {
 			fx.In
 			DB *sql.DB `name:"ro"`
@@ -59,7 +65,7 @@ var Prod = fx.Module(moduleName,
 
 	// setup read-write connection
 	fx.Provide(fx.Annotate(New,
-		fx.ParamTags(`name:"rw"`), fx.ResultTags(`name:"rw"`),
+		fx.ParamTags(`name:"rw"`, `optional:"true"`), fx.ResultTags(`name:"rw"`),
 		fx.OnStart(func(ctx context.Context, in struct {
 			fx.In
 			DB *sql.DB `name:"rw"`
@@ -77,14 +83,6 @@ var Prod = fx.Module(moduleName,
 
 // Test configures the DI for a test environment
 var Test = fx.Options(Prod,
-	// always use temporary schemas in the tests
-	fx.Decorate(func(cfg Config) Config {
-		var b [8]byte
-		rand.Read(b[:])
-		cfg.TemporarySchemaName = fmt.Sprintf(moduleName+"_test_%x", b[:])
-		return cfg
-	}),
-
 	// we re-provide the read-write sql db as an unnamed *sql.DB and config because that is
 	// what we usually want in tests.
 	fx.Provide(fx.Annotate(func(rw *sql.DB) *sql.DB { return rw }, fx.ParamTags(`name:"rw"`))),
