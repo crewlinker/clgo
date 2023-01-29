@@ -1,11 +1,9 @@
-package clhttp_test
+package clotel_test
 
 import (
 	"context"
 	"net/http"
-	"testing"
 
-	"github.com/crewlinker/clgo/clhttp"
 	"github.com/crewlinker/clgo/clotel"
 	"github.com/crewlinker/clgo/clzap"
 	. "github.com/onsi/ginkgo/v2"
@@ -15,33 +13,17 @@ import (
 	"go.uber.org/fx"
 )
 
-func TestHttpclient(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "internal/httpclient")
-}
-
 var _ = Describe("client", func() {
 	var hc *http.Client
-	Describe("without tracing", func() {
-		BeforeEach(func(ctx context.Context) {
-			app := fx.New(fx.Populate(&hc), clzap.Test, clhttp.Prod)
-			Expect(app.Start(ctx)).To(Succeed())
-			DeferCleanup(app.Stop)
-		})
-
-		It("should construct and log", func() {
-			Expect(hc).ToNot(BeNil())
-		})
-	})
-
 	Describe("with tracing", func() {
 		var tobs *tracetest.InMemoryExporter
 		var tp *sdktrace.TracerProvider
 
 		BeforeEach(func(ctx context.Context) {
-			app := fx.New(fx.Populate(&hc, &tobs, &tp), clzap.Test, clhttp.Prod, clotel.Test)
+			app := fx.New(fx.Populate(&tobs, &tp), clzap.Test, clotel.Test)
 			Expect(app.Start(ctx)).To(Succeed())
 			DeferCleanup(app.Stop)
+			hc = &http.Client{}
 		})
 
 		It("should construct and trace", func(ctx context.Context) {

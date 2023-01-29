@@ -3,11 +3,13 @@ package clotel
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
 	"github.com/caarlos0/env/v6"
 	"github.com/go-logr/zapr"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/contrib/propagators/aws/xray"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
@@ -73,6 +75,12 @@ func New(
 
 	// set it globally, but code should prefer to inject it during construction
 	otel.SetTracerProvider(tp)
+
+	// set default htt transport and client to use tracing
+	http.DefaultTransport = otelhttp.NewTransport(http.DefaultTransport,
+		otelhttp.WithPropagators(pr),
+		otelhttp.WithTracerProvider(tp))
+	http.DefaultClient = &http.Client{Transport: http.DefaultTransport}
 	return tp, nil
 }
 
