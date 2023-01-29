@@ -2,7 +2,9 @@ package clzap
 
 import (
 	"context"
+	"fmt"
 
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -18,6 +20,29 @@ type ContextHook func(ctx context.Context, f []zap.Field) []zap.Field
 type ContextLogger struct {
 	logs *zap.Logger
 	hook ContextHook
+}
+
+// TraceHook creates a context logger hook that appends trace information
+func TraceHook() func(ctx context.Context, f []zap.Field) []zap.Field {
+	return func(ctx context.Context, f []zap.Field) []zap.Field {
+		span := trace.SpanFromContext(ctx)
+		if span != nil && span.SpanContext().HasSpanID() {
+			f = append(f, zap.String("span_id", span.SpanContext().SpanID().String()))
+		}
+
+		// log the trace id in the xray format
+		if span != nil && span.SpanContext().HasTraceID() {
+			tid := span.SpanContext().TraceID().String()
+			f = append(f, zap.String("trace_id", fmt.Sprintf("1-%s-%s", tid[:8], tid[8:])))
+		}
+
+		return f
+	}
+}
+
+// NewTraceContextLogger inits a contextual logger that adds trace information to each log line
+func NewTraceContextLogger(logs *zap.Logger) *ContextLogger {
+	return NewContextLogger(logs, TraceHook())
 }
 
 // NewContextLogger inits our contextual with the underlying zapcore logger

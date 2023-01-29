@@ -18,7 +18,7 @@ type Logger struct {
 // NewLogger inits a logger for pgx. Inside is a contextual logger so we can log each postgres query
 // with context fields for tracing.
 func NewLogger(logs *zap.Logger) *Logger {
-	return &Logger{logs: clzap.NewContextLogger(logs.WithOptions(zap.AddCallerSkip(1)))}
+	return &Logger{logs: clzap.NewTraceContextLogger(logs.WithOptions(zap.AddCallerSkip(1)))}
 }
 
 func (pl *Logger) Log(ctx context.Context, level tracelog.LogLevel, msg string, data map[string]interface{}) {
