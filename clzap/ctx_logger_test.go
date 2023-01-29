@@ -5,6 +5,7 @@ import (
 
 	"github.com/caarlos0/env/v6"
 	"github.com/crewlinker/clgo/clzap"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -17,6 +18,32 @@ import (
 type fatalHook struct{}
 
 func (fatalHook) OnWrite(*zapcore.CheckedEntry, []zapcore.Field) {}
+
+var _ = Describe("context logging", func() {
+	var logs *zap.Logger
+	var clogs *clzap.ContextLogger
+	var obs *observer.ObservedLogs
+	BeforeEach(func(ctx context.Context) {
+		app := fx.New(fx.Populate(&logs, &obs), clzap.Test)
+		Expect(app.Start(ctx)).To(Succeed())
+		DeferCleanup(app.Stop)
+		clogs = clzap.NewTraceContextLogger(logs)
+	})
+
+	It("should add span, trace and profile id", func(ctx context.Context) {
+		ctx = trace.ContextWithSpanContext(ctx, trace.NewSpanContext(trace.SpanContextConfig{
+			TraceID: trace.TraceID{0x01},
+			SpanID:  trace.SpanID{0x02},
+		}))
+
+		clogs.Info(ctx, "foo")
+
+		Expect(obs.FilterMessage("foo").All()[0].ContextMap()).To(Equal(map[string]any{
+			"span_id":  "0200000000000000",
+			"trace_id": "1-01000000-000000000000000000000000",
+		}))
+	})
+})
 
 var _ = Describe("default context logger", func() {
 	var logs *zap.Logger

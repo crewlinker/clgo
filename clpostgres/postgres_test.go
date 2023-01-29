@@ -6,11 +6,15 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/crewlinker/clgo/clotel"
 	"github.com/crewlinker/clgo/clpostgres"
 	"github.com/crewlinker/clgo/clzap"
 	"github.com/joho/godotenv"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/fx"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -26,6 +30,8 @@ var _ = BeforeSuite(func() {
 
 var _ = Describe("connect", func() {
 	var obs *observer.ObservedLogs
+	var tobs *tracetest.InMemoryExporter
+	var tp *sdktrace.TracerProvider
 	var pg struct {
 		fx.In
 		ReadWrite *sql.DB `name:"rw"`
@@ -36,8 +42,8 @@ var _ = Describe("connect", func() {
 	var scdb *sql.DB
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(
-			fx.Populate(&pg, &obs, &scdb),
-			clzap.Test, clpostgres.Test)
+			fx.Populate(&pg, &obs, &scdb, &tobs, &tp),
+			clzap.Test, clpostgres.Test, clotel.Test)
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 
@@ -51,9 +57,26 @@ var _ = Describe("connect", func() {
 	})
 
 	It("should work without contextual logger/tracer", func(ctx context.Context) {
+		ctx = trace.ContextWithSpanContext(ctx, trace.NewSpanContext(trace.SpanContextConfig{
+			TraceID: trace.TraceID{0x01},
+			SpanID:  trace.SpanID{0x02},
+		}))
+
 		Expect(scdb).To(Equal(pg.ReadWrite))
 		Expect(pg.ReadWrite.PingContext(ctx))
 		Expect(pg.ReadOnly.PingContext(ctx))
-		Expect(obs.FilterMessage("Query").Len()).To(BeNumerically(">=", 4))
+
+		qlogs := obs.FilterMessage("Query")
+		Expect(qlogs.Len()).To(BeNumerically(">=", 4))
+		Expect(qlogs.All()[len(qlogs.All())-1].ContextMap()).To(HaveKeyWithValue("trace_id", "1-01000000-000000000000000000000000"))
+	})
+
+	It("should have observed traces", func(ctx context.Context) {
+		var num int
+		Expect(pg.ReadWrite.QueryRowContext(ctx, "SELECT 42").Scan(&num)).To(Succeed())
+
+		Expect(tp.ForceFlush(ctx)).To(Succeed())
+		Expect(len(tobs.GetSpans().Snapshots())).To(BeNumerically(">", 4))
+		Expect(string(tobs.GetSpans().Snapshots()[0].Attributes()[0].Key)).To(Equal("db.name"))
 	})
 })

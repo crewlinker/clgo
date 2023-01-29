@@ -11,6 +11,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/caarlos0/env/v6"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 )
@@ -26,13 +29,29 @@ type Config struct {
 // New initialize an AWS config to be used to create clients for individual aws services. We would like
 // run this during fx lifecycle phase to provide it with a context because it can block. But too many
 // dependencies would have to wait for it.
-func New(cfg Config, logs *zap.Logger, epresolver aws.EndpointResolverWithOptions) (acfg aws.Config, err error) {
+func New(
+	cfg Config,
+	logs *zap.Logger,
+	epresolver aws.EndpointResolverWithOptions,
+	tp trace.TracerProvider,
+	pr propagation.TextMapPropagator,
+) (acfg aws.Config, err error) {
 	logs.Info("loading config", zap.Duration("timeout", cfg.LoadConfigTimeout))
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.LoadConfigTimeout)
 	defer cancel()
 
-	if acfg, err = config.LoadDefaultConfig(ctx, config.WithEndpointResolverWithOptions(epresolver)); err != nil {
+	if acfg, err = config.LoadDefaultConfig(ctx,
+		config.WithEndpointResolverWithOptions(epresolver)); err != nil {
 		return acfg, fmt.Errorf("failed to load default config: %w", err)
+	}
+
+	// if we have a tracing available, we instrument the aws client
+	if tp != nil {
+		logs.Info("tracing provided, instrumenting aws client")
+		otelaws.AppendMiddlewares(
+			&acfg.APIOptions,
+			otelaws.WithTracerProvider(tp),
+			otelaws.WithTextMapPropagator(pr))
 	}
 
 	return acfg, nil
@@ -53,7 +72,7 @@ var Prod = fx.Module(moduleName,
 		},
 		fx.ParamTags(`optional:"true"`))),
 	// provide the actual aws config
-	fx.Provide(New),
+	fx.Provide(fx.Annotate(New, fx.ParamTags(``, ``, ``, `optional:"true"`, `optional:"true"`))),
 	// provide endpoint resolver, can be used to ovewrite endpoints based on configuration
 	fx.Provide(fx.Annotate(func(cfg Config) aws.EndpointResolverWithOptions {
 		return aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...any) (ep aws.Endpoint, err error) {
