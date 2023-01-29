@@ -55,6 +55,14 @@ func New(
 		return nil, fmt.Errorf("failed to detect resource: %w", err)
 	}
 
+	// lets log the
+	var afields []string
+	for _, attr := range res.Attributes() {
+		afields = append(afields, fmt.Sprintf("%s=%+v", string(attr.Key), attr.Value))
+	}
+
+	logs.Info("detected resource", zap.Strings("attributes", afields))
+
 	// we handle otel errors by logging it with our zap logger. This is unfortunately a global
 	// setting so it may confuse testing setups
 	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
@@ -87,8 +95,8 @@ func New(
 // moduleName for naming conventions
 const moduleName = "clotel"
 
-// shared module with di setup shared between test and prod environment
-var shared = fx.Module(moduleName,
+// Base module with di setup Base between test and prod environment
+var Base = fx.Module(moduleName,
 	// the incoming logger will be named after the module
 	fx.Decorate(func(l *zap.Logger) *zap.Logger { return l.Named(moduleName) }),
 	// provide the environment configuration
@@ -122,7 +130,7 @@ func newGrpcExporter(cfg Config) *otlptrace.Exporter {
 }
 
 // Service provides otel dependencies for container services
-var Service = fx.Options(shared,
+var Service = fx.Options(Base,
 	// service will export traces over grpc
 	fx.Provide(fx.Annotate(newGrpcExporter,
 		fx.OnStart(func(ctx context.Context, e *otlptrace.Exporter) error { return e.Start(ctx) }),
@@ -133,7 +141,7 @@ var Service = fx.Options(shared,
 )
 
 // Test configures the DI for a test environment
-var Test = fx.Options(shared,
+var Test = fx.Options(Base,
 	fx.Provide(fx.Annotate(tracetest.NewInMemoryExporter)),
 	fx.Provide(func(e *tracetest.InMemoryExporter) sdktrace.SpanExporter { return e }),
 	fx.Provide(func() resource.Detector {
