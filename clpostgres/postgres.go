@@ -5,9 +5,12 @@ import (
 	"database/sql"
 	"strings"
 
+	"github.com/XSAM/otelsql"
 	"github.com/caarlos0/env/v6"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 )
@@ -15,9 +18,19 @@ import (
 // New inits a stdlib sql connection. Any other dependency can optionall ybe provided as migrated
 // to force it's lifecycle to be run before the database is connected. This is mostly usefull to
 // run migration logic (such as initializing the database)
-func New(pcfg *pgxpool.Config, m *Migrater) (db *sql.DB) {
+func New(pcfg *pgxpool.Config, m *Migrater, tp trace.TracerProvider) (db *sql.DB) {
 	c := stdlib.GetConnector(*pcfg.ConnConfig)
-	db = sql.OpenDB(c)
+	if tp != nil {
+		db = otelsql.OpenDB(c,
+			otelsql.WithSpanOptions(otelsql.SpanOptions{Ping: true}),
+			otelsql.WithTracerProvider(tp),
+			otelsql.WithAttributes(
+				semconv.DBNameKey.String(pcfg.ConnConfig.Database),
+				semconv.DBSystemPostgreSQL,
+				semconv.DBConnectionStringKey.String(pcfg.ConnString())))
+	} else {
+		db = sql.OpenDB(c)
+	}
 	return
 }
 
@@ -44,7 +57,7 @@ var Prod = fx.Module(moduleName,
 
 	// setup read-only connection
 	fx.Provide(fx.Annotate(New,
-		fx.ParamTags(`name:"ro"`, `optional:"true"`), fx.ResultTags(`name:"ro"`),
+		fx.ParamTags(`name:"ro"`, `optional:"true"`, `optional:"true"`), fx.ResultTags(`name:"ro"`),
 		fx.OnStart(func(ctx context.Context, in struct {
 			fx.In
 			DB *sql.DB `name:"ro"`
@@ -61,7 +74,7 @@ var Prod = fx.Module(moduleName,
 
 	// setup read-write connection
 	fx.Provide(fx.Annotate(New,
-		fx.ParamTags(`name:"rw"`, `optional:"true"`), fx.ResultTags(`name:"rw"`),
+		fx.ParamTags(`name:"rw"`, `optional:"true"`, `optional:"true"`), fx.ResultTags(`name:"rw"`),
 		fx.OnStart(func(ctx context.Context, in struct {
 			fx.In
 			DB *sql.DB `name:"rw"`
