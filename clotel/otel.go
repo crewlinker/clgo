@@ -167,9 +167,7 @@ var Service = fx.Options(Base,
 	// detect expects ecs resource
 	fx.Provide(ecs.NewResourceDetector),
 	// decorate to fix an issue that prevents log correlation
-	fx.Decorate(func(d resource.Detector) resource.Detector {
-		return d
-	}),
+	fx.Decorate(WithExtraEcsAttributes),
 )
 
 // Test configures the DI for a test environment
