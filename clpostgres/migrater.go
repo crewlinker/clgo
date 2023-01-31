@@ -31,10 +31,11 @@ type Migrater struct {
 func NewMigrater(
 	cfg Config,
 	logs *zap.Logger,
-	dbcfg *pgxpool.Config,
+	rwcfg *pgxpool.Config,
+	rocfg *pgxpool.Config,
 	dir migrate.Dir,
 ) (*Migrater, error) {
-	m := &Migrater{cfg: cfg, dbcfg: dbcfg, logs: logs.Named("migrater"), dir: dir}
+	m := &Migrater{cfg: cfg, dbcfg: rwcfg, logs: logs.Named("migrater"), dir: dir}
 	if cfg.TemporaryDatabase {
 		var rngd [6]byte
 		if _, err := rand.Read(rngd[:]); err != nil {
@@ -46,6 +47,8 @@ func NewMigrater(
 		m.databases.original = m.dbcfg.Copy()
 		m.databases.temp = fmt.Sprintf("temp_%x_%s", rngd, m.databases.original.ConnConfig.Database)
 		m.dbcfg.ConnConfig.Database = m.databases.temp
+		// also change in read-only connection config, or the read-only is reading from different database
+		rocfg.ConnConfig.Database = m.databases.temp
 	}
 
 	return m, nil

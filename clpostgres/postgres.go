@@ -107,7 +107,7 @@ var Test = fx.Options(Prod,
 		NewMigrater,
 		fx.OnStart(func(ctx context.Context, m *Migrater) error { return m.Migrate(ctx) }),
 		fx.OnStop(func(ctx context.Context, m *Migrater) error { return m.DropDatabase(ctx) }),
-		fx.ParamTags(``, ``, `name:"rw"`)),
+		fx.ParamTags(``, ``, `name:"rw"`, `name:"ro"`)),
 	),
 
 	// we re-provide the read-write sql db as an unnamed *sql.DB and config because that is

@@ -89,7 +89,7 @@ func newPoolConfig(cfg Config, logs *zap.Logger, host string, awsc aws.Config) (
 
 	// we use a tracer to log all interactions with the database
 	pcfg.ConnConfig.Tracer = &tracelog.TraceLog{
-		Logger:   NewLogger(logs),
+		Logger:   NewLogger(logs, pcfg),
 		LogLevel: ll}
 
 	logs.Info("initialized postgres connection config",
