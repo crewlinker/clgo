@@ -79,7 +79,7 @@ var _ = Describe("connect", func() {
 
 		Expect(tp.ForceFlush(ctx)).To(Succeed())
 		Expect(len(tobs.GetSpans().Snapshots())).To(BeNumerically(">", 4))
-		Expect(string(tobs.GetSpans().Snapshots()[0].Attributes()[0].Key)).To(Equal("db.name"))
+		Expect(string(tobs.GetSpans().Snapshots()[0].Attributes()[0].Key)).To(Equal("db.user"))
 
 		metrics, err := mr.Collect(ctx)
 		Expect(err).ToNot(HaveOccurred())

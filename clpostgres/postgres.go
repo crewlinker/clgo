@@ -23,9 +23,9 @@ func New(pcfg *pgxpool.Config, m *Migrater, tp trace.TracerProvider, mp metric.M
 	c := stdlib.GetConnector(*pcfg.ConnConfig)
 	if tp != nil {
 		attr := otelsql.WithAttributes(
+			semconv.DBUserKey.String(pcfg.ConnConfig.User),
 			semconv.DBNameKey.String(pcfg.ConnConfig.Database),
-			semconv.DBSystemPostgreSQL,
-			semconv.DBConnectionStringKey.String(pcfg.ConnString()))
+			semconv.DBSystemPostgreSQL)
 
 		// trace sql
 		db = otelsql.OpenDB(c,
