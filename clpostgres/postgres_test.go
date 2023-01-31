@@ -12,6 +12,7 @@ import (
 	"github.com/joho/godotenv"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
@@ -30,6 +31,7 @@ var _ = BeforeSuite(func() {
 
 var _ = Describe("connect", func() {
 	var obs *observer.ObservedLogs
+	var mr sdkmetric.Reader
 	var tobs *tracetest.InMemoryExporter
 	var tp *sdktrace.TracerProvider
 	var pg struct {
@@ -42,7 +44,7 @@ var _ = Describe("connect", func() {
 	var scdb *sql.DB
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(
-			fx.Populate(&pg, &obs, &scdb, &tobs, &tp),
+			fx.Populate(&pg, &obs, &scdb, &tobs, &tp, &mr),
 			clzap.Test, clpostgres.Test, clotel.Test)
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
@@ -71,12 +73,17 @@ var _ = Describe("connect", func() {
 		Expect(qlogs.All()[len(qlogs.All())-1].ContextMap()).To(HaveKeyWithValue("trace_id", "1-01000000-000000000000000000000000"))
 	})
 
-	It("should have observed traces", func(ctx context.Context) {
+	It("should have observed traces and metrics", func(ctx context.Context) {
 		var num int
 		Expect(pg.ReadWrite.QueryRowContext(ctx, "SELECT 42").Scan(&num)).To(Succeed())
 
 		Expect(tp.ForceFlush(ctx)).To(Succeed())
 		Expect(len(tobs.GetSpans().Snapshots())).To(BeNumerically(">", 4))
 		Expect(string(tobs.GetSpans().Snapshots()[0].Attributes()[0].Key)).To(Equal("db.name"))
+
+		metrics, err := mr.Collect(ctx)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(metrics.ScopeMetrics[0].Scope.Name).To(Equal("github.com/XSAM/otelsql"))
 	})
 })

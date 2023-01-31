@@ -13,6 +13,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/fx"
 )
 
@@ -21,11 +22,12 @@ func TestClotel(t *testing.T) {
 	RunSpecs(t, "clotel")
 }
 
-var _ = Describe("otel", func() {
+var _ = Describe("otel tracing", func() {
 	var tp *sdktrace.TracerProvider
+	var tpi trace.TracerProvider
 	var tobs *tracetest.InMemoryExporter
 	BeforeEach(func(ctx context.Context) {
-		app := fx.New(fx.Populate(&tp, &tobs), clotel.Test, clzap.Test)
+		app := fx.New(fx.Populate(&tp, &tpi, &tobs), clotel.Test, clzap.Test)
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 	})
