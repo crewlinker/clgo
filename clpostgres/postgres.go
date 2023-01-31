@@ -97,10 +97,7 @@ var Prod = fx.Module(moduleName,
 			return in.DB.Close()
 		}),
 	)),
-)
 
-// Test configures the DI for a test environment
-var Test = fx.Options(Prod,
 	// Provide migrater which will now always run before connecting. If auto-migrate and temporary database
 	// configuration is set this can provide a fully isolated and migrated database for each test.
 	fx.Provide(fx.Annotate(
@@ -109,6 +106,10 @@ var Test = fx.Options(Prod,
 		fx.OnStop(func(ctx context.Context, m *Migrater) error { return m.DropDatabase(ctx) }),
 		fx.ParamTags(``, ``, `name:"rw"`, `name:"ro"`)),
 	),
+)
+
+// Test configures the DI for a test environment
+var Test = fx.Options(Prod,
 
 	// we re-provide the read-write sql db as an unnamed *sql.DB and config because that is
 	// what we usually want in tests.
