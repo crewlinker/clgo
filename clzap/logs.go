@@ -30,7 +30,10 @@ var Prod = fx.Module(moduleName,
 	// allow environmental config to configure the level at which to log
 	fx.Provide(func(cfg Config) zapcore.LevelEnabler { return cfg.Level }),
 	// provide the zapper, make sure everything is synced on shutdown
-	fx.Provide(fx.Annotate(zap.New, fx.OnStop(func(ctx context.Context, l *zap.Logger) error { return l.Sync() }))),
+	fx.Provide(fx.Annotate(zap.New, fx.OnStop(func(ctx context.Context, l *zap.Logger) error {
+		l.Sync() // ignore to support TTY: https://github.com/uber-go/zap/issues/880
+		return nil
+	}))),
 	// provide dependencies to build the prod logger
 	fx.Provide(zapcore.NewCore, zapcore.NewJSONEncoder, zap.NewProductionEncoderConfig),
 	// allow environment to configure where logs are being synced to
