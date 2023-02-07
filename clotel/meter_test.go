@@ -24,7 +24,7 @@ var _ = Describe("otel metrics", func() {
 	})
 
 	It("should provide metering", func(ctx context.Context) {
-		ctr, err := mp.Meter("some_test").SyncInt64().Counter("some.counter")
+		ctr, err := mp.Meter("some_test").Int64Counter("some.counter")
 		Expect(err).ToNot(HaveOccurred())
 		ctr.Add(ctx, 100)
 		ctr.Add(ctx, 10)
