@@ -49,7 +49,9 @@ func WithErrorHandling[C context.Context](f NoContextErrorHandlerFunc) Option[C]
 
 // WithPanicHandler configures how exeptions in the handling function are caught. By default, the recovered
 // panic is send to the error handler but it can be customized for example to provide custom logging.
-// Additionally the panic handler can be set to nil to disable recovering of panics altogether.
+// Additionally the panic handler can be set to nil to disable recovering of panics altogether. This can be
+// done because it is also common to have middleware recover any panics, which has the advantage being able
+// to catch panics in the middleware chain as well.
 //
 // Panics in the context builder are not caught by this logic and should be taken care of in the context
 // builder itself. But panics in error handling with a context are caught by this handler.
