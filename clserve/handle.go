@@ -18,22 +18,30 @@ func Handle[C context.Context](f func(C, http.ResponseWriter, *http.Request) err
 
 		ctx, err := opts.ctxBuilder(r)
 		if err != nil {
-			opts.errHandler(ctx, w, r, err)
+			opts.errHandler(w, r, err)
 			return
+		}
+
+		if opts.panicHandler != nil {
+			defer func() {
+				if v := recover(); v != nil {
+					opts.panicHandler(ctx, w, r, v, opts.ctxErrHandler)
+				}
+			}()
 		}
 
 		if err := f(ctx, bw, r); err != nil {
 			if resetErr := bw.Reset(); resetErr != nil {
-				opts.errHandler(ctx, w, r, errors.Join(err, resetErr))
+				opts.ctxErrHandler(ctx, w, r, errors.Join(err, resetErr))
 				return
 			}
 
-			opts.errHandler(ctx, w, r, err)
+			opts.ctxErrHandler(ctx, w, r, err)
 			return
 		}
 
 		if err := bw.ImplicitFlush(); err != nil {
-			opts.errHandler(ctx, w, r, err)
+			opts.ctxErrHandler(ctx, w, r, err)
 			return
 		}
 	})
