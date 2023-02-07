@@ -17,6 +17,8 @@ Opinionated but Re-usable Go libraries for the Crewlinker platform
 - [ ] SHOULD add the Atlasgo github integration for checking migrations
 - [x] SHOULD Allow configuration of the postgres application name to diagnose connections
 - [x] SHOULD allow iam authentication to a database
+- [ ] SHOULD test our clserve.Handle with http2 server/client
+- [ ] SHOULD test our clserve.Handle with websocket hijack/upgrade
 - [ ] COULD develop metric middleware for aws client so we can measure (average) latency (per service?)?
 
 ## Correct Otel dependencies

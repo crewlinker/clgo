@@ -28,7 +28,7 @@ func Test() error {
 
 // Bench run any benchmarks in the project
 func Bench() error {
-	return sh.Run("go", "test", "-bench='.*'", "-test.run=notests", "./...")
+	return sh.Run("go", "test", "-bench=.*", "./...")
 }
 
 // Dev will create or replace containers used for development

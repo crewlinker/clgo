@@ -106,11 +106,49 @@ var _ = Describe("handle implementations", func() {
 				w.WriteHeader(201)
 				fmt.Fprintf(w, "discard this")
 				return errors.New("failed")
-			}, clserve.WithErrorHandling(errh)).ServeHTTP(w, r)
+			}, clserve.WithContextErrorHandling(errh)).ServeHTTP(w, r)
 
 			Expect(w).To(HaveHTTPStatus(505))
 			Expect(w).To(HaveHTTPBody("my error"))
 			Expect(w).To(HaveHTTPHeaderWithValue("X-Error", "my-error"))
+		})
+
+		It("hould handle panics through error handler by default", func(ctx context.Context) {
+			errh := func(c context.Context, w http.ResponseWriter, r *http.Request, e error) {
+				fmt.Fprintf(w, "%v", e)
+			}
+
+			w, r := httptest.NewRecorder(), httptest.NewRequest("GET", "/", nil)
+			clserve.Handle(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+				panic("my panic")
+			}, clserve.WithContextErrorHandling(errh)).ServeHTTP(w, r)
+
+			Expect(w).To(HaveHTTPStatus(200))
+			Expect(w).To(HaveHTTPBody("my panic"))
+		})
+
+		It("should allow custom panic handling", func(ctx context.Context) {
+			panich := func(c context.Context, w http.ResponseWriter, r *http.Request, v any, errh clserve.ErrorHandlerFunc[context.Context]) {
+				w.WriteHeader(502)
+				fmt.Fprintf(w, "panic: %v", v)
+			}
+
+			w, r := httptest.NewRecorder(), httptest.NewRequest("GET", "/", nil)
+			clserve.Handle(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+				panic("my panic")
+			}, clserve.WithPanicHandler(panich)).ServeHTTP(w, r)
+
+			Expect(w).To(HaveHTTPStatus(502))
+			Expect(w).To(HaveHTTPBody("panic: my panic"))
+		})
+
+		It("should allow disabling of panic handling", func(ctx context.Context) {
+			Expect(func() {
+				w, r := httptest.NewRecorder(), httptest.NewRequest("GET", "/", nil)
+				clserve.Handle(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+					panic("my panic")
+				}, clserve.WithPanicHandler[context.Context](nil)).ServeHTTP(w, r)
+			}).To(Panic())
 		})
 	})
 
@@ -131,7 +169,7 @@ var _ = Describe("handle implementations", func() {
 
 		It("should handle error from ctx building", func(ctx context.Context) {
 			w, r := httptest.NewRecorder(), httptest.NewRequest("GET", "/", nil)
-			errh := func(c *MyContext, w http.ResponseWriter, r *http.Request, e error) {
+			errh := func(w http.ResponseWriter, r *http.Request, e error) {
 				fmt.Fprintf(w, "%v", e)
 			}
 			ctxb := func(r *http.Request) (*MyContext, error) {
@@ -140,7 +178,7 @@ var _ = Describe("handle implementations", func() {
 
 			clserve.Handle(func(ctx *MyContext, w http.ResponseWriter, r *http.Request) error {
 				return nil
-			}, clserve.WithContextBuilder(ctxb), clserve.WithErrorHandling(errh)).ServeHTTP(w, r)
+			}, clserve.WithContextBuilder(ctxb), clserve.WithErrorHandling[*MyContext](errh)).ServeHTTP(w, r)
 			Expect(w).To(HaveHTTPBody("ctx fail"))
 		})
 
@@ -178,7 +216,7 @@ var _ = Describe("handle implementations", func() {
 			// return an error to trigger a reset on the buffered response, which will fail since
 			// it's already flushed.
 			return errors.New("foo")
-		}, clserve.WithErrorHandling(errh)).ServeHTTP(w, r)
+		}, clserve.WithContextErrorHandling(errh)).ServeHTTP(w, r)
 		Expect(errIsAlreadyFlushed).To(BeTrue())
 	})
 
@@ -193,7 +231,7 @@ var _ = Describe("handle implementations", func() {
 		clserve.Handle(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 			fmt.Fprintf(w, "some data")
 			return nil
-		}, clserve.WithErrorHandling(errh)).ServeHTTP(fw, r)
+		}, clserve.WithContextErrorHandling(errh)).ServeHTTP(fw, r)
 		Expect(err).To(MatchError(`write fail`))
 	})
 })
