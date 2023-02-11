@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/tracelog"
 	"go.uber.org/zap"
@@ -38,8 +38,6 @@ type Config struct {
 	SSLMode string `env:"SSL_MODE" envDefault:"disable"`
 	// IamAuth will cause the password to be set to an IAM token for authentication
 	IamAuth bool `env:"IAM_AUTH"`
-	// IamAuthTimeout bounds the time it takes to geht the IAM auth token
-	IamAuthTimeout time.Duration `env:"IAM_AUTH_TIMEOUT" envDefault:"100ms"`
 
 	// TemporaryDatabase can be set to cause the logic to create a random database name and initialize
 	// it when running auto-migration. This is mostly usefull for automated tests
@@ -64,22 +62,28 @@ func NewReadWriteConfig(cfg Config, logs *zap.Logger, awsc aws.Config) (*pgxpool
 // newPoolConfig will turn environment configuration in a way that allows
 // database credentials to be provided
 func newPoolConfig(cfg Config, logs *zap.Logger, host string, awsc aws.Config) (pcfg *pgxpool.Config, err error) {
-	if cfg.IamAuth {
-		if awsc.Credentials == nil {
-			return nil, fmt.Errorf("IAM auth requested but optional AWS config dependency not provided")
-		}
-
-		// if we use iam auth we replac the password with a token
-		if cfg.Password, err = buildIamAuthToken(cfg, awsc, host); err != nil {
-			return nil, fmt.Errorf("failed to build IAM auth token: %w", err)
-		}
-	}
 
 	connString := fmt.Sprintf(`postgres://%s:%s@%s:%d/%s?application_name=%s&sslmode=%s`,
 		cfg.Username, url.QueryEscape(cfg.Password), host, cfg.Port, cfg.DatabaseName, cfg.ApplicationName, cfg.SSLMode)
 	pcfg, err = pgxpool.ParseConfig(connString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config from conn string: %w", err)
+	}
+
+	if cfg.IamAuth {
+		if awsc.Credentials == nil {
+			return nil, fmt.Errorf("IAM auth requested but optional AWS config dependency not provided")
+		}
+
+		// For IAM Auth we need to build a token as a password on every connection attempt
+		pcfg.BeforeConnect = func(ctx context.Context, cc *pgx.ConnConfig) error {
+			tok, err := buildIamAuthToken(ctx, cfg, awsc, host)
+			if err != nil {
+				return fmt.Errorf("failed to build iam token: %w", err)
+			}
+			cc.Password = tok
+			return nil
+		}
 	}
 
 	ll, err := tracelog.LogLevelFromString(cfg.PgxLogLevel)
@@ -104,8 +108,6 @@ func newPoolConfig(cfg Config, logs *zap.Logger, host string, awsc aws.Config) (
 
 // buildIamAuthToken will construct a RDS proxy authentication token. We don't run this during the
 // lifecycle phase so we timeout manually with our own context.
-func buildIamAuthToken(cfg Config, awsc aws.Config, ep string) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), cfg.IamAuthTimeout)
-	defer cancel()
+func buildIamAuthToken(ctx context.Context, cfg Config, awsc aws.Config, ep string) (string, error) {
 	return auth.BuildAuthToken(ctx, ep+":"+strconv.Itoa(cfg.Port), awsc.Region, cfg.Username, awsc.Credentials)
 }
