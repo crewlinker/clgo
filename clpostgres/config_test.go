@@ -62,7 +62,11 @@ var _ = Describe("config", func() {
 			DeferCleanup(app.Stop)
 		})
 
-		It("should have build configs", func() {
+		It("should have build configs", func(ctx context.Context) {
+			cfg := cfgs.ReadWrite.ConnConfig
+
+			Expect(cfgs.ReadWrite.BeforeConnect(ctx, cfg)).To(Succeed())
+
 			Expect(cfgs.ReadWrite.ConnConfig.Password).To(MatchRegexp(`^foo.read-write:([0-9]+)\?Action=connect`))
 			Expect(cfgs.ReadWrite.ConnConfig.Host).To(Equal("foo.read-write"))
 			Expect(cfgs.ReadOnly.ConnConfig.Host).To(Equal("foo.read-only"))

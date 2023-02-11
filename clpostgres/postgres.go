@@ -20,7 +20,12 @@ import (
 // to force it's lifecycle to be run before the database is connected. This is mostly usefull to
 // run migration logic (such as initializing the database)
 func New(pcfg *pgxpool.Config, m *Migrater, tp trace.TracerProvider, mp metric.MeterProvider) (db *sql.DB) {
-	c := stdlib.GetConnector(*pcfg.ConnConfig)
+	openopts := []stdlib.OptionOpenDB{}
+	if pcfg.BeforeConnect != nil {
+		openopts = append(openopts, stdlib.OptionBeforeConnect(pcfg.BeforeConnect)) // if set, for IAM auth
+	}
+
+	c := stdlib.GetConnector(*pcfg.ConnConfig, openopts...)
 	if tp != nil {
 		attr := otelsql.WithAttributes(
 			semconv.DBUserKey.String(pcfg.ConnConfig.User),
