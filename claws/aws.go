@@ -1,3 +1,4 @@
+// Package claws provides the offical AWS SDK (v2)
 package claws
 
 import (

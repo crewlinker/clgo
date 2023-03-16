@@ -31,9 +31,11 @@ require (
 	go.opentelemetry.io/otel/trace v1.12.0
 	go.uber.org/fx v1.19.1
 	go.uber.org/zap v1.24.0
+	honnef.co/go/tools v0.4.2
 )
 
 require (
+	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/agext/levenshtein v1.2.1 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.9 // indirect
@@ -75,6 +77,8 @@ require (
 	go.uber.org/dig v1.16.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/crypto v0.0.0-20220829220503-c86fa9a7ed90 // indirect
+	golang.org/x/exp/typeparams v0.0.0-20221208152030-732eee02a75a // indirect
+	golang.org/x/mod v0.9.0 // indirect
 	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect

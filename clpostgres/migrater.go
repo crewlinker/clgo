@@ -27,7 +27,7 @@ type Migrater struct {
 	}
 }
 
-// NewMigrator inits the migrater
+// NewMigrater inits the migrater
 func NewMigrater(
 	cfg Config,
 	logs *zap.Logger,

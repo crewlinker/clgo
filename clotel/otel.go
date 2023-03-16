@@ -1,3 +1,4 @@
+// Package clotel provides re-usable components for OpenTelemetry integration
 package clotel
 
 import (

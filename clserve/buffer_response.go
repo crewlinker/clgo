@@ -130,7 +130,7 @@ func (w *ResponseBuffer) ImplicitFlush() error {
 	return err
 }
 
-// Flush any buffered bytes to the underlying response writer and resets the buffer. After flush has been
+// FlushError any buffered bytes to the underlying response writer and resets the buffer. After flush has been
 // called the response data should be considered sent and in-transport to the client.
 func (w *ResponseBuffer) FlushError() error {
 	if err := w.ImplicitFlush(); err != nil {

@@ -1,3 +1,4 @@
+// Package cllambda providees reusable fx code for building AWS Lambda infra
 package cllambda
 
 import (
@@ -9,7 +10,7 @@ import (
 	"go.uber.org/fx"
 )
 
-// handler is a generic lambda handler interface
+// Handler is a generic lambda handler interface
 type Handler[I, O any] interface {
 	Handle(context.Context, I) (O, error)
 }
