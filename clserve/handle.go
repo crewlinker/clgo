@@ -1,3 +1,4 @@
+// Package clserve provides buffered HTTP response serving to support error handling
 package clserve
 
 import (

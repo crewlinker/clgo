@@ -1,3 +1,4 @@
+// Package clpostgres provides re-usable components for using PostgreSQL
 package clpostgres
 
 import (

@@ -1,3 +1,4 @@
+// Package clzap provides logging using the zap logging library
 package clzap
 
 import (

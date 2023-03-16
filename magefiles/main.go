@@ -13,6 +13,28 @@ func init() {
 	mustBeInRoot()
 }
 
+// Checks runs various pre-merge checks
+func Checks() error {
+	if err := sh.Run("go", "vet", "./..."); err != nil {
+		return fmt.Errorf("failed to run go vet: %w", err)
+	}
+
+	out, err := sh.Output("go", "fmt", "./...")
+	if err != nil {
+		return fmt.Errorf("failed to run gofmt: %w", err)
+	}
+
+	if out != "" {
+		return fmt.Errorf("some files were unformatted, make sure `go fmt` is run")
+	}
+
+	if err := sh.Run("go", "run", "-mod=readonly", "honnef.co/go/tools/cmd/staticcheck", "./..."); err != nil {
+		return fmt.Errorf("failed to run staticcheck: %w", err)
+	}
+
+	return nil
+}
+
 // Test perform the whole project's unit tests
 func Test() error {
 	if err := Dev(); err != nil {
