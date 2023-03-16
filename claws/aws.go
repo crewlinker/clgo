@@ -3,7 +3,6 @@ package claws
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"strings"
 	"time"
 
@@ -22,8 +21,6 @@ import (
 type Config struct {
 	// LoadConfigTimeout bounds the time given to config loading
 	LoadConfigTimeout time.Duration `env:"LOAD_CONFIG_TIMEOUT" envDefault:"100ms"`
-	// DynamoEndpoint allows configuring the dynamodb endpoint for testing because it supports a local version
-	DynamoEndpoint *url.URL `env:"DYNAMO_ENDPOINT"`
 }
 
 // New initialize an AWS config to be used to create clients for individual aws services. We would like
@@ -32,7 +29,6 @@ type Config struct {
 func New(
 	cfg Config,
 	logs *zap.Logger,
-	epresolver aws.EndpointResolverWithOptions,
 	tp trace.TracerProvider,
 	pr propagation.TextMapPropagator,
 ) (acfg aws.Config, err error) {
@@ -40,8 +36,7 @@ func New(
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.LoadConfigTimeout)
 	defer cancel()
 
-	if acfg, err = config.LoadDefaultConfig(ctx,
-		config.WithEndpointResolverWithOptions(epresolver)); err != nil {
+	if acfg, err = config.LoadDefaultConfig(ctx); err != nil {
 		return acfg, fmt.Errorf("failed to load default config: %w", err)
 	}
 
@@ -72,17 +67,22 @@ var Prod = fx.Module(moduleName,
 		},
 		fx.ParamTags(`optional:"true"`))),
 	// provide the actual aws config
-	fx.Provide(fx.Annotate(New, fx.ParamTags(``, ``, ``, `optional:"true"`, `optional:"true"`))),
-	// provide endpoint resolver, can be used to ovewrite endpoints based on configuration
-	fx.Provide(fx.Annotate(func(cfg Config) aws.EndpointResolverWithOptions {
-		return aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...any) (ep aws.Endpoint, err error) {
-			switch {
-			case service == dynamodb.ServiceID && cfg.DynamoEndpoint != nil:
-				ep.URL = cfg.DynamoEndpoint.String()
+	fx.Provide(fx.Annotate(New, fx.ParamTags(``, ``, `optional:"true"`, `optional:"true"`))),
+)
+
+// DynamoEndpointDecorator will change the resolvers to set the dynamodb endpoint since this AWS supports a
+// local version of Dynamo
+func DynamoEndpointDecorator(epurl string) func(c aws.Config) aws.Config {
+	return func(c aws.Config) aws.Config {
+		c.EndpointResolverWithOptions = aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...any) (ep aws.Endpoint, err error) {
+			switch service {
+			case dynamodb.ServiceID:
+				ep.URL = epurl
 				return ep, err
 			default:
 				return ep, &aws.EndpointNotFoundError{}
 			}
 		})
-	})),
-)
+		return c
+	}
+}
