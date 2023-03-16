@@ -23,14 +23,16 @@ func TestAwsclient(t *testing.T) {
 var _ = Describe("config without tracing", Serial, func() {
 	var cfg aws.Config
 	BeforeEach(func(ctx context.Context) {
-		os.Setenv("CLAWS_DYNAMO_ENDPOINT", "foo-bar-1")
-		DeferCleanup(os.Unsetenv, "AWS_REGION")
 		os.Setenv("AWS_REGION", "foo-bar-1")
-		DeferCleanup(os.Unsetenv, "CLAWS_DYNAMO_ENDPOINT")
+		DeferCleanup(os.Unsetenv, "AWS_REGION")
 
-		app := fx.New(fx.Populate(&cfg), clzap.Test, claws.Prod)
+		app := fx.New(
+			fx.Populate(&cfg),
+			fx.Decorate(claws.DynamoEndpointDecorator("http://foo:1")),
+			clzap.Test, claws.Prod)
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
+
 	})
 
 	It("should construct the config", func() {
@@ -38,7 +40,7 @@ var _ = Describe("config without tracing", Serial, func() {
 
 		ep, err := cfg.EndpointResolverWithOptions.ResolveEndpoint(dynamodb.ServiceID, "eu-west-1")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(ep.URL).To(Equal("foo-bar-1"))
+		Expect(ep.URL).To(Equal("http://foo:1"))
 	})
 })
 
