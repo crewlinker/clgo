@@ -28,6 +28,8 @@ type Config struct {
 	EnableTLS bool `env:"ENABLE_TLS" envDefault:"false"`
 	// Setting this enables TLS connections
 	TLSServerName string `env:"TLS_SERVER_NAME"`
+	// ClientName allows the application to indicate its name so connections can be more easily debugged
+	ClientName string `env:"CLIENT_NAME" envDefault:"unknown"`
 }
 
 // NewOptions parses our environment config into options for the Redis client
@@ -41,6 +43,8 @@ func NewOptions(cfg Config, logs *zap.Logger) (*redis.UniversalOptions, error) {
 		ReadOnly:       false,
 		RouteRandomly:  false,
 		RouteByLatency: false,
+
+		ClientName: cfg.ClientName,
 	}
 
 	// unfortunately, the redis client only support a global logger, so
