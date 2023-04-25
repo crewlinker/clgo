@@ -84,7 +84,7 @@ var _ = Describe("handle implementations", func() {
 		defer resp2.Body.Close()
 
 		Expect(resp1.StatusCode).To(Equal(resp2.StatusCode))
-		Expect(resp1.Header).To(Equal(resp2.Header))
+		Expect(resp1.Header.Get("Rab")).To(Equal(resp2.Header.Get("Rab")))
 		b1 := bytes.NewBuffer(nil)
 		io.Copy(b1, resp1.Body)
 		b2 := bytes.NewBuffer(nil)

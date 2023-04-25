@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/crewlinker/clgo/clzap"
 	"go.uber.org/fx"
+	"go.uber.org/zap"
 )
 
 // Handler is a generic lambda handler interface
@@ -19,13 +20,16 @@ type Handler[I, O any] interface {
 // not actually start the lambda unless the AWS_LAMBDA_RUNTIME_API is present. Which will be present on a
 // real deployment but not during testing.
 func Invoke[I, O any]() fx.Option {
-	return fx.Invoke(fx.Annotate(func(lc fx.Lifecycle, h Handler[I, O]) {
+	return fx.Invoke(fx.Annotate(func(lc fx.Lifecycle, logs *zap.Logger, h Handler[I, O]) {
+		logs = logs.Named("cllambda.invoke")
 		if os.Getenv("AWS_LAMBDA_RUNTIME_API") == "" {
 			return // only add the lambda stat when we're actually executing inside the lambda, for testing
 		}
 
 		lc.Append(fx.Hook{OnStart: func(ctx context.Context) error {
-			go lambda.Start(h.Handle)
+			go lambda.StartWithOptions(h.Handle, lambda.WithEnableSIGTERM(func() {
+				logs.Info("function container shutting down")
+			}))
 			return nil
 		}})
 	}))
