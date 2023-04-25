@@ -10,6 +10,7 @@ Opinionated but Re-usable Go libraries for the Crewlinker platform
 
 ## backlog
 
+- [ ] SHOULD update github.com/caarlos0/env/v6 to v8
 - [ ] MUST include a mechanism to provide isolated schemas to tests, using a "versioned" migration strategy
       in a migraiton directory
 - [ ] MUST include tracing, and re-add the test for contextual postgres logging (from the old 'back' repo)

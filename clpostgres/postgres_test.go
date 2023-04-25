@@ -13,6 +13,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
@@ -81,9 +82,10 @@ var _ = Describe("connect", func() {
 		Expect(len(tobs.GetSpans().Snapshots())).To(BeNumerically(">", 4))
 		Expect(string(tobs.GetSpans().Snapshots()[0].Attributes()[0].Key)).To(Equal("db.user"))
 
-		metrics, err := mr.Collect(ctx)
+		rm := metricdata.ResourceMetrics{}
+		err := mr.Collect(ctx, &rm)
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(metrics.ScopeMetrics[0].Scope.Name).To(Equal("github.com/XSAM/otelsql"))
+		Expect(rm.ScopeMetrics[0].Scope.Name).To(Equal("github.com/XSAM/otelsql"))
 	})
 })
