@@ -1,4 +1,19 @@
 services:
+  redis:
+    image: "redis:6.2-alpine"
+    ports:
+      - "6378:6379"
+    logging:
+      options:
+        max-size: 10m
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 2s
+      retries: 20
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
   postgres:
     image: postgres:14.5-alpine
     ports:
