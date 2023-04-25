@@ -29,11 +29,12 @@ var _ = Describe("otel metrics", func() {
 		ctr.Add(ctx, 100)
 		ctr.Add(ctx, 10)
 
-		metrics, err := mr.Collect(ctx)
+		rm := metricdata.ResourceMetrics{}
+		err = mr.Collect(ctx, &rm)
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(metrics.ScopeMetrics[0].Scope.Name).To(Equal("some_test"))
-		Expect(metrics.ScopeMetrics[0].Metrics[0].Name).To(Equal("some.counter"))
-		Expect(metrics.ScopeMetrics[0].Metrics[0].Data.(metricdata.Sum[int64]).DataPoints[0].Value).To(Equal(int64(110)))
+		Expect(rm.ScopeMetrics[0].Scope.Name).To(Equal("some_test"))
+		Expect(rm.ScopeMetrics[0].Metrics[0].Name).To(Equal("some.counter"))
+		Expect(rm.ScopeMetrics[0].Metrics[0].Data.(metricdata.Sum[int64]).DataPoints[0].Value).To(Equal(int64(110)))
 	})
 })
