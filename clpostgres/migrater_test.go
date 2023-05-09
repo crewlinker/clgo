@@ -21,7 +21,7 @@ var _ = Describe("migrater", func() {
 		app := fx.New(
 			fx.Populate(&db, &dbcfg),
 			fx.Provide(func() (migrate.Dir, error) { return migrate.NewLocalDir("test_data") }),
-			clzap.Test, clpostgres.Test)
+			clzap.Test(), clpostgres.Test)
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(func(ctx context.Context) {
 			Expect(stdlib.OpenDB(*dbcfg.ConnConfig).PingContext(ctx).Error()).To(MatchRegexp(`database .* does not exist`))

@@ -20,7 +20,7 @@ var _ = Describe("client", func() {
 		var tp *sdktrace.TracerProvider
 
 		BeforeEach(func(ctx context.Context) {
-			app := fx.New(fx.Populate(&tobs, &tp), clzap.Test, clotel.Test)
+			app := fx.New(fx.Populate(&tobs, &tp), clzap.Test(), clotel.Test)
 			Expect(app.Start(ctx)).To(Succeed())
 			DeferCleanup(app.Stop)
 			hc = &http.Client{}

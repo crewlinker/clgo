@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// ContextHook allows adding fields based on the context
+// ContextHook allows adding fields based on the context.
 type ContextHook func(ctx context.Context, f []zap.Field) []zap.Field
 
 // ContextLogger wraps a zap loger but only allows logging with a context. This allows users to force the
@@ -22,35 +22,36 @@ type ContextLogger struct {
 	hook ContextHook
 }
 
-// TraceHook creates a context logger hook that appends trace information
+// TraceHook creates a context logger hook that appends trace information.
 func TraceHook() func(ctx context.Context, f []zap.Field) []zap.Field {
-	return func(ctx context.Context, f []zap.Field) []zap.Field {
+	return func(ctx context.Context, field []zap.Field) []zap.Field {
 		span := trace.SpanFromContext(ctx)
 		if span != nil && span.SpanContext().HasSpanID() {
-			f = append(f, zap.String("span_id", span.SpanContext().SpanID().String()))
+			field = append(field, zap.String("span_id", span.SpanContext().SpanID().String()))
 		}
 
 		// log the trace id in the xray format
 		if span != nil && span.SpanContext().HasTraceID() {
 			tid := span.SpanContext().TraceID().String()
-			f = append(f, zap.String("trace_id", fmt.Sprintf("1-%s-%s", tid[:8], tid[8:])))
+			field = append(field, zap.String("trace_id", fmt.Sprintf("1-%s-%s", tid[:8], tid[8:])))
 		}
 
-		return f
+		return field
 	}
 }
 
-// NewTraceContextLogger inits a contextual logger that adds trace information to each log line
+// NewTraceContextLogger inits a contextual logger that adds trace information to each log line.
 func NewTraceContextLogger(logs *zap.Logger) *ContextLogger {
 	return NewContextLogger(logs, TraceHook())
 }
 
-// NewContextLogger inits our contextual with the underlying zapcore logger
+// NewContextLogger inits our contextual with the underlying zapcore logger.
 func NewContextLogger(logs *zap.Logger, hook ...ContextHook) *ContextLogger {
 	l := &ContextLogger{logs: logs, hook: func(ctx context.Context, f []zap.Field) []zap.Field { return f }}
 	if len(hook) > 0 {
 		l.hook = hook[0]
 	}
+
 	return l
 }
 
@@ -150,5 +151,9 @@ func (log *ContextLogger) Fatal(ctx context.Context, msg string, fields ...zap.F
 // Sync calls the underlying Core's Sync method, flushing any buffered log
 // entries. Applications should take care to call Sync before exiting.
 func (log *ContextLogger) Sync() error {
-	return log.logs.Sync()
+	if err := log.logs.Sync(); err != nil {
+		return fmt.Errorf("failed to sync underlying: %w", err)
+	}
+
+	return nil
 }

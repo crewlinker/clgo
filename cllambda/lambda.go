@@ -40,7 +40,7 @@ func Invoke[I, O any]() fx.Option {
 func Lambda[I, O any](o ...fx.Option) fx.Option {
 	return fx.Options(append(o, []fx.Option{
 		clzap.Fx(),     // log fx lines to zap
-		clzap.Prod,     // provide logging to all handlers
+		clzap.Prod(),   // provide logging to all handlers
 		Invoke[I, O](), // invoke the lambda
 	}...)...)
 }
