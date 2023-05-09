@@ -8,6 +8,7 @@ import (
 )
 
 func TestClServe(t *testing.T) {
+	t.Parallel()
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "clserve")
 }

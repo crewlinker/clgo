@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	// ErrBufferFull is returned when the write call will cause the buffer to be filled beyond its limit
+	// ErrBufferFull is returned when the write call will cause the buffer to be filled beyond its limit.
 	ErrBufferFull = errors.New("buffer is full")
 
 	// ErrAlreadyFlushed is returned when the buffer is reset even though a handler already flushed the data
@@ -19,7 +19,7 @@ var (
 
 // ResponseBuffer is a http.ResponseWriter implementation that buffers writes up to configurable amount of
 // bytes. This allows the implementation of handlers that can error halfway and return a
-// completely different response instead of what was written before the error occured.
+// completely different response instead of what was written before the error occurred.
 type ResponseBuffer struct {
 	resp              http.ResponseWriter
 	buf               bytes.Buffer
@@ -32,7 +32,7 @@ type ResponseBuffer struct {
 
 // responseBufferPool allows us to reuse some ResponseBuffer objects to
 // conserve system resources.
-var responseBufferPool = sync.Pool{
+var responseBufferPool = sync.Pool{ //nolint:gochecknoglobals
 	New: func() interface{} { return new(ResponseBuffer) },
 }
 
@@ -40,10 +40,11 @@ var responseBufferPool = sync.Pool{
 // which the writing will return an error. This is to protect unchecked handlers from claiming
 // too much memory. Limit can be set to -1 to disable this check.
 func NewBufferResponse(resp http.ResponseWriter, limit int) *ResponseBuffer {
-	w := responseBufferPool.Get().(*ResponseBuffer)
+	w, _ := responseBufferPool.Get().(*ResponseBuffer)
 	w.resp = resp
 	w.limit = limit
 	w.status = http.StatusOK
+
 	return w
 }
 
@@ -81,6 +82,7 @@ func (w *ResponseBuffer) Header() http.Header {
 		if w.unflushableHeader == nil {
 			w.unflushableHeader = make(http.Header)
 		}
+
 		return w.unflushableHeader
 	}
 
@@ -89,7 +91,7 @@ func (w *ResponseBuffer) Header() http.Header {
 
 // Reset provides the differentiating feature from a regular ResponseWriter: it allows changing the
 // response completely even if some data has been written already. This behaviour cannot be guaranteed
-// if flush has been called explicitely. In that case it will return ErrAlreadyFlushed.
+// if flush has been called explicitly. In that case it will return ErrAlreadyFlushed.
 func (w *ResponseBuffer) Reset() error {
 	if w.bodyFlushed {
 		return errAlreadyFlushed()
@@ -98,9 +100,11 @@ func (w *ResponseBuffer) Reset() error {
 	for k := range w.resp.Header() {
 		w.resp.Header().Del(k)
 	}
+
 	w.headerFlushed = false
 	w.status = http.StatusOK
 	w.buf.Reset()
+
 	return nil
 }
 
@@ -112,12 +116,19 @@ func (w *ResponseBuffer) markHeaderAsFlushed() {
 
 // Write appends the contents of p to the buffered response, growing the internal buffer as needed. If
 // the write will cause the buffer be larger then the configure limit it will return ErrBufferFull.
-func (w *ResponseBuffer) Write(b []byte) (int, error) {
-	if w.limit >= 0 && w.buf.Len()+len(b) > w.limit {
+func (w *ResponseBuffer) Write(buf []byte) (int, error) {
+	if w.limit >= 0 && w.buf.Len()+len(buf) > w.limit {
 		return 0, errBufferFull()
 	}
+
 	w.markHeaderAsFlushed()
-	return w.buf.Write(b)
+
+	n, err := w.buf.Write(buf)
+	if err != nil {
+		return 0, fmt.Errorf("failed to write underlying response: %w", err)
+	}
+
+	return n, nil
 }
 
 // ImplicitFlush flushes data to the underlying writer without calling .Flush on it by proxy. This is provided
@@ -125,9 +136,15 @@ func (w *ResponseBuffer) Write(b []byte) (int, error) {
 func (w *ResponseBuffer) ImplicitFlush() error {
 	w.markHeaderAsFlushed()
 	w.resp.WriteHeader(w.status)
+
 	_, err := w.buf.WriteTo(w.resp)
+	if err != nil {
+		return fmt.Errorf("failed to write underlying: %w", err)
+	}
+
 	w.bodyFlushed = true
-	return err
+
+	return nil
 }
 
 // FlushError any buffered bytes to the underlying response writer and resets the buffer. After flush has been
@@ -136,8 +153,13 @@ func (w *ResponseBuffer) FlushError() error {
 	if err := w.ImplicitFlush(); err != nil {
 		return err
 	}
+
 	// calling flush on the underlying writer to make it explicit
-	return http.NewResponseController(w.resp).Flush()
+	if err := http.NewResponseController(w.resp).Flush(); err != nil { //nolint:bodyclose
+		return fmt.Errorf("failed to flush underlying: %w", err)
+	}
+
+	return nil
 }
 
 // Unwrap returns the underlying response writer. This is expected by the http.ResponseController to
@@ -146,8 +168,8 @@ func (w *ResponseBuffer) Unwrap() http.ResponseWriter {
 	return w.resp
 }
 
-// errBufferFull returns an error that Is ErrBufferFull but is not == to it
+// errBufferFull returns an error that Is ErrBufferFull but is not == to it.
 func errBufferFull() error { return fmt.Errorf("%w", ErrBufferFull) }
 
-// errAlreadyFlushed returns an error that Is ErrAlreadyFlushed but is not == to it
+// errAlreadyFlushed returns an error that Is ErrAlreadyFlushed but is not == to it.
 func errAlreadyFlushed() error { return fmt.Errorf("%w", ErrAlreadyFlushed) }

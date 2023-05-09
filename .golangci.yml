@@ -1,0 +1,29 @@
+linters-settings:
+  staticcheck:
+    checks: ["all"]
+  stylecheck:
+    checks: ["all"]
+linters:
+  enable-all: true
+  disable:
+    - exhaustivestruct # deprecated
+    - exhaustruct # CDK has large structs we use partially
+    - golint # deprecated 
+    - varcheck # deprecated
+    - structcheck # deprecated
+    - interfacer # deprecated
+    - nosnakecase # deprecated
+    - scopelint # deprecated
+    - ifshort # deprecated
+    - maligned # deprecated
+    - deadcode # deprecated
+    - gochecknoinits # frameworks and magefile use init responsibly
+    - gci # no way to automate this in the vscode so default ordering is good enough
+    - ireturn # our oapi implementations return interfaces all the time
+
+issues:
+  include:
+    - EXC0015  # warn for lack of package comment
+    - EXC0013  # warn for lack of package comment
+    - EXC0012  # EXC0012 revive: Annoying issue about not having a comment. The rare codebase has such comments
+    - EXC0014  # EXC0014 revive: Annoying issue about not having a comment. The rare codebase has such comments
