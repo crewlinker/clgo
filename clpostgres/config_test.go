@@ -29,9 +29,10 @@ var _ = Describe("config", func() {
 					c.Password = "my-p&assword"
 					c.ReadOnlyHostname = "foo.read-only"
 					c.ReadWriteHostname = "foo.read-write"
+
 					return c
 				}),
-				clzap.Test(), clpostgres.Prod)
+				clzap.Test(), clpostgres.Prod())
 			Expect(app.Start(ctx)).To(Succeed())
 			DeferCleanup(app.Stop)
 		})
@@ -50,14 +51,15 @@ var _ = Describe("config", func() {
 
 			app := fx.New(
 				fx.Populate(&cfgs),
-				fx.Decorate(func(c clpostgres.Config) clpostgres.Config {
-					c.IamAuth = true
-					c.Password = "my-p&assword"
-					c.ReadOnlyHostname = "foo.read-only"
-					c.ReadWriteHostname = "foo.read-write"
-					return c
+				fx.Decorate(func(pgc clpostgres.Config) clpostgres.Config {
+					pgc.IamAuth = true
+					pgc.Password = "my-p&assword"
+					pgc.ReadOnlyHostname = "foo.read-only"
+					pgc.ReadWriteHostname = "foo.read-write"
+
+					return pgc
 				}),
-				clzap.Test(), claws.Prod(), clpostgres.Prod)
+				clzap.Test(), claws.Prod(), clpostgres.Prod())
 			Expect(app.Start(ctx)).To(Succeed())
 			DeferCleanup(app.Stop)
 		})

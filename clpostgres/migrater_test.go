@@ -3,6 +3,7 @@ package clpostgres_test
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"ariga.io/atlas/sql/migrate"
 	"github.com/crewlinker/clgo/clpostgres"
@@ -15,13 +16,20 @@ import (
 )
 
 var _ = Describe("migrater", func() {
-	var db *sql.DB
+	var sqldb *sql.DB
 	var dbcfg *pgxpool.Config
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(
-			fx.Populate(&db, &dbcfg),
-			fx.Provide(func() (migrate.Dir, error) { return migrate.NewLocalDir("test_data") }),
-			clzap.Test(), clpostgres.Test)
+			fx.Populate(&sqldb, &dbcfg),
+			fx.Provide(func() (migrate.Dir, error) {
+				ldir, err := migrate.NewLocalDir("test_data")
+				if err != nil {
+					return nil, fmt.Errorf("failed to init dir: %w", err)
+				}
+
+				return ldir, nil
+			}),
+			clzap.Test(), clpostgres.Test())
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(func(ctx context.Context) {
 			Expect(stdlib.OpenDB(*dbcfg.ConnConfig).PingContext(ctx).Error()).To(MatchRegexp(`database .* does not exist`))
@@ -32,13 +40,13 @@ var _ = Describe("migrater", func() {
 
 	It("should create temp db and allow insert in migrated table", func(ctx context.Context) {
 		Expect(dbcfg.ConnConfig.Database).To(HavePrefix("temp_"))
-		_, err := db.ExecContext(ctx, "insert into profiles (id) values (1);")
+		_, err := sqldb.ExecContext(ctx, "insert into profiles (id) values (1);")
 		Expect(err).To(Succeed())
 	})
 
 	for i := 0; i < 10; i++ {
 		It("should run in a isolated database", func(ctx context.Context) {
-			_, err := db.ExecContext(ctx, "insert into profiles (id) values (1);")
+			_, err := sqldb.ExecContext(ctx, "insert into profiles (id) values (1);")
 			Expect(err).To(Succeed()) // fails when not isolated because id is unique
 		})
 	}

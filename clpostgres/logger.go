@@ -11,7 +11,7 @@ import (
 )
 
 // Logger is a pgx logger that uses a main zap logger for logging but will prefer
-// using a context specific logger if it exists
+// using a context specific logger if it exists.
 type Logger struct {
 	logs  *clzap.ContextLogger
 	dbcfg *pgxpool.Config
@@ -26,12 +26,11 @@ func NewLogger(logs *zap.Logger, dbcfg *pgxpool.Config) *Logger {
 	}
 }
 
+// Log implements the postgres logger.
 func (pl *Logger) Log(ctx context.Context, level tracelog.LogLevel, msg string, data map[string]interface{}) {
-	fields := make([]zapcore.Field, len(data))
-	i := 0
+	fields := make([]zapcore.Field, 0, len(data))
 	for k, v := range data {
-		fields[i] = zap.Any(k, v)
-		i++
+		fields = append(fields, zap.Any(k, v))
 	}
 
 	fields = append(fields,
@@ -49,6 +48,7 @@ func (pl *Logger) Log(ctx context.Context, level tracelog.LogLevel, msg string, 
 		pl.logs.Warn(ctx, msg, fields...)
 	case tracelog.LogLevelError:
 		pl.logs.Error(ctx, msg, fields...)
+	case tracelog.LogLevelNone:
 	default:
 		pl.logs.Error(ctx, msg, append(fields, zap.Stringer("PGX_LOG_LEVEL", level))...)
 	}
