@@ -3,6 +3,9 @@ linters-settings:
     checks: ["all"]
   stylecheck:
     checks: ["all"]
+  varnamelen:
+    ignore-names:
+      - db
 linters:
   enable-all: true
   disable:

@@ -2,7 +2,9 @@ package clpostgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net"
 	"net/url"
 	"strconv"
 
@@ -40,10 +42,10 @@ type Config struct {
 	IamAuth bool `env:"IAM_AUTH"`
 
 	// TemporaryDatabase can be set to cause the logic to create a random database name and initialize
-	// it when running auto-migration. This is mostly usefull for automated tests
+	// it when running auto-migration. This is mostly useful for automated tests
 	TemporaryDatabase bool `env:"TEMPORARY_DATABASE" envDefault:"false"`
 	// AutoMigration can be set to true to cause the logic to automatically run migrations when started. This
-	// is mostly usefull for automated tests.
+	// is mostly useful for automated tests.
 	AutoMigration bool `env:"AUTO_MIGRATION" envDefault:"false"`
 }
 
@@ -54,39 +56,45 @@ func NewReadOnlyConfig(cfg Config, logs *zap.Logger, awsc aws.Config) (*pgxpool.
 }
 
 // NewReadWriteConfig constructs a config for a read-write database connecion. The aws config is optional
-// and only used when the IamAuth option is set
+// and only used when the IamAuth option is set.
 func NewReadWriteConfig(cfg Config, logs *zap.Logger, awsc aws.Config) (*pgxpool.Config, error) {
 	return newPoolConfig(cfg, logs.Named("rw"), cfg.ReadWriteHostname, awsc)
 }
 
-// newPoolConfig will turn environment configuration in a way that allows
-// database credentials to be provided
-func newPoolConfig(cfg Config, logs *zap.Logger, host string, awsc aws.Config) (pcfg *pgxpool.Config, err error) {
+// error when invalid dep combo for config.
+var errIAMAuthWithoutAWSConfig = errors.New("IAM auth requested but optional AWS config dependency not provided")
 
-	connString := fmt.Sprintf(`postgres://%s:%s@%s:%d/%s?application_name=%s&sslmode=%s`,
-		cfg.Username, url.QueryEscape(cfg.Password), host, cfg.Port, cfg.DatabaseName, cfg.ApplicationName, cfg.SSLMode)
-	pcfg, err = pgxpool.ParseConfig(connString)
+// newPoolConfig will turn environment configuration in a way that allows
+// database credentials to be provided.
+func newPoolConfig(cfg Config, logs *zap.Logger, host string, awsc aws.Config) (*pgxpool.Config, error) {
+	connString := fmt.Sprintf(`postgres://%s:%s@%s/%s?application_name=%s&sslmode=%s`,
+		cfg.Username, url.QueryEscape(cfg.Password), net.JoinHostPort(host, strconv.Itoa(cfg.Port)),
+		cfg.DatabaseName, cfg.ApplicationName, cfg.SSLMode)
+
+	pcfg, err := pgxpool.ParseConfig(connString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config from conn string: %w", err)
 	}
 
 	if cfg.IamAuth {
 		if awsc.Credentials == nil {
-			return nil, fmt.Errorf("IAM auth requested but optional AWS config dependency not provided")
+			return nil, errIAMAuthWithoutAWSConfig
 		}
 
 		// For IAM Auth we need to build a token as a password on every connection attempt
-		pcfg.BeforeConnect = func(ctx context.Context, cc *pgx.ConnConfig) error {
+		pcfg.BeforeConnect = func(ctx context.Context, pgc *pgx.ConnConfig) error {
 			tok, err := buildIamAuthToken(ctx, cfg, awsc, host)
 			if err != nil {
 				return fmt.Errorf("failed to build iam token: %w", err)
 			}
-			cc.Password = tok
+
+			pgc.Password = tok
+
 			return nil
 		}
 	}
 
-	ll, err := tracelog.LogLevelFromString(cfg.PgxLogLevel)
+	lls, err := tracelog.LogLevelFromString(cfg.PgxLogLevel)
 	if err != nil {
 		return nil, fmt.Errorf("failed to determine pgx log level from '%s': %w", cfg.PgxLogLevel, err)
 	}
@@ -94,7 +102,8 @@ func newPoolConfig(cfg Config, logs *zap.Logger, host string, awsc aws.Config) (
 	// we use a tracer to log all interactions with the database
 	pcfg.ConnConfig.Tracer = &tracelog.TraceLog{
 		Logger:   NewLogger(logs, pcfg),
-		LogLevel: ll}
+		LogLevel: lls,
+	}
 
 	logs.Info("initialized postgres connection config",
 		zap.Any("runtime_params", pcfg.ConnConfig.RuntimeParams),
@@ -103,11 +112,17 @@ func newPoolConfig(cfg Config, logs *zap.Logger, host string, awsc aws.Config) (
 		zap.String("database", pcfg.ConnConfig.Database),
 		zap.String("host", pcfg.ConnConfig.Host),
 		zap.Uint16("port", pcfg.ConnConfig.Port))
-	return
+
+	return pcfg, nil
 }
 
 // buildIamAuthToken will construct a RDS proxy authentication token. We don't run this during the
 // lifecycle phase so we timeout manually with our own context.
 func buildIamAuthToken(ctx context.Context, cfg Config, awsc aws.Config, ep string) (string, error) {
-	return auth.BuildAuthToken(ctx, ep+":"+strconv.Itoa(cfg.Port), awsc.Region, cfg.Username, awsc.Credentials)
+	tok, err := auth.BuildAuthToken(ctx, ep+":"+strconv.Itoa(cfg.Port), awsc.Region, cfg.Username, awsc.Credentials)
+	if err != nil {
+		return "", fmt.Errorf("underlying: %w", err)
+	}
+
+	return tok, nil
 }

@@ -22,6 +22,7 @@ import (
 )
 
 func TestPostgres(t *testing.T) {
+	t.Parallel()
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "clpostgres")
 }
@@ -32,10 +33,10 @@ var _ = BeforeSuite(func() {
 
 var _ = Describe("connect", func() {
 	var obs *observer.ObservedLogs
-	var mr sdkmetric.Reader
+	var mtr sdkmetric.Reader
 	var tobs *tracetest.InMemoryExporter
-	var tp *sdktrace.TracerProvider
-	var pg struct {
+	var trp *sdktrace.TracerProvider
+	var pgs struct {
 		fx.In
 		ReadWrite *sql.DB `name:"rw"`
 		ReadOnly  *sql.DB `name:"ro"`
@@ -45,16 +46,16 @@ var _ = Describe("connect", func() {
 	var scdb *sql.DB
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(
-			fx.Populate(&pg, &obs, &scdb, &tobs, &tp, &mr),
-			clzap.Test(), clpostgres.Test, clotel.Test())
+			fx.Populate(&pgs, &obs, &scdb, &tobs, &trp, &mtr),
+			clzap.Test(), clpostgres.Test(), clotel.Test())
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 
 		DeferCleanup(func(ctx context.Context) {
 			Expect(app.Stop(ctx)).To(Succeed())
-			_, err := pg.ReadOnly.QueryContext(ctx, `SELECT * FROM foo`)
+			_, err := pgs.ReadOnly.QueryContext(ctx, `SELECT * FROM foo`)
 			Expect(err).To(MatchError("sql: database is closed"))
-			_, err = pg.ReadWrite.QueryContext(ctx, `SELECT * FROM foo`)
+			_, err = pgs.ReadWrite.QueryContext(ctx, `SELECT * FROM foo`)
 			Expect(err).To(MatchError("sql: database is closed"))
 		})
 	})
@@ -65,25 +66,26 @@ var _ = Describe("connect", func() {
 			SpanID:  trace.SpanID{0x02},
 		}))
 
-		Expect(scdb).To(Equal(pg.ReadWrite))
-		Expect(pg.ReadWrite.PingContext(ctx))
-		Expect(pg.ReadOnly.PingContext(ctx))
+		Expect(scdb).To(Equal(pgs.ReadWrite))
+		Expect(pgs.ReadWrite.PingContext(ctx))
+		Expect(pgs.ReadOnly.PingContext(ctx))
 
 		qlogs := obs.FilterMessage("Query")
 		Expect(qlogs.Len()).To(BeNumerically(">=", 4))
-		Expect(qlogs.All()[len(qlogs.All())-1].ContextMap()).To(HaveKeyWithValue("trace_id", "1-01000000-000000000000000000000000"))
+		Expect(qlogs.All()[len(qlogs.All())-1].ContextMap()).To(
+			HaveKeyWithValue("trace_id", "1-01000000-000000000000000000000000"))
 	})
 
 	It("should have observed traces and metrics", func(ctx context.Context) {
 		var num int
-		Expect(pg.ReadWrite.QueryRowContext(ctx, "SELECT 42").Scan(&num)).To(Succeed())
+		Expect(pgs.ReadWrite.QueryRowContext(ctx, "SELECT 42").Scan(&num)).To(Succeed())
 
-		Expect(tp.ForceFlush(ctx)).To(Succeed())
+		Expect(trp.ForceFlush(ctx)).To(Succeed())
 		Expect(len(tobs.GetSpans().Snapshots())).To(BeNumerically(">", 4))
 		Expect(string(tobs.GetSpans().Snapshots()[0].Attributes()[0].Key)).To(Equal("db.user"))
 
 		rm := metricdata.ResourceMetrics{}
-		err := mr.Collect(ctx, &rm)
+		err := mtr.Collect(ctx, &rm)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(rm.ScopeMetrics[0].Scope.Name).To(Equal("github.com/XSAM/otelsql"))

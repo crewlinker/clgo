@@ -27,7 +27,7 @@ type Migrater struct {
 	}
 }
 
-// NewMigrater inits the migrater
+// NewMigrater inits the migrater.
 func NewMigrater(
 	cfg Config,
 	logs *zap.Logger,
@@ -35,7 +35,8 @@ func NewMigrater(
 	rocfg *pgxpool.Config,
 	dir migrate.Dir,
 ) (*Migrater, error) {
-	m := &Migrater{cfg: cfg, dbcfg: rwcfg, logs: logs.Named("migrater"), dir: dir}
+	mig := &Migrater{cfg: cfg, dbcfg: rwcfg, logs: logs.Named("migrater"), dir: dir}
+
 	if cfg.TemporaryDatabase {
 		var rngd [6]byte
 		if _, err := rand.Read(rngd[:]); err != nil {
@@ -44,17 +45,17 @@ func NewMigrater(
 
 		// if a temporary database is requested, we replace the database name in the connection string
 		// but keep the original for a bootstrap connection later.
-		m.databases.original = m.dbcfg.Copy()
-		m.databases.temp = fmt.Sprintf("temp_%x_%s", rngd, m.databases.original.ConnConfig.Database)
-		m.dbcfg.ConnConfig.Database = m.databases.temp
+		mig.databases.original = mig.dbcfg.Copy()
+		mig.databases.temp = fmt.Sprintf("temp_%x_%s", rngd, mig.databases.original.ConnConfig.Database)
+		mig.dbcfg.ConnConfig.Database = mig.databases.temp
 		// also change in read-only connection config, or the read-only is reading from different database
-		rocfg.ConnConfig.Database = m.databases.temp
+		rocfg.ConnConfig.Database = mig.databases.temp
 	}
 
-	return m, nil
+	return mig, nil
 }
 
-// Migrate initializes the schema
+// Migrate initializes the schema.
 func (m Migrater) Migrate(ctx context.Context) error {
 	if m.cfg.TemporaryDatabase {
 		m.logs.Info("enabled temporary database option, creating database",
@@ -63,8 +64,11 @@ func (m Migrater) Migrate(ctx context.Context) error {
 
 		// with a temporary database we create it using a bootstrap connection
 		if err := m.bootstrapRun(ctx, func(ctx context.Context, db *sql.DB) error {
-			_, err := db.ExecContext(ctx, fmt.Sprintf(`CREATE DATABASE %s`, m.databases.temp))
-			return err
+			if _, err := db.ExecContext(ctx, fmt.Sprintf(`CREATE DATABASE %s`, m.databases.temp)); err != nil {
+				return fmt.Errorf("failed to exec context: %w", err)
+			}
+
+			return nil
 		}); err != nil {
 			return fmt.Errorf("failed to bootstrap run: %w", err)
 		}
@@ -72,6 +76,7 @@ func (m Migrater) Migrate(ctx context.Context) error {
 
 	if !m.cfg.AutoMigration {
 		m.logs.Info("auto-migration disabled, expect database to be provisioned already")
+
 		return nil // without auto-migration enabled, there is nothing left to do
 	}
 
@@ -83,13 +88,14 @@ func (m Migrater) Migrate(ctx context.Context) error {
 	m.logs.Info("auto-migrating from migrate dir",
 		zap.String("checksum", checksum.Sum()))
 
-	db := stdlib.OpenDB(*m.dbcfg.ConnConfig)
-	defer db.Close()
-	if err := db.PingContext(ctx); err != nil {
+	sqldb := stdlib.OpenDB(*m.dbcfg.ConnConfig)
+	defer sqldb.Close()
+
+	if err := sqldb.PingContext(ctx); err != nil {
 		return fmt.Errorf("failed to ping connection: %w", err)
 	}
 
-	drv, err := postgres.Open(db)
+	drv, err := postgres.Open(sqldb)
 	if err != nil {
 		return fmt.Errorf("failed to init atlas driver: %w", err)
 	}
@@ -106,7 +112,7 @@ func (m Migrater) Migrate(ctx context.Context) error {
 	return nil
 }
 
-// DropDatabase drops the schema
+// DropDatabase drops the schema.
 func (m Migrater) DropDatabase(ctx context.Context) error {
 	if m.databases.temp == "" {
 		return nil // not temporary database, so nothing to do on shutdown
@@ -118,7 +124,11 @@ func (m Migrater) DropDatabase(ctx context.Context) error {
 
 	if err := m.bootstrapRun(ctx, func(ctx context.Context, db *sql.DB) error {
 		_, err := db.ExecContext(ctx, fmt.Sprintf(`DROP DATABASE %s (force)`, m.databases.temp))
-		return err
+		if err != nil {
+			return fmt.Errorf("failed to exec: %w", err)
+		}
+
+		return nil
 	}); err != nil {
 		return fmt.Errorf("failed to bootstrap run: %w", err)
 	}
@@ -126,9 +136,9 @@ func (m Migrater) DropDatabase(ctx context.Context) error {
 	return nil
 }
 
-// bootstrapRun will init a dedicated bootstrap connection
+// bootstrapRun will init a dedicated bootstrap connection.
 func (m Migrater) bootstrapRun(ctx context.Context, runf func(context.Context, *sql.DB) error) error {
-	return func(ctx context.Context) (err error) {
+	return func(ctx context.Context) error {
 		db := stdlib.OpenDB(*m.databases.original.ConnConfig)
 		defer db.Close()
 
@@ -136,6 +146,6 @@ func (m Migrater) bootstrapRun(ctx context.Context, runf func(context.Context, *
 			return fmt.Errorf("failed to run: %w", err)
 		}
 
-		return
+		return nil
 	}(ctx)
 }
