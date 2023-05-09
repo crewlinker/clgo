@@ -31,7 +31,7 @@ var _ = Describe("config", func() {
 					c.ReadWriteHostname = "foo.read-write"
 					return c
 				}),
-				clzap.Test, clpostgres.Prod)
+				clzap.Test(), clpostgres.Prod)
 			Expect(app.Start(ctx)).To(Succeed())
 			DeferCleanup(app.Stop)
 		})
@@ -57,7 +57,7 @@ var _ = Describe("config", func() {
 					c.ReadWriteHostname = "foo.read-write"
 					return c
 				}),
-				clzap.Test, claws.Prod, clpostgres.Prod)
+				clzap.Test(), claws.Prod, clpostgres.Prod)
 			Expect(app.Start(ctx)).To(Succeed())
 			DeferCleanup(app.Stop)
 		})
