@@ -54,7 +54,7 @@ var _ = Describe("redis observed", func() {
 				c.Addrs = []string{"localhost:6378"} // use our docker-hosted redis
 
 				return c
-			}), clredis.Test(), clzap.Test(), clotel.Test)
+			}), clredis.Test(), clzap.Test(), clotel.Test())
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 	})

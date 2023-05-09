@@ -6,7 +6,7 @@ import "time"
 type Config struct {
 	// DetectorDetectTimeout bound the time it may take to init a trace provider
 	DetectorDetectTimeout time.Duration `env:"DETECTOR_DETECT_TIMEOUT" envDefault:"1s"`
-	// ExporterTimeout overwrites the timeout for exporting spans. This can be usefull in tests to speed
+	// ExporterTimeout overwrites the timeout for exporting spans. This can be useful in tests to speed
 	// them up
 	ExporterTimeout time.Duration `env:"EXPORTER_TIMEOUT" envDefault:"10s"`
 	// ExporterEndpoint configures where otel span exporter will send data to

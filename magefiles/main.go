@@ -33,7 +33,12 @@ func Checks() error {
 		return errUnformatted
 	}
 
-	if err := sh.Run("go", "run", "-mod=readonly", "honnef.co/go/tools/cmd/staticcheck", "./..."); err != nil {
+	return nil
+}
+
+// Lint lints the codebase.
+func Lint() error {
+	if err := sh.Run("golangci-lint", "run"); err != nil {
 		return fmt.Errorf("failed to run staticcheck: %w", err)
 	}
 

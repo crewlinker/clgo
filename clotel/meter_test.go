@@ -14,27 +14,28 @@ import (
 )
 
 var _ = Describe("otel metrics", func() {
-	var mp *sdkmetric.MeterProvider
+	var mtp *sdkmetric.MeterProvider
 	var mpi metric.MeterProvider
-	var mr sdkmetric.Reader
+	var mtr sdkmetric.Reader
 	BeforeEach(func(ctx context.Context) {
-		app := fx.New(fx.Populate(&mp, &mpi, &mr), clotel.Test, clzap.Test())
+		app := fx.New(fx.Populate(&mtp, &mpi, &mtr), clotel.Test(), clzap.Test())
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 	})
 
 	It("should provide metering", func(ctx context.Context) {
-		ctr, err := mp.Meter("some_test").Int64Counter("some.counter")
+		ctr, err := mtp.Meter("some_test").Int64Counter("some.counter")
 		Expect(err).ToNot(HaveOccurred())
 		ctr.Add(ctx, 100)
 		ctr.Add(ctx, 10)
 
-		rm := metricdata.ResourceMetrics{}
-		err = mr.Collect(ctx, &rm)
+		mrm := metricdata.ResourceMetrics{}
+		err = mtr.Collect(ctx, &mrm)
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(rm.ScopeMetrics[0].Scope.Name).To(Equal("some_test"))
-		Expect(rm.ScopeMetrics[0].Metrics[0].Name).To(Equal("some.counter"))
-		Expect(rm.ScopeMetrics[0].Metrics[0].Data.(metricdata.Sum[int64]).DataPoints[0].Value).To(Equal(int64(110)))
+		Expect(mrm.ScopeMetrics[0].Scope.Name).To(Equal("some_test"))
+		Expect(mrm.ScopeMetrics[0].Metrics[0].Name).To(Equal("some.counter"))
+		sum, _ := mrm.ScopeMetrics[0].Metrics[0].Data.(metricdata.Sum[int64])
+		Expect(sum.DataPoints[0].Value).To(Equal(int64(110)))
 	})
 })

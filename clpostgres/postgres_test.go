@@ -46,7 +46,7 @@ var _ = Describe("connect", func() {
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(
 			fx.Populate(&pg, &obs, &scdb, &tobs, &tp, &mr),
-			clzap.Test(), clpostgres.Test, clotel.Test)
+			clzap.Test(), clpostgres.Test, clotel.Test())
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 
