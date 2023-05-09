@@ -13,42 +13,45 @@ import (
 )
 
 func TestCLLambda(t *testing.T) {
+	t.Parallel()
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "cllambda")
 }
 
 var _ = Describe("full app dependencies", func() {
 	It("should wire up all dependencies as in actual deployment", func(ctx context.Context) {
-		var h *Handler
+		var hdlr *Handler
 		Expect(fx.New(
 			fx.Supply(env.Options{Environment: map[string]string{"CLZAP_LEVEL": "panic"}}),
-			cllambda.Lambda[Input, Output](Prod),
-			fx.Populate(&h),
+			cllambda.Lambda[Input, Output](Prod()),
+			fx.Populate(&hdlr),
 		).Start(ctx)).To(Succeed())
-		Expect(h).ToNot(BeNil())
+		Expect(hdlr).ToNot(BeNil())
 	})
 })
 
 type (
-	// Input for testing
+	// Input for testing.
 	Input = struct{}
-	// Output for testing
+	// Output for testing.
 	Output = struct{}
 )
 
-// Handler for testing
+// Handler for testing.
 type Handler struct{}
 
-// New for testing
-func New(logs *zap.Logger) *Handler { return &Handler{} }
+// New for testing.
+func New(*zap.Logger) *Handler { return &Handler{} }
 
-// Handle implementation
-func (Handler) Handle(ctx context.Context, in Input) (out Output, err error) {
-	return
+// Handle implementation.
+func (Handler) Handle(context.Context, Input) (Output, error) {
+	return Output{}, nil
 }
 
-var Prod = fx.Module("lambda_test",
-	fx.Provide(fx.Annotate(New)),
-	fx.Provide(fx.Annotate(func(h *Handler) cllambda.Handler[Input, Output] { return h },
-		fx.As(new(cllambda.Handler[Input, Output])))),
-)
+func Prod() fx.Option {
+	return fx.Module("lambda_test",
+		fx.Provide(fx.Annotate(New)),
+		fx.Provide(fx.Annotate(func(h *Handler) cllambda.Handler[Input, Output] { return h },
+			fx.As(new(cllambda.Handler[Input, Output])))),
+	)
+}

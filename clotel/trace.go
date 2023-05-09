@@ -18,19 +18,18 @@ import (
 	"go.uber.org/zap"
 )
 
-// NewTracerProvider inits a tracer provider
+// NewTracerProvider inits a tracer provider.
 func NewTracerProvider(
 	cfg Config,
 	logs *zap.Logger,
 	exp sdktrace.SpanExporter,
 	det resource.Detector,
 	idg sdktrace.IDGenerator,
-	pr propagation.TextMapPropagator,
+	txtp propagation.TextMapPropagator,
 ) (*sdktrace.TracerProvider, error) {
-
-	// detect the resource with a timeout
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.DetectorDetectTimeout)
 	defer cancel()
+
 	res, err := det.Detect(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to detect resource: %w", err)
@@ -47,27 +46,28 @@ func NewTracerProvider(
 	// for sdk logging we also need to set a global value
 	otel.SetLogger(zapr.NewLogger(logs))
 	// set the global text map propagator
-	otel.SetTextMapPropagator(pr)
+	otel.SetTextMapPropagator(txtp)
 
 	// finally, init the actual provider
-	tp := sdktrace.NewTracerProvider(
+	trp := sdktrace.NewTracerProvider(
 		sdktrace.WithResource(res),
 		sdktrace.WithBatcher(exp),
 		sdktrace.WithIDGenerator(idg),
 	)
 
 	// set it globally, but code should prefer to inject it during construction
-	otel.SetTracerProvider(tp)
+	otel.SetTracerProvider(trp)
 
 	// set default htt transport and client to use tracing
 	http.DefaultTransport = otelhttp.NewTransport(http.DefaultTransport,
-		otelhttp.WithPropagators(pr),
-		otelhttp.WithTracerProvider(tp))
+		otelhttp.WithPropagators(txtp),
+		otelhttp.WithTracerProvider(trp))
 	http.DefaultClient = &http.Client{Transport: http.DefaultTransport}
-	return tp, nil
+
+	return trp, nil
 }
 
-// newGrcpExporter rturns the grpc exporter
+// newGrcpExporter rturns the grpc exporter.
 func newGrpcExporter(cfg Config) *otlptrace.Exporter {
 	return otlptracegrpc.NewUnstarted(
 		otlptracegrpc.WithInsecure(),
@@ -80,8 +80,8 @@ func newGrpcExporter(cfg Config) *otlptrace.Exporter {
 // https://github.com/aws-observability/aws-otel-collector/issues/1766
 type extraEcsDetector struct{ resource.Detector }
 
-func (det extraEcsDetector) Detect(ctx context.Context) (res *resource.Resource, err error) {
-	res, err = det.Detector.Detect(ctx)
+func (det extraEcsDetector) Detect(ctx context.Context) (*resource.Resource, error) {
+	res, err := det.Detector.Detect(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to detect: %w", err)
 	}
@@ -94,15 +94,21 @@ func (det extraEcsDetector) Detect(ctx context.Context) (res *resource.Resource,
 	if arns, ok := res.Set().Value(semconv.AWSLogGroupARNsKey); ok {
 		kvs = append(kvs, semconv.AWSLogGroupARNsKey.StringSlice([]string{arns.AsString()}))
 	}
+
 	if names, ok := res.Set().Value(semconv.AWSLogGroupNamesKey); ok {
 		kvs = append(kvs, semconv.AWSLogGroupNamesKey.StringSlice([]string{names.AsString()}))
 	}
 
 	// instead set the attributes as string slices for the otel exporter to enable log2trace correlation
-	return resource.Merge(res, resource.NewSchemaless(kvs...))
+	res, err = resource.Merge(res, resource.NewSchemaless(kvs...))
+	if err != nil {
+		return nil, fmt.Errorf("failed to merge: %w", err)
+	}
+
+	return res, nil
 }
 
-// WithExtraEcsAttributes decorates the detector with extra ecs attributess to fix log tracing
+// WithExtraEcsAttributes decorates the detector with extra ecs attributess to fix log tracing.
 func WithExtraEcsAttributes(d resource.Detector) resource.Detector {
 	return &extraEcsDetector{Detector: d}
 }

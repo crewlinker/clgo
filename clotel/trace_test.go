@@ -18,25 +18,26 @@ import (
 )
 
 func TestClotel(t *testing.T) {
+	t.Parallel()
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "clotel")
 }
 
 var _ = Describe("otel tracing", func() {
-	var tp *sdktrace.TracerProvider
+	var trp *sdktrace.TracerProvider
 	var tpi trace.TracerProvider
 	var tobs *tracetest.InMemoryExporter
 	BeforeEach(func(ctx context.Context) {
-		app := fx.New(fx.Populate(&tp, &tpi, &tobs), clotel.Test, clzap.Test())
+		app := fx.New(fx.Populate(&trp, &tpi, &tobs), clotel.Test(), clzap.Test())
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 	})
 
 	It("should provide tracing", func(ctx context.Context) {
-		_, span := tp.Tracer("test").Start(ctx, "my-span")
+		_, span := trp.Tracer("test").Start(ctx, "my-span")
 		span.End()
 
-		Expect(tp.ForceFlush(ctx)).To(Succeed())
+		Expect(trp.ForceFlush(ctx)).To(Succeed())
 		spans := tobs.GetSpans().Snapshots()
 
 		Expect(spans).To(HaveLen(1))
@@ -47,12 +48,17 @@ var _ = Describe("otel tracing", func() {
 type testDetector struct{}
 
 func (testDetector) Detect(ctx context.Context) (*resource.Resource, error) {
-	return resource.Detect(ctx,
+	res, err := resource.Detect(ctx,
 		resource.StringDetector(semconv.SchemaURL, semconv.AWSLogGroupARNsKey, func() (string, error) {
 			return "xyz", nil
 		}), resource.StringDetector(semconv.SchemaURL, semconv.AWSLogGroupNamesKey, func() (string, error) {
 			return "zyx", nil
 		}))
+	if err != nil {
+		return nil, fmt.Errorf("failed to detect: %w", err)
+	}
+
+	return res, nil
 }
 
 var _ = Describe("extra ecs detector", func() {

@@ -14,6 +14,7 @@ import (
 )
 
 func TestClconfig(t *testing.T) {
+	t.Parallel()
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "clconfig")
 }
