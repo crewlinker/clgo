@@ -19,6 +19,7 @@ import (
 )
 
 func TestClredis(t *testing.T) {
+	t.Parallel()
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "clredis")
 }
@@ -29,8 +30,9 @@ var _ = Describe("redis", func() {
 		app := fx.New(fx.Populate(&red),
 			fx.Decorate(func(c clredis.Config) clredis.Config {
 				c.Addrs = []string{"localhost:6378"} // use our docker-hosted redis
+
 				return c
-			}), clredis.Test, clzap.Test())
+			}), clredis.Test(), clzap.Test())
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 	})
@@ -42,34 +44,35 @@ var _ = Describe("redis", func() {
 
 var _ = Describe("redis observed", func() {
 	var red redis.UniversalClient
-	var mr sdkmetric.Reader
+	var metr sdkmetric.Reader
 	var tobs *tracetest.InMemoryExporter
-	var tp *sdktrace.TracerProvider
+	var trp *sdktrace.TracerProvider
 
 	BeforeEach(func(ctx context.Context) {
-		app := fx.New(fx.Populate(&red, &tobs, &tp, &mr),
+		app := fx.New(fx.Populate(&red, &tobs, &trp, &metr),
 			fx.Decorate(func(c clredis.Config) clredis.Config {
 				c.Addrs = []string{"localhost:6378"} // use our docker-hosted redis
+
 				return c
-			}), clredis.Test, clzap.Test(), clotel.Test)
+			}), clredis.Test(), clzap.Test(), clotel.Test)
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 	})
 
 	It("should trace and measure redis client interactions", func(ctx context.Context) {
-		ctx, _ = tp.Tracer("tests").Start(ctx, "my-test")
+		ctx, _ = trp.Tracer("tests").Start(ctx, "my-test")
 
 		_, err := red.Set(ctx, "foo", "bar", time.Second).Result()
 		Expect(err).To(Succeed())
 
 		By("checking traces")
-		Expect(tp.ForceFlush(ctx)).To(Succeed())
-		Expect(len(tobs.GetSpans().Snapshots())).To(BeNumerically(">", 0))
+		Expect(trp.ForceFlush(ctx)).To(Succeed())
+		Expect(tobs.GetSpans().Snapshots()).ToNot(BeEmpty())
 		Expect(string(tobs.GetSpans().Snapshots()[0].Attributes()[0].Key)).To(Equal("db.system"))
 
 		By("checking metrics")
 		rm := metricdata.ResourceMetrics{}
-		err = mr.Collect(ctx, &rm)
+		err = metr.Collect(ctx, &rm)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(rm.ScopeMetrics[0].Scope.Name).To(Equal("github.com/redis/go-redis/extra/redisotel"))
 	})
