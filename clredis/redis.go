@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/caarlos0/env/v6"
+	"github.com/crewlinker/clgo/clconfig"
 	"github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/otel/metric"
@@ -90,15 +90,10 @@ const moduleName = "clredis"
 
 // Prod configures the DI for providng database connectivity
 var Prod = fx.Module(moduleName,
+	// provide the environment configuration
+	clconfig.Provide[Config](strings.ToUpper(moduleName)+"_"),
 	// the incoming logger will be named after the module
 	fx.Decorate(func(l *zap.Logger) *zap.Logger { return l.Named(moduleName) }),
-	// provide the environment configuration
-	fx.Provide(fx.Annotate(
-		func(o env.Options) (c Config, err error) {
-			o.Prefix = strings.ToUpper(moduleName) + "_"
-			return c, env.Parse(&c, o)
-		},
-		fx.ParamTags(`optional:"true"`))),
 	// Init redis options from env variables
 	fx.Provide(fx.Annotate(NewOptions)),
 	// Init the client and ping on start, close on shutdown
