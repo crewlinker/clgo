@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/crewlinker/clgo/clserve"
 	. "github.com/onsi/ginkgo/v2"
@@ -18,7 +19,8 @@ import (
 )
 
 func BenchmarkResponseBuffer(b *testing.B) {
-	var w http.ResponseWriter
+	var resp http.ResponseWriter
+
 	for _, dat := range [][]byte{
 		make([]byte, 1024),    // 1KiB
 		make([]byte, 1024*64), // 64KiB
@@ -27,19 +29,21 @@ func BenchmarkResponseBuffer(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 			for n := 0; n < b.N; n++ {
-				w = httptest.NewRecorder()
-				w = clserve.NewBufferResponse(w, -1)
-				w.Write(dat)
-				w.(*clserve.ResponseBuffer).ImplicitFlush()
-				w.(*clserve.ResponseBuffer).Free()
+				resp = httptest.NewRecorder()
+				resp = clserve.NewBufferResponse(resp, -1)
+				Expect(resp.Write(dat)).ToNot(BeZero())
+
+				rbuf, _ := resp.(*clserve.ResponseBuffer)
+				rbuf.ImplicitFlush()
+				rbuf.Free()
 			}
 		})
 		b.Run("original-"+strconv.Itoa(len(dat)), func(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 			for n := 0; n < b.N; n++ {
-				w = httptest.NewRecorder()
-				w.Write(dat)
+				resp = httptest.NewRecorder()
+				Expect(resp.Write(dat)).ToNot(BeZero())
 			}
 		})
 	}
@@ -59,22 +63,24 @@ var _ = Describe("handle implementations", func() {
 		Expect(err).ToNot(HaveOccurred())
 		srv1 := &httptest.Server{
 			Listener: ln1,
-			Config:   &http.Server{Handler: http.HandlerFunc(handler), ErrorLog: log1},
+			Config:   &http.Server{Handler: http.HandlerFunc(handler), ErrorLog: log1, ReadHeaderTimeout: time.Second},
 		}
 		srv1.Start()
 		srv2 := &httptest.Server{
 			Listener: ln2,
-			Config: &http.Server{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				defer GinkgoRecover()
-				wr := clserve.NewBufferResponse(w, 10)
-				handler(wr, r)
-				Expect(wr.ImplicitFlush()).To(Succeed()) // flush any remaining data
-			}), ErrorLog: log2},
+			Config: &http.Server{
+				ReadHeaderTimeout: time.Second, Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					defer GinkgoRecover()
+					wr := clserve.NewBufferResponse(w, 10)
+					handler(wr, r)
+					Expect(wr.ImplicitFlush()).To(Succeed()) // flush any remaining data
+				}), ErrorLog: log2,
+			},
 		}
 		srv2.Start()
 
-		req1, _ := http.NewRequest("GET", srv1.URL, nil)
-		req2, _ := http.NewRequest("GET", srv2.URL, nil)
+		req1, _ := http.NewRequest(http.MethodGet, srv1.URL, nil)
+		req2, _ := http.NewRequest(http.MethodGet, srv2.URL, nil)
 		resp1, err1 := http.DefaultClient.Do(req1)
 		resp2, err2 := http.DefaultClient.Do(req2)
 		Expect(err1).ToNot(HaveOccurred())
@@ -85,12 +91,16 @@ var _ = Describe("handle implementations", func() {
 
 		Expect(resp1.StatusCode).To(Equal(resp2.StatusCode))
 		Expect(resp1.Header.Get("Rab")).To(Equal(resp2.Header.Get("Rab")))
-		b1 := bytes.NewBuffer(nil)
-		io.Copy(b1, resp1.Body)
-		b2 := bytes.NewBuffer(nil)
-		io.Copy(b2, resp2.Body)
 
-		exp(resp1, resp2, b1, b2)
+		buf1 := bytes.NewBuffer(nil)
+		_, err = io.Copy(buf1, resp1.Body)
+		Expect(err).ToNot(HaveOccurred())
+
+		b2 := bytes.NewBuffer(nil)
+		_, err = io.Copy(b2, resp2.Body)
+		Expect(err).ToNot(HaveOccurred())
+
+		exp(resp1, resp2, buf1, b2)
 	},
 		Entry("implicit 200",
 			func(w http.ResponseWriter, r *http.Request) {},
@@ -109,7 +119,7 @@ var _ = Describe("handle implementations", func() {
 			},
 		),
 		Entry("explicit 201",
-			func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(201) },
+			func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusCreated) },
 			func(r1, r2 *http.Response, b1, b2 *bytes.Buffer) {
 				Expect(r1.StatusCode).To(Equal(201))
 			},
@@ -128,7 +138,7 @@ var _ = Describe("handle implementations", func() {
 		Entry("set header after .WriteHeader",
 			func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Rab", "dar")
-				w.WriteHeader(202)
+				w.WriteHeader(http.StatusAccepted)
 				w.Header().Set("Dar", "tab")
 			},
 			func(r1, r2 *http.Response, b1, b2 *bytes.Buffer) {
@@ -163,9 +173,9 @@ var _ = Describe("handle implementations", func() {
 		),
 		Entry("set status after write",
 			func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(201)
+				w.WriteHeader(http.StatusCreated)
 				fmt.Fprintf(w, "bar")
-				w.WriteHeader(202)
+				w.WriteHeader(http.StatusAccepted)
 			},
 			func(r1, r2 *http.Response, b1, b2 *bytes.Buffer) {
 				Expect(r1.StatusCode).To(Equal(201))
@@ -176,7 +186,7 @@ var _ = Describe("handle implementations", func() {
 })
 
 var _ = Describe("buffered writes", func() {
-	var wr io.Writer
+	var wrt io.Writer
 	var fwr interface {
 		io.Writer                    // should always be a regular writer
 		FlushError() error           // implemented for: https://pkg.go.dev/net/http@master#NewResponseController
@@ -192,9 +202,9 @@ var _ = Describe("buffered writes", func() {
 	Describe("limiting", func() {
 		It("should limit writes exactly", func() {
 			rec := httptest.NewRecorder()
-			wr = clserve.NewBufferResponse(rec, 1)
-			Expect(wr.Write([]byte{0x01})).To(Equal(1), "should not limit")
-			n, err := wr.Write([]byte{0x02})
+			wrt = clserve.NewBufferResponse(rec, 1)
+			Expect(wrt.Write([]byte{0x01})).To(Equal(1), "should not limit")
+			n, err := wrt.Write([]byte{0x02})
 			Expect(n).To(Equal(0), "should not have written the byte")
 			Expect(errors.Is(err, clserve.ErrBufferFull)).To(BeTrue(), "should have been this error")
 			Expect(rec.Body.Len()).To(Equal(0), "should not have flushed anything")
@@ -202,8 +212,8 @@ var _ = Describe("buffered writes", func() {
 
 		It("should limit writes when writing past", func() {
 			rec := httptest.NewRecorder()
-			wr = clserve.NewBufferResponse(rec, 1)
-			n, err := wr.Write([]byte{0x01, 0x02})
+			wrt = clserve.NewBufferResponse(rec, 1)
+			n, err := wrt.Write([]byte{0x01, 0x02})
 			Expect(n).To(Equal(0))
 			Expect(errors.Is(err, clserve.ErrBufferFull)).To(BeTrue())
 			Expect(rec.Body.Len()).To(Equal(0))
@@ -212,8 +222,8 @@ var _ = Describe("buffered writes", func() {
 
 		It("should not limit writes when passed -1", func() {
 			rec := httptest.NewRecorder()
-			wr = clserve.NewBufferResponse(rec, -1)
-			Expect(wr.Write([]byte{0x01, 0x02})).To(Equal(2))
+			wrt = clserve.NewBufferResponse(rec, -1)
+			Expect(wrt.Write([]byte{0x01, 0x02})).To(Equal(2))
 			Expect(rec.Body.Len()).To(Equal(0), "should not have flushed anything")
 		})
 
@@ -239,7 +249,7 @@ var _ = Describe("buffered writes", func() {
 		wr := failingResponseWriter{rec}
 		fwr = clserve.NewBufferResponse(wr, -1)
 		fmt.Fprintf(fwr, "foo") // without something in the buffer underlying write won't be triggered
-		Expect(fwr.FlushError()).To(MatchError("write fail"))
+		Expect(fwr.FlushError()).To(MatchError(MatchRegexp("write fail")))
 	})
 
 	Describe("reset behaviour", func() {
@@ -263,23 +273,23 @@ var _ = Describe("buffered writes", func() {
 			Expect(resp.FlushError()).To(Succeed())
 
 			Expect(rec.Header().Get("X-After")).To(Equal("after"))
-			Expect(rec.Header().Values("X-Bfore")).ToNot(Equal(nil))
+			Expect(rec.Header().Values("X-Bfore")).To(BeEmpty())
 		})
 
 		It("should allow re-writing status code", func() {
 			rec := httptest.NewRecorder()
 			resp = clserve.NewBufferResponse(rec, -1)
-			resp.WriteHeader(201)
+			resp.WriteHeader(http.StatusCreated)
 			Expect(resp.Reset()).To(Succeed())
-			resp.WriteHeader(202)
+			resp.WriteHeader(http.StatusAccepted)
 			Expect(resp.FlushError()).To(Succeed())
-			Expect(rec.Code).To(Equal(202))
+			Expect(rec.Code).To(Equal(http.StatusAccepted))
 		})
 
 		It("should reset to default status of 200", func() {
 			rec := httptest.NewRecorder()
 			resp = clserve.NewBufferResponse(rec, -1)
-			resp.WriteHeader(201)
+			resp.WriteHeader(http.StatusCreated)
 			Expect(resp.Reset()).To(Succeed())
 			Expect(resp.FlushError()).To(Succeed())
 			Expect(rec.Code).To(Equal(200))

@@ -1,0 +1,8 @@
+{
+    "go.lintTool": "golangci-lint",
+    "go.useLanguageServer": true,
+    "editor.rulers": [120],
+    "gopls": {
+        "formatting.gofumpt": true,
+    },
+}

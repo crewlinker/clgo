@@ -7,10 +7,8 @@ import (
 	"net/http"
 )
 
-var (
-	// ErrContextBuilderRequired is thrown when the context cannot be cased from context.Context
-	ErrContextBuilderRequired = errors.New("context builder required")
-)
+// ErrContextBuilderRequired is thrown when the context cannot be cased from context.Context.
+var ErrContextBuilderRequired = errors.New("context builder required")
 
 // Option allows for customization of the (buffered) handling logic.
 type Option[C context.Context] func(*opts[C])
@@ -29,8 +27,8 @@ func WithContextBuilder[C context.Context](f ContextBuilderFunc[C]) Option[C] {
 }
 
 // WithContextErrorHandling allows for custom logic to handle the error returned from the Handler in case
-// there is a context available. By default the the handle just calls the non-context ErrorHandler. It
-// allows full customization of the error response (including headers and status code) but the error might
+// there is a context available. By default the handle just calls the non-context ErrorHandler. It allows
+// full customization of the error response (including headers and status code) but the error might
 // be due to a failture to reset the buffer or because writing to the underlying ResponseWriter has failed.
 // In those cases it might not be possible to guarantee a complete error response can be returned.
 func WithContextErrorHandling[C context.Context](f ErrorHandlerFunc[C]) Option[C] {
@@ -59,20 +57,20 @@ func WithPanicHandler[C context.Context](f PanicHandlerFunc[C]) Option[C] {
 	return func(o *opts[C]) { o.panicHandler = f }
 }
 
-// ErrorHandlerFunc can be configured across handlers to standardize how handling errors are handled
+// ErrorHandlerFunc can be configured across handlers to standardize how handling errors are handled.
 type ErrorHandlerFunc[C context.Context] func(c C, w http.ResponseWriter, r *http.Request, err error)
 
 // NoContextErrorHandlerFunc can be configured across handlers to standardize how handling errors in case
 // context building has failed.
 type NoContextErrorHandlerFunc func(w http.ResponseWriter, r *http.Request, err error)
 
-// PanicHandlerFunc can be configured across handlers to standardize how panics are handled
-type PanicHandlerFunc[C context.Context] func(c C, w http.ResponseWriter, r *http.Request, v any, errh ErrorHandlerFunc[C])
+// PanicHandlerFunc can be configured across handlers to standardize how panics are handled.
+type PanicHandlerFunc[C context.Context] func(c C, w http.ResponseWriter, r *http.Request, v any, e ErrorHandlerFunc[C])
 
-// ContextBuilderFunc describes the signature of a context builder
+// ContextBuilderFunc describes the signature of a context builder.
 type ContextBuilderFunc[C context.Context] func(r *http.Request) (C, error)
 
-// opts for the handling
+// opts for the handling.
 type opts[C context.Context] struct {
 	ctxBuilder    ContextBuilderFunc[C]
 	errHandler    NoContextErrorHandlerFunc
@@ -81,45 +79,50 @@ type opts[C context.Context] struct {
 	bufLimit      int
 }
 
-// defaultErrHandler simply returns an internal server error when an error occured
-func defaultErrHandler(w http.ResponseWriter, r *http.Request, err error) {
+// defaultErrHandler simply returns an internal server error when an error occurred.
+func defaultErrHandler(w http.ResponseWriter, _ *http.Request, _ error) {
 	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 }
 
-// defeaultCtxBuilder builds a context from the request
+// defeaultCtxBuilder builds a context from the request.
+//
+//nolint:unparam
 func defaultCtxBuilder[C context.Context](r *http.Request) (C, error) {
-	c, ok := r.Context().(C)
+	ctx, ok := r.Context().(C)
 	if !ok {
 		// in case we cannot just cast from the regular context.Context to our custom context
 		// the user must provide a builder, else it panics.
 		panic(ErrContextBuilderRequired)
 	}
 
-	return c, nil
+	return ctx, nil
 }
 
-// defaultPanicHandler simply defers the panic to the error handler
+// defaultPanicHandler simply defers the panic to the error handler.
 func defaultPanicHandler[C context.Context](
-	c C,
+	ctx C,
 	w http.ResponseWriter,
 	r *http.Request,
 	v any,
 	errh ErrorHandlerFunc[C],
 ) {
-	errh(c, w, r, fmt.Errorf("%v", v))
+	errh(ctx, w, r, fmt.Errorf("%v", v)) //nolint:goerr113
 }
 
-// applyOptions applies options and sets sensible default
-func applyOptions[C context.Context](opts []Option[C]) (o opts[C]) {
-	o.bufLimit = -1
-	o.errHandler = defaultErrHandler
-	o.ctxErrHandler = func(c C, w http.ResponseWriter, r *http.Request, err error) {
-		o.errHandler(w, r, err) // by default, just call the no-context variant
+// applyOptions applies options and sets sensible default.
+func applyOptions[C context.Context](olist []Option[C]) opts[C] {
+	var merged opts[C]
+	merged.bufLimit = -1
+	merged.errHandler = defaultErrHandler
+	merged.ctxErrHandler = func(c C, w http.ResponseWriter, r *http.Request, err error) {
+		merged.errHandler(w, r, err) // by default, just call the no-context variant
 	}
-	o.ctxBuilder = defaultCtxBuilder[C]
-	o.panicHandler = defaultPanicHandler[C]
-	for _, opt := range opts {
-		opt(&o)
+	merged.ctxBuilder = defaultCtxBuilder[C]
+	merged.panicHandler = defaultPanicHandler[C]
+
+	for _, opt := range olist {
+		opt(&merged)
 	}
-	return
+
+	return merged
 }
