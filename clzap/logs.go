@@ -4,7 +4,9 @@ package clzap
 import (
 	"context"
 	"io"
+	"strings"
 
+	"github.com/crewlinker/clgo/clconfig"
 	"github.com/onsi/ginkgo/v2"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
@@ -12,6 +14,14 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 )
+
+// Config configures the logging package
+type Config struct {
+	// Level configures the the minium logging level that will be captured
+	Level zapcore.Level `env:"LEVEL" envDefault:"info"`
+	// Outputs configures the zap outputs that will be opened for logging
+	Outputs []string `env:"OUTPUTS" envDefault:"stderr"`
+}
 
 // Fx is a convenient option that configures fx to use the zap logger.
 func Fx() fx.Option {
@@ -26,8 +36,8 @@ const moduleName = "clzap"
 // Prod logging module. It can be used as a fx Module in production binaries to provide
 // high-performance structured logging.
 var Prod = fx.Module(moduleName,
-	// provide environment based configuration
-	fx.Provide(fx.Annotate(parseConfig, fx.ParamTags(`optional:"true"`))),
+	// provide the environment configuration
+	clconfig.Provide[Config](strings.ToUpper(moduleName)+"_"),
 	// allow environmental config to configure the level at which to log
 	fx.Provide(func(cfg Config) zapcore.LevelEnabler { return cfg.Level }),
 	// provide the zapper, make sure everything is synced on shutdown
@@ -60,7 +70,8 @@ func newObservedAndConsole(le zapcore.LevelEnabler, gw io.Writer) (c zapcore.Cor
 // Observed configures a logging module that allows for observing while also writing console output to
 // a io.Writer that needs to be supplied.
 var Observed = fx.Module(moduleName+"-observed",
-	fx.Provide(fx.Annotate(parseConfig, fx.ParamTags(`optional:"true"`))),
+	// provide the environment configuration
+	clconfig.Provide[Config](strings.ToUpper(moduleName)+"_"),
 	fx.Provide(func(cfg Config) zapcore.LevelEnabler { return cfg.Level }),
 	fx.Provide(newObservedAndConsole),
 	fx.Provide(fx.Annotate(zap.New, fx.OnStop(func(ctx context.Context, l *zap.Logger) error {

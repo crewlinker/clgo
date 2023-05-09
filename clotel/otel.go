@@ -5,7 +5,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/caarlos0/env/v6"
+	"github.com/crewlinker/clgo/clconfig"
 	"go.opentelemetry.io/contrib/detectors/aws/ecs"
 	"go.opentelemetry.io/contrib/propagators/aws/xray"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
@@ -26,16 +26,10 @@ const moduleName = "clotel"
 
 // Base module with di setup Base between test and prod environment
 var Base = fx.Module(moduleName,
+	// provide the environment configuration
+	clconfig.Provide[Config](strings.ToUpper(moduleName)+"_"),
 	// the incoming logger will be named after the module
 	fx.Decorate(func(l *zap.Logger) *zap.Logger { return l.Named(moduleName) }),
-	// provide the environment configuration
-	fx.Provide(fx.Annotate(
-		func(o env.Options) (c Config, err error) {
-			o.Prefix = strings.ToUpper(moduleName) + "_"
-			return c, env.Parse(&c, o)
-		},
-		fx.ParamTags(`optional:"true"`))),
-
 	// we can use the xray id generator in all cases
 	fx.Provide(fx.Annotate(xray.NewIDGenerator, fx.As(new(sdktrace.IDGenerator)))),
 	// we also provide an xray propagator for anywhere it code we need this

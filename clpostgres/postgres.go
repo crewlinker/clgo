@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/XSAM/otelsql"
-	"github.com/caarlos0/env/v6"
+	"github.com/crewlinker/clgo/clconfig"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	"go.opentelemetry.io/otel/metric"
@@ -52,16 +52,11 @@ const moduleName = "clpostgres"
 
 // Prod configures the DI for providng database connectivity
 var Prod = fx.Module(moduleName,
+	// provide the environment configuration
+	clconfig.Provide[Config](strings.ToUpper(moduleName)+"_"),
+
 	// the incoming logger will be named after the module
 	fx.Decorate(func(l *zap.Logger) *zap.Logger { return l.Named(moduleName) }),
-	// provide the environment configuration
-	fx.Provide(fx.Annotate(
-		func(o env.Options) (c Config, err error) {
-			o.Prefix = strings.ToUpper(moduleName) + "_"
-			return c, env.Parse(&c, o)
-		},
-		fx.ParamTags(`optional:"true"`))),
-
 	// provide read/write configuration
 	fx.Provide(fx.Annotate(NewReadOnlyConfig,
 		fx.ParamTags(``, ``, `optional:"true"`), fx.ResultTags(`name:"ro"`))),
