@@ -16,7 +16,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Config configures Redis through the environment
+// Config configures Redis through the environment.
 type Config struct {
 	// Node addresses provide to the cluster client
 	Addrs []string `env:"ADDRS" envDefault:"localhost:6379"`
@@ -32,14 +32,14 @@ type Config struct {
 	ClientName string `env:"CLIENT_NAME" envDefault:"unknown"`
 }
 
-// NewOptions parses our environment config into options for the Redis client
+// NewOptions parses our environment config into options for the Redis client.
 func NewOptions(cfg Config, logs *zap.Logger) (*redis.UniversalOptions, error) {
 	opts := &redis.UniversalOptions{
 		Addrs:    cfg.Addrs,
 		Username: cfg.Username,
 		Password: cfg.Password,
 
-		// note: taken from https://stackoverflow.com/questions/73907312/i-want-to-connect-to-elasticcache-for-redis-in-which-cluster-mode-is-enabled-i
+		// note: taken from: https://t.ly/cixv
 		ReadOnly:       false,
 		RouteRandomly:  false,
 		RouteByLatency: false,
@@ -54,7 +54,7 @@ func NewOptions(cfg Config, logs *zap.Logger) (*redis.UniversalOptions, error) {
 	// enable tls if available, potentially with server name checking
 	if cfg.EnableTLS {
 		opts.TLSConfig = &tls.Config{
-			InsecureSkipVerify: true,
+			InsecureSkipVerify: true, //nolint:gosec
 			MinVersion:         tls.VersionTLS12,
 		}
 
@@ -67,8 +67,10 @@ func NewOptions(cfg Config, logs *zap.Logger) (*redis.UniversalOptions, error) {
 	return opts, nil
 }
 
-// New inits a univeral client and instruments it if available
-func New(opts *redis.UniversalOptions, logs *zap.Logger, tp trace.TracerProvider, mp metric.MeterProvider) (redis.UniversalClient, error) {
+// New inits a universal client and instruments it if available.
+func New(
+	opts *redis.UniversalOptions, _ *zap.Logger, tp trace.TracerProvider, mtr metric.MeterProvider,
+) (redis.UniversalClient, error) {
 	ruc := redis.NewUniversalClient(opts)
 	if tp != nil {
 		if err := redisotel.InstrumentTracing(ruc, redisotel.WithTracerProvider(tp)); err != nil {
@@ -76,8 +78,8 @@ func New(opts *redis.UniversalOptions, logs *zap.Logger, tp trace.TracerProvider
 		}
 	}
 
-	if mp != nil {
-		if err := redisotel.InstrumentMetrics(ruc, redisotel.WithMeterProvider(mp)); err != nil {
+	if mtr != nil {
+		if err := redisotel.InstrumentMetrics(ruc, redisotel.WithMeterProvider(mtr)); err != nil {
 			return nil, fmt.Errorf("failed to instrument with metrics: %w", err)
 		}
 	}
@@ -85,27 +87,37 @@ func New(opts *redis.UniversalOptions, logs *zap.Logger, tp trace.TracerProvider
 	return ruc, nil
 }
 
-// moduleName for naming conventions
+// moduleName for naming conventions.
 const moduleName = "clredis"
 
-// Prod configures the DI for providng database connectivity
-var Prod = fx.Module(moduleName,
-	// provide the environment configuration
-	clconfig.Provide[Config](strings.ToUpper(moduleName)+"_"),
-	// the incoming logger will be named after the module
-	fx.Decorate(func(l *zap.Logger) *zap.Logger { return l.Named(moduleName) }),
-	// Init redis options from env variables
-	fx.Provide(fx.Annotate(NewOptions)),
-	// Init the client and ping on start, close on shutdown
-	fx.Provide(fx.Annotate(New,
-		fx.ParamTags(``, ``, `optional:"true"`, `optional:"true"`),
-		fx.OnStart(func(ctx context.Context, red redis.UniversalClient) error {
-			return red.Ping(ctx).Err()
-		}),
-		fx.OnStop(func(ctx context.Context, red redis.UniversalClient) error {
-			return red.Close()
-		}))),
-)
+// Prod configures the DI for providng database connectivity.
+func Prod() fx.Option {
+	return fx.Module(moduleName,
+		// provide the environment configuration
+		clconfig.Provide[Config](strings.ToUpper(moduleName)+"_"),
+		// the incoming logger will be named after the module
+		fx.Decorate(func(l *zap.Logger) *zap.Logger { return l.Named(moduleName) }),
+		// Init redis options from env variables
+		fx.Provide(fx.Annotate(NewOptions)),
+		// Init the client and ping on start, close on shutdown
+		fx.Provide(fx.Annotate(New,
+			fx.ParamTags(``, ``, `optional:"true"`, `optional:"true"`),
+			fx.OnStart(func(ctx context.Context, red redis.UniversalClient) error {
+				if err := red.Ping(ctx).Err(); err != nil {
+					return fmt.Errorf("failed to ping redis: %w", err)
+				}
 
-// Test configures the DI for a test environment
-var Test = fx.Options(Prod)
+				return nil
+			}),
+			fx.OnStop(func(ctx context.Context, red redis.UniversalClient) error {
+				if err := red.Close(); err != nil {
+					return fmt.Errorf("failed to close redis conn: %w", err)
+				}
+
+				return nil
+			}))),
+	)
+}
+
+// Test configures the DI for a test environment.
+func Test() fx.Option { return fx.Options(Prod()) }

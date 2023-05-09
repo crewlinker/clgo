@@ -16,6 +16,7 @@ import (
 )
 
 func TestAwsclient(t *testing.T) {
+	t.Parallel()
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "claws")
 }
@@ -29,7 +30,7 @@ var _ = Describe("config without tracing", Serial, func() {
 		app := fx.New(
 			fx.Populate(&cfg),
 			fx.Decorate(claws.DynamoEndpointDecorator("http://foo:1")),
-			clzap.Test(), claws.Prod)
+			clzap.Test(), claws.Prod())
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 	})
@@ -46,12 +47,12 @@ var _ = Describe("config without tracing", Serial, func() {
 var _ = Describe("config with tracing", Serial, func() {
 	var cfg aws.Config
 	BeforeEach(func(ctx context.Context) {
-		app := fx.New(fx.Populate(&cfg), clzap.Test(), claws.Prod, clotel.Test)
+		app := fx.New(fx.Populate(&cfg), clzap.Test(), claws.Prod(), clotel.Test)
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 	})
 
 	It("should have tracing options on client", func() {
-		Expect(len(cfg.APIOptions)).To(Equal(4))
+		Expect(cfg.APIOptions).To(HaveLen(4))
 	})
 })

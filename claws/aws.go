@@ -1,4 +1,4 @@
-// Package claws provides the offical AWS SDK (v2)
+// Package claws provides the official AWS SDK (v2)
 package claws
 
 import (
@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/caarlos0/env/v6"
+	"github.com/crewlinker/clgo/clconfig"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
@@ -18,7 +18,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Config configures this package
+// Config configures this package.
 type Config struct {
 	// LoadConfigTimeout bounds the time given to config loading
 	LoadConfigTimeout time.Duration `env:"LOAD_CONFIG_TIMEOUT" envDefault:"100ms"`
@@ -30,10 +30,16 @@ type Config struct {
 func New(
 	cfg Config,
 	logs *zap.Logger,
-	tp trace.TracerProvider,
-	pr propagation.TextMapPropagator,
-) (acfg aws.Config, err error) {
+	trp trace.TracerProvider,
+	txtp propagation.TextMapPropagator,
+) (aws.Config, error) {
 	logs.Info("loading config", zap.Duration("timeout", cfg.LoadConfigTimeout))
+
+	var (
+		acfg aws.Config
+		err  error
+	)
+
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.LoadConfigTimeout)
 	defer cancel()
 
@@ -42,48 +48,50 @@ func New(
 	}
 
 	// if we have a tracing available, we instrument the aws client
-	if tp != nil {
+	if trp != nil {
 		logs.Info("tracing provided, instrumenting aws client")
 		otelaws.AppendMiddlewares(
 			&acfg.APIOptions,
-			otelaws.WithTracerProvider(tp),
-			otelaws.WithTextMapPropagator(pr))
+			otelaws.WithTracerProvider(trp),
+			otelaws.WithTextMapPropagator(txtp))
 	}
 
 	return acfg, nil
 }
 
-// moduleName for naming conventions
+// moduleName for naming conventions.
 const moduleName = "claws"
 
-// Prod configures the DI for providng database connectivity
-var Prod = fx.Module(moduleName,
-	// the incoming logger will be named after the module
-	fx.Decorate(func(l *zap.Logger) *zap.Logger { return l.Named(moduleName) }),
-	// provide the environment configuration
-	fx.Provide(fx.Annotate(
-		func(o env.Options) (c Config, err error) {
-			o.Prefix = strings.ToUpper(moduleName) + "_"
-			return c, env.Parse(&c, o)
-		},
-		fx.ParamTags(`optional:"true"`))),
-	// provide the actual aws config
-	fx.Provide(fx.Annotate(New, fx.ParamTags(``, ``, `optional:"true"`, `optional:"true"`))),
-)
+// Prod configures the DI for providng database connectivity.
+func Prod() fx.Option {
+	return fx.Module(moduleName,
+		// provide the environment configuration
+		clconfig.Provide[Config](strings.ToUpper(moduleName)+"_"),
+		// the incoming logger will be named after the module
+		fx.Decorate(func(l *zap.Logger) *zap.Logger { return l.Named(moduleName) }),
+		// provide the actual aws config
+		fx.Provide(fx.Annotate(New, fx.ParamTags(``, ``, `optional:"true"`, `optional:"true"`))),
+	)
+}
 
 // DynamoEndpointDecorator will change the resolvers to set the dynamodb endpoint since this AWS supports a
-// local version of Dynamo
+// local version of Dynamo.
 func DynamoEndpointDecorator(epurl string) func(c aws.Config) aws.Config {
-	return func(c aws.Config) aws.Config {
-		c.EndpointResolverWithOptions = aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...any) (ep aws.Endpoint, err error) {
+	return func(acfg aws.Config) aws.Config {
+		acfg.EndpointResolverWithOptions = aws.EndpointResolverWithOptionsFunc(func(
+			service, region string, options ...any,
+		) (aws.Endpoint, error) {
+			var aep aws.Endpoint
 			switch service {
 			case dynamodb.ServiceID:
-				ep.URL = epurl
-				return ep, err
+				aep.URL = epurl
+
+				return aep, nil
 			default:
-				return ep, &aws.EndpointNotFoundError{}
+				return aep, &aws.EndpointNotFoundError{}
 			}
 		})
-		return c
+
+		return acfg
 	}
 }
