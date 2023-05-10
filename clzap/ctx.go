@@ -11,10 +11,18 @@ import (
 // ctxKey holds the context key under which the logger will be stored.
 type ctxKey string
 
+// LoggerFromContext attempts to get a zap logger from the context. Returns nil and false if there is no logger
+// in the context.
+func LoggerFromContext(ctx context.Context) (*zap.Logger, bool) {
+	logs, ok := ctx.Value(ctxKey("clzap.logger")).(*zap.Logger)
+
+	return logs, ok
+}
+
 // Log retrieves a zap logger from the context. Returns a no-op logger if none is defined. If the context also
 // has tracing and or span information this will be logged by the logger automatically.
 func Log(ctx context.Context) *zap.Logger {
-	logs, ok := ctx.Value(ctxKey("clzap.logger")).(*zap.Logger)
+	logs, ok := LoggerFromContext(ctx)
 	if !ok {
 		logs = zap.NewNop()
 	}
