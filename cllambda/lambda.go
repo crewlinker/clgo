@@ -26,14 +26,21 @@ func Invoke[I, O any]() fx.Option {
 			return // only add the lambda stat when we're actually executing inside the lambda, for testing
 		}
 
-		fxlc.Append(fx.Hook{OnStart: func(ctx context.Context) error {
-			go lambda.StartWithOptions(hdlr.Handle, lambda.WithEnableSIGTERM(func() {
-				logs.Info("function container shutting down")
-			}))
+		fxlc.Append(fx.Hook{OnStart: func(context.Context) error {
+			go lambda.StartWithOptions(hdlr.Handle,
+				lambda.WithContext(baseContext(logs)), //nolint:contextcheck
+				lambda.WithEnableSIGTERM(func() {
+					logs.Info("received SIGTERM, shuttding down")
+				}))
 
 			return nil
 		}})
 	}))
+}
+
+// basecontext builds the root context for all lambda invocations.
+func baseContext(logs *zap.Logger) context.Context {
+	return clzap.WithLogger(context.Background(), logs.Named("lambda"))
 }
 
 // Lambda provides shared fx options (mostly modules) that may be used in any lambda handler so we can
