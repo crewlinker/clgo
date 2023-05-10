@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/fx"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
 
@@ -31,7 +32,8 @@ var _ = BeforeSuite(func() {
 	Expect(godotenv.Load(filepath.Join("..", ".test.env")))
 })
 
-var _ = Describe("connect", func() {
+var _ = Describe("observe", func() {
+	var logs *zap.Logger
 	var obs *observer.ObservedLogs
 	var mtr sdkmetric.Reader
 	var tobs *tracetest.InMemoryExporter
@@ -46,7 +48,7 @@ var _ = Describe("connect", func() {
 	var scdb *sql.DB
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(
-			fx.Populate(&pgs, &obs, &scdb, &tobs, &trp, &mtr),
+			fx.Populate(&logs, &pgs, &obs, &scdb, &tobs, &trp, &mtr),
 			clzap.Test(), clpostgres.Test(), clotel.Test())
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
@@ -61,6 +63,7 @@ var _ = Describe("connect", func() {
 	})
 
 	It("should work without contextual logger/tracer", func(ctx context.Context) {
+		ctx = clzap.WithLogger(ctx, logs)
 		ctx = trace.ContextWithSpanContext(ctx, trace.NewSpanContext(trace.SpanContextConfig{
 			TraceID: trace.TraceID{0x01},
 			SpanID:  trace.SpanID{0x02},
@@ -71,7 +74,7 @@ var _ = Describe("connect", func() {
 		Expect(pgs.ReadOnly.PingContext(ctx))
 
 		qlogs := obs.FilterMessage("Query")
-		Expect(qlogs.Len()).To(BeNumerically(">=", 4))
+		Expect(qlogs.Len()).To(BeNumerically(">=", 2))
 		Expect(qlogs.All()[len(qlogs.All())-1].ContextMap()).To(
 			HaveKeyWithValue("trace_id", "1-01000000-000000000000000000000000"))
 	})

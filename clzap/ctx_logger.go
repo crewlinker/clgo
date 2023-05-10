@@ -17,6 +17,10 @@ type ContextHook func(ctx context.Context, f []zap.Field) []zap.Field
 // trace. It is not provided as a dependency to fx because it is expected that this logger is initialized
 // inside the components on a case-by-case basis. We want the signature of components constructs NOT to
 // be dependant on a contextual logger, to imporove portability.
+//
+// Deprecated: the less surprising way to do contextual logging is to embed the logger in the context. This approach
+// can be found in the ctx.go. It is also simpler and doesn't require a home-made type. The ContextLogger was mainly
+// useful to allow named loggers per component.
 type ContextLogger struct {
 	logs *zap.Logger
 	hook ContextHook

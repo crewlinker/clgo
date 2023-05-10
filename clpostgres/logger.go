@@ -13,15 +13,13 @@ import (
 // Logger is a pgx logger that uses a main zap logger for logging but will prefer
 // using a context specific logger if it exists.
 type Logger struct {
-	logs  *clzap.ContextLogger
 	dbcfg *pgxpool.Config
 }
 
 // NewLogger inits a logger for pgx. Inside is a contextual logger so we can log each postgres query
 // with context fields for tracing.
-func NewLogger(logs *zap.Logger, dbcfg *pgxpool.Config) *Logger {
+func NewLogger(dbcfg *pgxpool.Config) *Logger {
 	return &Logger{
-		logs:  clzap.NewTraceContextLogger(logs.WithOptions(zap.AddCallerSkip(1))),
 		dbcfg: dbcfg,
 	}
 }
@@ -29,6 +27,8 @@ func NewLogger(logs *zap.Logger, dbcfg *pgxpool.Config) *Logger {
 // Log implements the postgres logger.
 func (pl *Logger) Log(ctx context.Context, level tracelog.LogLevel, msg string, data map[string]interface{}) {
 	fields := make([]zapcore.Field, 0, len(data))
+	logs := clzap.Log(ctx).WithOptions(zap.AddCallerSkip(1))
+
 	for k, v := range data {
 		fields = append(fields, zap.Any(k, v))
 	}
@@ -39,17 +39,17 @@ func (pl *Logger) Log(ctx context.Context, level tracelog.LogLevel, msg string, 
 
 	switch level {
 	case tracelog.LogLevelTrace:
-		pl.logs.Debug(ctx, msg, append(fields, zap.Stringer("PGX_LOG_LEVEL", level))...)
+		logs.Debug(msg, append(fields, zap.Stringer("PGX_LOG_LEVEL", level))...)
 	case tracelog.LogLevelDebug:
-		pl.logs.Debug(ctx, msg, fields...)
+		logs.Debug(msg, fields...)
 	case tracelog.LogLevelInfo:
-		pl.logs.Info(ctx, msg, fields...)
+		logs.Info(msg, fields...)
 	case tracelog.LogLevelWarn:
-		pl.logs.Warn(ctx, msg, fields...)
+		logs.Warn(msg, fields...)
 	case tracelog.LogLevelError:
-		pl.logs.Error(ctx, msg, fields...)
+		logs.Error(msg, fields...)
 	case tracelog.LogLevelNone:
 	default:
-		pl.logs.Error(ctx, msg, append(fields, zap.Stringer("PGX_LOG_LEVEL", level))...)
+		logs.Error(msg, append(fields, zap.Stringer("PGX_LOG_LEVEL", level))...)
 	}
 }
