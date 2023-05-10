@@ -21,7 +21,7 @@ type Handler[I, O any] interface {
 // real deployment but not during testing.
 func Invoke[I, O any]() fx.Option {
 	return fx.Invoke(fx.Annotate(func(fxlc fx.Lifecycle, logs *zap.Logger, hdlr Handler[I, O]) {
-		logs = logs.Named("cllambda.invoke")
+		logs = logs.Named("lambda")
 		if os.Getenv("AWS_LAMBDA_RUNTIME_API") == "" {
 			return // only add the lambda stat when we're actually executing inside the lambda, for testing
 		}
@@ -40,7 +40,7 @@ func Invoke[I, O any]() fx.Option {
 
 // basecontext builds the root context for all lambda invocations.
 func baseContext(logs *zap.Logger) context.Context {
-	return clzap.WithLogger(context.Background(), logs.Named("lambda"))
+	return clzap.WithLogger(context.Background(), logs)
 }
 
 // Lambda provides shared fx options (mostly modules) that may be used in any lambda handler so we can
