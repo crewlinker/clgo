@@ -23,6 +23,7 @@ linters:
     - gochecknoinits # frameworks and magefile use init responsibly
     - gci # no way to automate this in the vscode so default ordering is good enough
     - ireturn # our oapi implementations return interfaces all the time
+    - depguard # broken or crazy mental model that i'm not understanding
 
 issues:
   include:

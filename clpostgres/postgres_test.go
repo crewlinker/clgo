@@ -29,7 +29,7 @@ func TestPostgres(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	Expect(godotenv.Load(filepath.Join("..", ".test.env")))
+	Expect(godotenv.Load(filepath.Join("..", ".test.env"))).To(Succeed())
 })
 
 var _ = Describe("observe", func() {
@@ -70,8 +70,8 @@ var _ = Describe("observe", func() {
 		}))
 
 		Expect(scdb).To(Equal(pgs.ReadWrite))
-		Expect(pgs.ReadWrite.PingContext(ctx))
-		Expect(pgs.ReadOnly.PingContext(ctx))
+		Expect(pgs.ReadWrite.PingContext(ctx)).To(Succeed())
+		Expect(pgs.ReadOnly.PingContext(ctx)).To(Succeed())
 
 		qlogs := obs.FilterMessage("Query")
 		Expect(qlogs.Len()).To(BeNumerically(">=", 2))
