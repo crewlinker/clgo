@@ -32,4 +32,5 @@ jobs:
           cache: false
       - uses: actions/checkout@v3
       - uses: golangci/golangci-lint-action@v3
-        args: --timeout=10m
+        with:
+          args: --timeout=10m
