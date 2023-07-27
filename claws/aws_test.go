@@ -44,6 +44,32 @@ var _ = Describe("config without tracing", Serial, func() {
 	})
 })
 
+var _ = Describe("config with static credentials", Serial, func() {
+	var cfg aws.Config
+	BeforeEach(func(ctx context.Context) {
+		app := fx.New(
+			fx.Populate(&cfg),
+			fx.Decorate(func(c claws.Config) claws.Config {
+				c.OverwriteAccessKeyID = "KEY"
+				c.OverwriteSecretAccessKey = "SECRET"
+				c.OverwriteSessionToken = "SESS"
+
+				return c
+			}),
+			clzap.Test(), claws.Prod())
+		Expect(app.Start(ctx)).To(Succeed())
+		DeferCleanup(app.Stop)
+	})
+
+	It("should have static credentials", func(ctx context.Context) {
+		creds, err := cfg.Credentials.Retrieve(ctx)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(creds.AccessKeyID).To(Equal("KEY"))
+		Expect(creds.SecretAccessKey).To(Equal("SECRET"))
+		Expect(creds.SessionToken).To(Equal("SESS"))
+	})
+})
+
 var _ = Describe("config with tracing", Serial, func() {
 	var cfg aws.Config
 	BeforeEach(func(ctx context.Context) {
