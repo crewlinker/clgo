@@ -19,12 +19,17 @@ func LoggerFromContext(ctx context.Context) (*zap.Logger, bool) {
 	return logs, ok
 }
 
-// Log retrieves a zap logger from the context. Returns a no-op logger if none is defined. If the context also
+// Log retrieves a zap logger from the context. If the optional fallback logger is provided this logger is returned
+// when the context has no logger, else a no-op logger is returned. If the context also
 // has tracing and or span information this will be logged by the logger automatically.
-func Log(ctx context.Context) *zap.Logger {
+func Log(ctx context.Context, fbl ...*zap.Logger) *zap.Logger {
 	logs, ok := LoggerFromContext(ctx)
 	if !ok {
-		logs = zap.NewNop()
+		if len(fbl) > 0 {
+			logs = fbl[0]
+		} else {
+			logs = zap.NewNop()
+		}
 	}
 
 	// if span information is in the context, add it as a field to the logger

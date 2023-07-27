@@ -41,6 +41,14 @@ var _ = Describe("context", func() {
 		Expect(obs.FilterMessage("foo").Len()).To(Equal(0))
 	})
 
+	It("should return fallback logger", func() {
+		logs1 := clzap.Log(ctx1, logs)
+		Expect(logs1).To(Equal(logs))
+
+		logs1.Info("backup")
+		Expect(obs.FilterMessage("backup").Len()).To(Equal(1))
+	})
+
 	It("should return regular logger", func() {
 		clzap.Log(ctx2).Info("foo")
 		Expect(obs.FilterMessage("foo").Len()).To(Equal(1))
