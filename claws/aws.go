@@ -9,6 +9,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/crewlinker/clgo/clconfig"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws"
@@ -22,6 +23,12 @@ import (
 type Config struct {
 	// LoadConfigTimeout bounds the time given to config loading
 	LoadConfigTimeout time.Duration `env:"LOAD_CONFIG_TIMEOUT" envDefault:"100ms"`
+	// OverwriteAccessKeyID can be set to overwrite regular credentials loading chain and just a static key/secret
+	OverwriteAccessKeyID string `env:"OVERWRITE_ACCESS_KEY_ID"`
+	// If OverwriteAccessKeyID this wil be used as the secret
+	OverwriteSecretAccessKey string `env:"OVERWRITE_SECRET_ACCESS_KEY"`
+	// If OverwriteAccessKeyID this wil be used as the session token
+	OverwriteSessionToken string `env:"OVERWRITE_SESSION_TOKEN"`
 }
 
 // New initialize an AWS config to be used to create clients for individual aws services. We would like
@@ -43,7 +50,19 @@ func New(
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.LoadConfigTimeout)
 	defer cancel()
 
-	if acfg, err = config.LoadDefaultConfig(ctx); err != nil {
+	opts := []func(*config.LoadOptions) error{}
+	if cfg.OverwriteAccessKeyID != "" {
+		opts = append(opts, config.WithCredentialsProvider(aws.NewCredentialsCache(
+			credentials.NewStaticCredentialsProvider(
+				cfg.OverwriteAccessKeyID,
+				cfg.OverwriteSecretAccessKey,
+				cfg.OverwriteSessionToken,
+			)),
+		),
+		)
+	}
+
+	if acfg, err = config.LoadDefaultConfig(ctx, opts...); err != nil {
 		return acfg, fmt.Errorf("failed to load default config: %w", err)
 	}
 
