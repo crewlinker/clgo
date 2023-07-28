@@ -71,6 +71,15 @@ func Bench() error {
 	return nil
 }
 
+// Generate generates code across the repository.
+func Generate() error {
+	if err := sh.Run("buf", "generate"); err != nil {
+		return fmt.Errorf("failed to run buf: %w", err)
+	}
+
+	return nil
+}
+
 // Dev will create or replace containers used for development.
 func Dev() error {
 	if err := sh.Run("docker", "compose", "-f", "docker-compose.dev.yml", "-p", "clgo-dev", "up",

@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package cldynamo.testdata.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// Kind encodes the entity kind in the database.
+enum FridgeBrand {
+  // when no fridge brand is specified
+  FRIDGE_BRAND_UNSPECIFIED = 0;
+  // siemens brand
+  FRIDGE_BRAND_SIEMENS = 1;
+}
+
+// User describes a user on our platform
+message Kitchen {
+  // id of the kitchen
+  string kitchen_id = 1;
+  // the brand of fridge
+  FridgeBrand fridge_brand = 2;
+
+  // one of the tiling style
+  oneof tiling_style {
+    // terracotta style
+    string terracotta = 6;
+    // some other style
+    int64 other_style = 7;
+    // nested message in oneof
+    Kitchen yet_another = 8;
+  }
+
+  // another kitchen
+  Kitchen another = 4;
+  // other nested kitchens
+  repeated Kitchen others = 5;
+  // map with recursive type
+  map<int64, Kitchen> map_others = 9;
+  // field with imported type
+  google.protobuf.Timestamp build_at = 10;
+}

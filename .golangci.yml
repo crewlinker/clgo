@@ -11,7 +11,7 @@ linters:
   disable:
     - exhaustivestruct # deprecated
     - exhaustruct # CDK has large structs we use partially
-    - golint # deprecated 
+    - golint # deprecated
     - varcheck # deprecated
     - structcheck # deprecated
     - interfacer # deprecated
@@ -27,7 +27,15 @@ linters:
 
 issues:
   include:
-    - EXC0015  # warn for lack of package comment
-    - EXC0013  # warn for lack of package comment
-    - EXC0012  # EXC0012 revive: Annoying issue about not having a comment. The rare codebase has such comments
-    - EXC0014  # EXC0014 revive: Annoying issue about not having a comment. The rare codebase has such comments
+    - EXC0015 # warn for lack of package comment
+    - EXC0013 # warn for lack of package comment
+    - EXC0012 # EXC0012 revive: Annoying issue about not having a comment. The rare codebase has such comments
+    - EXC0014 # EXC0014 revive: Annoying issue about not having a comment. The rare codebase has such comments
+  exclude-rules:
+    # Exclude some linters from running on tests files.
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
