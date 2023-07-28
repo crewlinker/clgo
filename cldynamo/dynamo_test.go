@@ -21,17 +21,23 @@ func TestCldynamo(t *testing.T) {
 	RunSpecs(t, "cldynamo")
 }
 
-var _ = DescribeTable("marshal/unmarshal", func(inp proto.Message, exp map[string]types.AttributeValue) {
+var _ = DescribeTable("marshal/unmarshal", func(inp, out proto.Message, exp map[string]types.AttributeValue) {
 	act, err := cldynamo.MarshalMap(inp)
 	Expect(err).ToNot(HaveOccurred())
 
 	diff := cmp.Diff(act, exp, ignoreAttrUnexported())
+	Expect(diff).To(BeEmpty())
+
+	Expect(cldynamo.UnmarshalMap(act, out)).To(Succeed())
+
+	diff = cmp.Diff(out, inp, ignoreProtoUnexported())
 	Expect(diff).To(BeEmpty())
 },
 	Entry("some scalar fields",
 		&testdatav1.Kitchen{
 			KitchenId: "id1",
 		},
+		&testdatav1.Kitchen{},
 		map[string]types.AttributeValue{
 			"1": &types.AttributeValueMemberS{Value: "id1"},
 		}),
@@ -39,11 +45,15 @@ var _ = DescribeTable("marshal/unmarshal", func(inp proto.Message, exp map[strin
 		&testdatav1.Kitchen{
 			FridgeBrand: testdatav1.FridgeBrand_FRIDGE_BRAND_SIEMENS,
 		},
+		&testdatav1.Kitchen{},
 		map[string]types.AttributeValue{
 			"2": &types.AttributeValueMemberN{Value: "1"},
 		}),
-	Entry("oneof set",
-		&testdatav1.Kitchen{TilingStyle: &testdatav1.Kitchen_Terracotta{Terracotta: "foo"}},
+	Entry("oneof scalar",
+		&testdatav1.Kitchen{
+			TilingStyle: &testdatav1.Kitchen_Terracotta{Terracotta: "foo"},
+		},
+		&testdatav1.Kitchen{},
 		map[string]types.AttributeValue{
 			"6": &types.AttributeValueMemberS{Value: "foo"},
 		}),
@@ -51,6 +61,7 @@ var _ = DescribeTable("marshal/unmarshal", func(inp proto.Message, exp map[strin
 		&testdatav1.Kitchen{TilingStyle: &testdatav1.Kitchen_YetAnother{
 			YetAnother: &testdatav1.Kitchen{KitchenId: "nestedid"},
 		}},
+		&testdatav1.Kitchen{},
 		map[string]types.AttributeValue{
 			"8": &types.AttributeValueMemberM{Value: map[string]types.AttributeValue{
 				"1": &types.AttributeValueMemberS{Value: "nestedid"},
@@ -61,6 +72,7 @@ var _ = DescribeTable("marshal/unmarshal", func(inp proto.Message, exp map[strin
 			{KitchenId: "l1"},
 			{KitchenId: "l2"},
 		}},
+		&testdatav1.Kitchen{},
 		map[string]types.AttributeValue{
 			"5": &types.AttributeValueMemberL{
 				Value: []types.AttributeValue{
@@ -78,6 +90,7 @@ var _ = DescribeTable("marshal/unmarshal", func(inp proto.Message, exp map[strin
 			100: {KitchenId: "m1"},
 			200: {KitchenId: "m2"},
 		}},
+		&testdatav1.Kitchen{},
 		map[string]types.AttributeValue{
 			"9": &types.AttributeValueMemberM{Value: map[string]types.AttributeValue{
 				"100": &types.AttributeValueMemberM{Value: map[string]types.AttributeValue{
@@ -89,7 +102,10 @@ var _ = DescribeTable("marshal/unmarshal", func(inp proto.Message, exp map[strin
 			}},
 		}),
 	Entry("timestamp",
-		&testdatav1.Kitchen{BuildAt: timestamppb.New(time.Unix(1690528463, 100))},
+		&testdatav1.Kitchen{
+			BuildAt: timestamppb.New(time.Unix(1690528463, 100)),
+		},
+		&testdatav1.Kitchen{},
 		map[string]types.AttributeValue{
 			"10": &types.AttributeValueMemberM{Value: map[string]types.AttributeValue{
 				"1": &types.AttributeValueMemberN{Value: "1690528463"},
@@ -109,5 +125,12 @@ func ignoreAttrUnexported() cmp.Option {
 		types.AttributeValueMemberL{},
 		types.AttributeValueMemberBOOL{},
 		types.AttributeValueMemberBS{},
+	)
+}
+
+// option to ignore exported fields of protobuf messages.
+func ignoreProtoUnexported() cmp.Option {
+	return cmpopts.IgnoreUnexported(
+		testdatav1.Kitchen{},
 	)
 }
