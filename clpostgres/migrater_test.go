@@ -3,9 +3,7 @@ package clpostgres_test
 import (
 	"context"
 	"database/sql"
-	"fmt"
 
-	"ariga.io/atlas/sql/migrate"
 	"github.com/crewlinker/clgo/clpostgres"
 	"github.com/crewlinker/clgo/clzap"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -21,15 +19,7 @@ var _ = Describe("migrater", func() {
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(
 			fx.Populate(&sqldb, &dbcfg),
-			fx.Provide(func() (migrate.Dir, error) {
-				ldir, err := migrate.NewLocalDir("test_data")
-				if err != nil {
-					return nil, fmt.Errorf("failed to init dir: %w", err)
-				}
-
-				return ldir, nil
-			}),
-			clzap.Test(), clpostgres.Test())
+			clzap.Test(), clpostgres.MigratedTest("test_data"))
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(func(ctx context.Context) {
 			Expect(stdlib.OpenDB(*dbcfg.ConnConfig).PingContext(ctx).Error()).To(MatchRegexp(`database .* does not exist`))

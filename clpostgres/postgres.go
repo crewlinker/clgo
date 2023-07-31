@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"ariga.io/atlas/sql/migrate"
 	"github.com/XSAM/otelsql"
 	"github.com/crewlinker/clgo/clconfig"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -141,5 +142,28 @@ func Test() fx.Option {
 		// what we usually want in tests.
 		fx.Provide(fx.Annotate(func(rw *sql.DB) *sql.DB { return rw }, fx.ParamTags(`name:"rw"`))),
 		fx.Provide(fx.Annotate(func(rw *pgxpool.Config) *pgxpool.Config { return rw }, fx.ParamTags(`name:"rw"`))),
+	)
+}
+
+// MigratedTest configures the di for testing with a temporary database and auto-migration of a directory.
+func MigratedTest(migrationDir string) fx.Option {
+	return fx.Options(
+		Test(),
+		// For tests we want temporary database and auto-migratino
+		fx.Decorate(func(c Config) Config {
+			c.TemporaryDatabase = true
+			c.AutoMigration = true
+
+			return c
+		}),
+		// provide the optional configuration for a migration dir
+		fx.Provide(func() (migrate.Dir, error) {
+			ldir, err := migrate.NewLocalDir(migrationDir)
+			if err != nil {
+				return nil, fmt.Errorf("failed to init dir: %w", err)
+			}
+
+			return ldir, nil
+		}),
 	)
 }
