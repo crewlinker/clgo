@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"ariga.io/atlas/sql/migrate"
+	"ariga.io/atlas/sql/sqltool"
 	"github.com/XSAM/otelsql"
 	"github.com/crewlinker/clgo/clconfig"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -158,12 +159,12 @@ func MigratedTest(migrationDir string) fx.Option {
 		}),
 		// provide the optional configuration for a migration dir
 		fx.Provide(func() (migrate.Dir, error) {
-			ldir, err := migrate.NewLocalDir(migrationDir)
+			dir, err := sqltool.NewGolangMigrateDir(migrationDir)
 			if err != nil {
-				return nil, fmt.Errorf("failed to init dir: %w", err)
+				return nil, fmt.Errorf("failed to init golang migrate dir: %w", err)
 			}
 
-			return ldir, nil
+			return dir, nil
 		}),
 	)
 }
