@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"fmt"
+	"io"
 
 	"ariga.io/atlas/sql/migrate"
 	"ariga.io/atlas/sql/postgres"
@@ -19,7 +20,28 @@ import (
 // is useful for unit tests that don't need this feature for quick iteration.
 type alwaysValidateMigrateDir struct{ *sqltool.GolangMigrateDir }
 
-func (alwaysValidateMigrateDir) Validate() error { return nil }
+// Checksum implements the logic for re-calculate the directories checksum. But instead we return
+// the checksum in the checksum file to make the validation logic always pass.
+func (dir alwaysValidateMigrateDir) Checksum() (migrate.HashFile, error) {
+	file, err := dir.Open(migrate.HashFileName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open hash file: %w", err)
+	}
+
+	defer file.Close()
+
+	byt, err := io.ReadAll(file)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read all from hash file: %w", err)
+	}
+
+	var fh migrate.HashFile
+	if err := fh.UnmarshalText(byt); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal hash file: %w", err)
+	}
+
+	return fh, nil
+}
 
 // MigratedTest configures the di for testing with a temporary database and auto-migration of a directory.
 func MigratedTest(migrationDir string, disableValidation bool) fx.Option {
