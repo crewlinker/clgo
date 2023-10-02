@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
@@ -51,6 +52,8 @@ type Config struct {
 	CreateDatabaseFormat string `env:"CREATE_DATABASE_FORMAT" envDefault:"CREATE DATABASE %s"`
 	// the sql being generated for dropping the temporary database
 	DropDatabaseFormat string `env:"DROP_DATABASE_FORMAT" envDefault:"DROP DATABASE %s (force)"`
+	// PoolConnectionTimeout configures how long the pgx pool connect logic waits for the connection to establish
+	PoolConnectionTimeout time.Duration `env:"POOL_CONNECTION_TIMEOUT" envDefault:"10s"`
 }
 
 // NewReadOnlyConfig constructs a config for a read-only database connecion. The aws config is optional
