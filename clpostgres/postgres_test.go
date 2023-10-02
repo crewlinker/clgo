@@ -9,6 +9,7 @@ import (
 	"github.com/crewlinker/clgo/clotel"
 	"github.com/crewlinker/clgo/clpostgres"
 	"github.com/crewlinker/clgo/clzap"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -30,6 +31,35 @@ func TestPostgres(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	Expect(godotenv.Load(filepath.Join("..", ".test.env"))).To(Succeed())
+})
+
+var _ = Describe("pgx pool", func() {
+	var rwp, rop *pgxpool.Pool
+	var pool *pgxpool.Pool
+	BeforeEach(func(ctx context.Context) {
+		app := fx.New(
+			fx.Populate(&pool),
+			fx.Populate(
+				fx.Annotate(&rwp, fx.ParamTags(`name:"rw"`)),
+				fx.Annotate(&rop, fx.ParamTags(`name:"ro"`))),
+			clpostgres.MigratedTest("test_data", false),
+			clzap.Test())
+		Expect(app.Start(ctx)).To(Succeed())
+
+		DeferCleanup(func(ctx context.Context) {
+			Expect(app.Stop(ctx)).To(Succeed())
+			_, err := rop.Query(ctx, `SELECT * FROM foo`)
+			Expect(err).To(MatchError(`closed pool`))
+			_, err = rwp.Query(ctx, `SELECT * FROM foo`)
+			Expect(err).To(MatchError(`closed pool`))
+		})
+	})
+
+	It("should provide rw/ro pool", func() {
+		Expect(rwp).ToNot(BeNil())
+		Expect(rop).ToNot(BeNil())
+		Expect(pool).ToNot(BeNil())
+	})
 })
 
 var _ = Describe("observe", func() {
@@ -62,7 +92,7 @@ var _ = Describe("observe", func() {
 		})
 	})
 
-	It("should work without contextual logger/tracer", func(ctx context.Context) {
+	It("should work with contextual logger/tracer", func(ctx context.Context) {
 		ctx = clzap.WithLogger(ctx, logs)
 		ctx = trace.ContextWithSpanContext(ctx, trace.NewSpanContext(trace.SpanContextConfig{
 			TraceID: trace.TraceID{0x01},

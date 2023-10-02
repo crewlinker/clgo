@@ -18,6 +18,20 @@ import (
 	"go.uber.org/zap"
 )
 
+// NewPool inits a raw pgx postgres connection pool. Migrater is specified as a dependency so it
+// force it's lifecycle hooks to be run.
+func NewPool(pcfg *pgxpool.Config, cfg Config, _ *Migrater) (*pgxpool.Pool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.PoolConnectionTimeout)
+	defer cancel()
+
+	pool, err := pgxpool.NewWithConfig(ctx, pcfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to init pool with config: %w", err)
+	}
+
+	return pool, nil
+}
+
 // New inits a stdlib sql connection. Any other dependency can optionally be provided as migrated
 // to force it's lifecycle to be run before the database is connected. This is mostly useful to
 // run migration logic (such as initializing the database).
@@ -69,7 +83,54 @@ func Prod() fx.Option {
 			fx.ParamTags(``, ``, `optional:"true"`), fx.ResultTags(`name:"ro"`))),
 		fx.Provide(fx.Annotate(NewReadWriteConfig,
 			fx.ParamTags(``, ``, `optional:"true"`), fx.ResultTags(`name:"rw"`))),
-		// setup read-only connection
+		// setup read-only *pgxpool.Pool connection
+		fx.Provide(fx.Annotate(NewPool,
+			fx.ParamTags(`name:"ro"`),
+			fx.ResultTags(`name:"ro"`),
+			fx.OnStart(func(ctx context.Context, in struct {
+				fx.In
+				DB *pgxpool.Pool `name:"ro"`
+			},
+			) error {
+				if err := in.DB.Ping(ctx); err != nil {
+					return fmt.Errorf("failed to ping read-only pool: %w", err)
+				}
+
+				return nil
+			}),
+			fx.OnStop(func(in struct {
+				fx.In
+				DB *pgxpool.Pool `name:"ro"`
+			},
+			) {
+				in.DB.Close()
+			}),
+		)),
+		// setup read-write *pgxpool.Pool connection
+		fx.Provide(fx.Annotate(NewPool,
+			fx.ParamTags(`name:"rw"`),
+			fx.ResultTags(`name:"rw"`),
+			fx.OnStart(func(ctx context.Context, in struct {
+				fx.In
+				DB *pgxpool.Pool `name:"rw"`
+			},
+			) error {
+				if err := in.DB.Ping(ctx); err != nil {
+					return fmt.Errorf("failed to ping read-write pool: %w", err)
+				}
+
+				return nil
+			}),
+			fx.OnStop(func(in struct {
+				fx.In
+				DB *pgxpool.Pool `name:"rw"`
+			},
+			) {
+				in.DB.Close()
+			}),
+		)),
+
+		// setup read-only *sql.DB stdlib connection pool
 		fx.Provide(fx.Annotate(New,
 			fx.ParamTags(`name:"ro"`, `optional:"true"`, `optional:"true"`, `optional:"true"`),
 			fx.ResultTags(`name:"ro"`),
@@ -96,7 +157,7 @@ func Prod() fx.Option {
 				return nil
 			}),
 		)),
-		// setup read-write connection
+		// setup read-write *sql.DB connection
 		fx.Provide(fx.Annotate(New,
 			fx.ParamTags(`name:"rw"`, `optional:"true"`, `optional:"true"`, `optional:"true"`),
 			fx.ResultTags(`name:"rw"`),
@@ -140,6 +201,7 @@ func Test() fx.Option {
 		// we re-provide the read-write sql db as an unnamed *sql.DB and config because that is
 		// what we usually want in tests.
 		fx.Provide(fx.Annotate(func(rw *sql.DB) *sql.DB { return rw }, fx.ParamTags(`name:"rw"`))),
+		fx.Provide(fx.Annotate(func(rw *pgxpool.Pool) *pgxpool.Pool { return rw }, fx.ParamTags(`name:"rw"`))),
 		fx.Provide(fx.Annotate(func(rw *pgxpool.Config) *pgxpool.Config { return rw }, fx.ParamTags(`name:"rw"`))),
 	)
 }
