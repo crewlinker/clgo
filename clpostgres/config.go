@@ -47,6 +47,10 @@ type Config struct {
 	// AutoMigration can be set to true to cause the logic to automatically run migrations when started. This
 	// is mostly useful for automated tests.
 	AutoMigration bool `env:"AUTO_MIGRATION" envDefault:"false"`
+	// the sql being generated for creating the temporary database
+	CreateDatabaseFormat string `env:"CREATE_DATABASE_FORMAT" envDefault:"CREATE DATABASE %s"`
+	// the sql being generated for dropping the temporary database
+	DropDatabaseFormat string `env:"DROP_DATABASE_FORMAT" envDefault:"DROP DATABASE %s (force)"`
 }
 
 // NewReadOnlyConfig constructs a config for a read-only database connecion. The aws config is optional
@@ -101,7 +105,7 @@ func newPoolConfig(cfg Config, logs *zap.Logger, host string, awsc aws.Config) (
 
 	// we use a tracer to log all interactions with the database
 	pcfg.ConnConfig.Tracer = &tracelog.TraceLog{
-		Logger:   NewLogger(pcfg),
+		Logger:   NewLogger(pcfg, logs),
 		LogLevel: lls,
 	}
 

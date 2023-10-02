@@ -20,7 +20,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// New inits a stdlib sql connection. Any other dependency can optionall ybe provided as migrated
+// New inits a stdlib sql connection. Any other dependency can optionally be provided as migrated
 // to force it's lifecycle to be run before the database is connected. This is mostly useful to
 // run migration logic (such as initializing the database).
 func New(pcfg *pgxpool.Config, _ *Migrater, trp trace.TracerProvider, mtp metric.MeterProvider) (*sql.DB, error) {

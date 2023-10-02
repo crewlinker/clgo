@@ -64,13 +64,13 @@ func (m Migrater) Migrate(ctx context.Context) error {
 
 		// with a temporary database we create it using a bootstrap connection
 		if err := m.bootstrapRun(ctx, func(ctx context.Context, db *sql.DB) error {
-			if _, err := db.ExecContext(ctx, fmt.Sprintf(`CREATE DATABASE %s`, m.databases.temp)); err != nil {
-				return fmt.Errorf("failed to exec context: %w", err)
+			if _, err := db.ExecContext(ctx, fmt.Sprintf(m.cfg.CreateDatabaseFormat, m.databases.temp)); err != nil {
+				return fmt.Errorf("failed to exec create database sql: %w", err)
 			}
 
 			return nil
 		}); err != nil {
-			return fmt.Errorf("failed to bootstrap run: %w", err)
+			return fmt.Errorf("failed to run from bootstrap database: %w", err)
 		}
 	}
 
@@ -123,14 +123,14 @@ func (m Migrater) DropDatabase(ctx context.Context) error {
 		zap.String("database_name", m.databases.temp))
 
 	if err := m.bootstrapRun(ctx, func(ctx context.Context, db *sql.DB) error {
-		_, err := db.ExecContext(ctx, fmt.Sprintf(`DROP DATABASE %s (force)`, m.databases.temp))
+		_, err := db.ExecContext(ctx, fmt.Sprintf(m.cfg.DropDatabaseFormat, m.databases.temp))
 		if err != nil {
-			return fmt.Errorf("failed to exec: %w", err)
+			return fmt.Errorf("failed to execute database drop: %w", err)
 		}
 
 		return nil
 	}); err != nil {
-		return fmt.Errorf("failed to bootstrap run: %w", err)
+		return fmt.Errorf("failed turn from bootstrap database: %w", err)
 	}
 
 	return nil
