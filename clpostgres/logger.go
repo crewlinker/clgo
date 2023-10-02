@@ -14,20 +14,22 @@ import (
 // using a context specific logger if it exists.
 type Logger struct {
 	dbcfg *pgxpool.Config
+	fbl   *zap.Logger
 }
 
 // NewLogger inits a logger for pgx. Inside is a contextual logger so we can log each postgres query
 // with context fields for tracing.
-func NewLogger(dbcfg *pgxpool.Config) *Logger {
+func NewLogger(dbcfg *pgxpool.Config, fallback *zap.Logger) *Logger {
 	return &Logger{
 		dbcfg: dbcfg,
+		fbl:   fallback,
 	}
 }
 
 // Log implements the postgres logger.
 func (pl *Logger) Log(ctx context.Context, level tracelog.LogLevel, msg string, data map[string]interface{}) {
 	fields := make([]zapcore.Field, 0, len(data))
-	logs := clzap.Log(ctx).WithOptions(zap.AddCallerSkip(1))
+	logs := clzap.Log(ctx, pl.fbl).WithOptions(zap.AddCallerSkip(1))
 
 	for k, v := range data {
 		fields = append(fields, zap.Any(k, v))

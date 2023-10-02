@@ -70,8 +70,12 @@ var _ = Describe("observe", func() {
 		}))
 
 		Expect(scdb).To(Equal(pgs.ReadWrite))
-		Expect(pgs.ReadWrite.PingContext(ctx)).To(Succeed())
-		Expect(pgs.ReadOnly.PingContext(ctx)).To(Succeed())
+
+		By("no-op sql execution to trigger contextual logging")
+		_, err := pgs.ReadWrite.ExecContext(ctx, `BEGIN;COMMIT;`)
+		Expect(err).To(Succeed())
+		_, err = pgs.ReadOnly.ExecContext(ctx, `BEGIN;COMMIT;`)
+		Expect(err).To(Succeed())
 
 		qlogs := obs.FilterMessage("Query")
 		Expect(qlogs.Len()).To(BeNumerically(">=", 2))
