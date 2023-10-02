@@ -8,10 +8,45 @@ import (
 
 	"ariga.io/atlas/sql/migrate"
 	"ariga.io/atlas/sql/postgres"
+	"ariga.io/atlas/sql/sqltool"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
+	"go.uber.org/fx"
 	"go.uber.org/zap"
 )
+
+// alwaysValidateMigrateDir can be provided as a migration dir to disable checksum validation. This
+// is useful for unit tests that don't need this feature for quick iteration.
+type alwaysValidateMigrateDir struct{ *sqltool.GolangMigrateDir }
+
+func (alwaysValidateMigrateDir) Validate() error { return nil }
+
+// MigratedTest configures the di for testing with a temporary database and auto-migration of a directory.
+func MigratedTest(migrationDir string, disableValidation bool) fx.Option {
+	return fx.Options(
+		Test(),
+		// For tests we want temporary database and auto-migratino
+		fx.Decorate(func(c Config) Config {
+			c.TemporaryDatabase = true
+			c.AutoMigration = true
+
+			return c
+		}),
+		// provide the optional configuration for a migration dir
+		fx.Provide(func() (migrate.Dir, error) {
+			dir, err := sqltool.NewGolangMigrateDir(migrationDir)
+			if err != nil {
+				return nil, fmt.Errorf("failed to init golang migrate dir: %w", err)
+			}
+
+			if disableValidation {
+				return alwaysValidateMigrateDir{GolangMigrateDir: dir}, nil
+			}
+
+			return dir, nil
+		}),
+	)
+}
 
 // Migrater allows programmatic migration of a database schema. Mostly used in testing and local development
 // to provide fully isolated databases.

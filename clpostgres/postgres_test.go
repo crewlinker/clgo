@@ -49,7 +49,7 @@ var _ = Describe("observe", func() {
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(
 			fx.Populate(&logs, &pgs, &obs, &scdb, &tobs, &trp, &mtr),
-			clzap.Test(), clpostgres.MigratedTest("test_data"), clotel.Test())
+			clzap.Test(), clpostgres.MigratedTest("test_data", false), clotel.Test())
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 
