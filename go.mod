@@ -3,7 +3,7 @@ module github.com/crewlinker/clgo
 go 1.20
 
 require (
-	ariga.io/atlas v0.10.1
+	ariga.io/atlas v0.14.2
 	github.com/XSAM/otelsql v0.21.0
 	github.com/aws/aws-lambda-go v1.40.0
 	github.com/aws/aws-sdk-go-v2 v1.17.5
