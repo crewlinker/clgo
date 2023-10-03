@@ -85,7 +85,7 @@ func Prod() fx.Option {
 			fx.ParamTags(``, ``, `optional:"true"`), fx.ResultTags(`name:"rw"`))),
 		// setup read-only *pgxpool.Pool connection
 		fx.Provide(fx.Annotate(NewPool,
-			fx.ParamTags(`name:"ro"`),
+			fx.ParamTags(`name:"ro"`, ``, `optional:"true"`),
 			fx.ResultTags(`name:"ro"`),
 			fx.OnStart(func(ctx context.Context, in struct {
 				fx.In
@@ -108,7 +108,7 @@ func Prod() fx.Option {
 		)),
 		// setup read-write *pgxpool.Pool connection
 		fx.Provide(fx.Annotate(NewPool,
-			fx.ParamTags(`name:"rw"`),
+			fx.ParamTags(`name:"rw"`, ``, `optional:"true"`),
 			fx.ResultTags(`name:"rw"`),
 			fx.OnStart(func(ctx context.Context, in struct {
 				fx.In
