@@ -1,0 +1,17 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: "{{.Title}}"
+  description: "{{.Description}}"
+paths:
+  # serve a single email's html and text version
+  /foo/bar:
+    get:
+      operationId: email
+      responses:
+        "200":
+          description: "my reponse"
+          content:
+            application/json:
+              schema:
+                type: object
