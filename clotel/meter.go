@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
-	"go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 )
@@ -26,7 +26,7 @@ func NewMeterProvider(cfg Config, det resource.Detector, mtr metric.Reader) (*me
 		metric.WithResource(res))
 
 	// set globally in case libraries don't allow injecting
-	global.SetMeterProvider(mtp)
+	otel.SetMeterProvider(mtp)
 
 	return mtp, nil
 }

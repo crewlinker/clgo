@@ -95,7 +95,7 @@ func Service() fx.Option {
 // Test configures the DI for a test environment.
 func Test() fx.Option {
 	return fx.Options(Base(),
-		fx.Provide(sdkmetric.NewManualReader),
+		fx.Provide(fx.Annotate(sdkmetric.NewManualReader, fx.As(new(sdkmetric.Reader)))),
 		fx.Provide(fx.Annotate(tracetest.NewInMemoryExporter)),
 		fx.Provide(func(e *tracetest.InMemoryExporter) sdktrace.SpanExporter { return e }),
 		fx.Provide(func() resource.Detector {
