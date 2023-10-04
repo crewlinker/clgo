@@ -118,7 +118,7 @@ var _ = Describe("observe", func() {
 		Expect(pgs.ReadWrite.QueryRowContext(ctx, "SELECT 42").Scan(&num)).To(Succeed())
 
 		Expect(trp.ForceFlush(ctx)).To(Succeed())
-		Expect(len(tobs.GetSpans().Snapshots())).To(BeNumerically(">", 4))
+		Expect(len(tobs.GetSpans().Snapshots())).To(BeNumerically(">", 2))
 		Expect(string(tobs.GetSpans().Snapshots()[0].Attributes()[0].Key)).To(Equal("db.user"))
 
 		rm := metricdata.ResourceMetrics{}

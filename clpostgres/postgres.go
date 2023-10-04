@@ -87,17 +87,6 @@ func Prod() fx.Option {
 		fx.Provide(fx.Annotate(NewPool,
 			fx.ParamTags(`name:"ro"`, ``, `optional:"true"`),
 			fx.ResultTags(`name:"ro"`),
-			fx.OnStart(func(ctx context.Context, in struct {
-				fx.In
-				DB *pgxpool.Pool `name:"ro"`
-			},
-			) error {
-				if err := in.DB.Ping(ctx); err != nil {
-					return fmt.Errorf("failed to ping read-only pool: %w", err)
-				}
-
-				return nil
-			}),
 			fx.OnStop(func(in struct {
 				fx.In
 				DB *pgxpool.Pool `name:"ro"`
@@ -110,17 +99,6 @@ func Prod() fx.Option {
 		fx.Provide(fx.Annotate(NewPool,
 			fx.ParamTags(`name:"rw"`, ``, `optional:"true"`),
 			fx.ResultTags(`name:"rw"`),
-			fx.OnStart(func(ctx context.Context, in struct {
-				fx.In
-				DB *pgxpool.Pool `name:"rw"`
-			},
-			) error {
-				if err := in.DB.Ping(ctx); err != nil {
-					return fmt.Errorf("failed to ping read-write pool: %w", err)
-				}
-
-				return nil
-			}),
 			fx.OnStop(func(in struct {
 				fx.In
 				DB *pgxpool.Pool `name:"rw"`
@@ -134,17 +112,6 @@ func Prod() fx.Option {
 		fx.Provide(fx.Annotate(New,
 			fx.ParamTags(`name:"ro"`, `optional:"true"`, `optional:"true"`, `optional:"true"`),
 			fx.ResultTags(`name:"ro"`),
-			fx.OnStart(func(ctx context.Context, in struct {
-				fx.In
-				DB *sql.DB `name:"ro"`
-			},
-			) error {
-				if err := in.DB.PingContext(ctx); err != nil {
-					return fmt.Errorf("failed to ping: %w", err)
-				}
-
-				return nil
-			}),
 			fx.OnStop(func(ctx context.Context, in struct {
 				fx.In
 				DB *sql.DB `name:"ro"`
@@ -161,17 +128,6 @@ func Prod() fx.Option {
 		fx.Provide(fx.Annotate(New,
 			fx.ParamTags(`name:"rw"`, `optional:"true"`, `optional:"true"`, `optional:"true"`),
 			fx.ResultTags(`name:"rw"`),
-			fx.OnStart(func(ctx context.Context, in struct {
-				fx.In
-				DB *sql.DB `name:"rw"`
-			},
-			) error {
-				if err := in.DB.PingContext(ctx); err != nil {
-					return fmt.Errorf("failed to ping: %w", err)
-				}
-
-				return nil
-			}),
 			fx.OnStop(func(ctx context.Context, in struct {
 				fx.In
 				DB *sql.DB `name:"rw"`
