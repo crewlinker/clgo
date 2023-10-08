@@ -1,10 +1,12 @@
-package clpostgres_test
+package clpgmigrate_test
 
 import (
 	"context"
 	"database/sql"
+	"path/filepath"
 
 	"github.com/crewlinker/clgo/clpostgres"
+	"github.com/crewlinker/clgo/clpostgres/clpgmigrate"
 	"github.com/crewlinker/clgo/clzap"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -13,15 +15,21 @@ import (
 	"go.uber.org/fx"
 )
 
-var _ = Describe("version migrater", func() {
+var snapshot1 = filepath.Join("test_data", "snapshot", "snap1.sql")
+
+var _ = Describe("snapshot migrater", func() {
 	var sqldb *sql.DB
 	var dbcfg *pgxpool.Config
+	var mig clpostgres.Migrater
+
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(
-			fx.Populate(&sqldb, &dbcfg),
+			fx.Populate(&sqldb, &dbcfg, &mig),
 			clzap.Test(),
 			clpostgres.Test(),
-			clpostgres.VersionMigrated("test_data", true))
+			clpgmigrate.SnapshotMigrated(snapshot1),
+		)
+
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(func(ctx context.Context) {
 			Expect(stdlib.OpenDB(*dbcfg.ConnConfig).PingContext(ctx).Error()).To(MatchRegexp(`database .* does not exist`))
@@ -31,6 +39,7 @@ var _ = Describe("version migrater", func() {
 	})
 
 	It("should create temp db and allow insert in migrated table", func(ctx context.Context) {
+		Expect(mig).ToNot(BeNil())
 		Expect(dbcfg.ConnConfig.Database).To(HavePrefix("temp_"))
 		_, err := sqldb.ExecContext(ctx, "insert into profiles (id) values (1);")
 		Expect(err).To(Succeed())

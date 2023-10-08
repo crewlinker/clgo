@@ -1,4 +1,4 @@
-package clpostgres
+package clpgmigrate
 
 import (
 	"bytes"
@@ -7,7 +7,10 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 
+	"github.com/crewlinker/clgo/clconfig"
+	"github.com/crewlinker/clgo/clpostgres"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -101,14 +104,16 @@ func (m SnapshotMigrater) Reset(ctx context.Context) error {
 // SnapshotMigrated configures the di for using snapshot migrations.
 func SnapshotMigrated(sqlFile string) fx.Option {
 	return fx.Options(
+		clconfig.Provide[Config](strings.ToUpper(moduleName)+"_"),
+
 		fx.Supply(SnapshotPath(sqlFile)),
 
 		// Provide migrater which will now always run before connecting using versioned steps
 		fx.Provide(fx.Annotate(
 			NewSnaphotMigrater,
-			fx.As(new(Migrater)),
-			fx.OnStart(func(ctx context.Context, m Migrater) error { return m.Migrate(ctx) }), //nolint:wrapcheck
-			fx.OnStop(func(ctx context.Context, m Migrater) error { return m.Reset(ctx) }),    //nolint:wrapcheck
+			fx.As(new(clpostgres.Migrater)),
+			fx.OnStart(func(ctx context.Context, m clpostgres.Migrater) error { return m.Migrate(ctx) }), //nolint:wrapcheck
+			fx.OnStop(func(ctx context.Context, m clpostgres.Migrater) error { return m.Reset(ctx) }),    //nolint:wrapcheck
 			fx.ParamTags(``, ``, `name:"rw"`, `name:"ro"`)),
 		),
 

@@ -43,7 +43,6 @@ var _ = Describe("pgx pool", func() {
 				fx.Annotate(&rwp, fx.ParamTags(`name:"rw"`)),
 				fx.Annotate(&rop, fx.ParamTags(`name:"ro"`))),
 			clpostgres.Test(),
-			clpostgres.VersionMigrated("test_data", false),
 			clzap.Test())
 		Expect(app.Start(ctx)).To(Succeed())
 
@@ -82,7 +81,6 @@ var _ = Describe("observe", func() {
 			fx.Populate(&logs, &pgs, &obs, &scdb, &tobs, &trp, &mtr),
 			clpostgres.Test(),
 			clzap.Test(),
-			clpostgres.VersionMigrated("test_data", false),
 			clotel.Test())
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)

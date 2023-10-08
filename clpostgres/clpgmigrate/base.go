@@ -1,4 +1,4 @@
-package clpostgres
+package clpgmigrate
 
 import (
 	"context"

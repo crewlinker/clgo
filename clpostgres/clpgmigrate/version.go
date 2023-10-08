@@ -1,13 +1,16 @@
-package clpostgres
+package clpgmigrate
 
 import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	"ariga.io/atlas/sql/migrate"
 	"ariga.io/atlas/sql/postgres"
 	"ariga.io/atlas/sql/sqltool"
+	"github.com/crewlinker/clgo/clconfig"
+	"github.com/crewlinker/clgo/clpostgres"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/fx"
@@ -44,13 +47,15 @@ func (dir alwaysValidateMigrateDir) Checksum() (migrate.HashFile, error) {
 // VersionMigrated configures the di for testing with a temporary database and auto-migration of a directory.
 func VersionMigrated(migrationDir string, disableValidation bool) fx.Option {
 	return fx.Options(
+		// provide the environment configuration
+		clconfig.Provide[Config](strings.ToUpper(moduleName)+"_"),
 
 		// Provide migrater which will now always run before connecting using versioned steps
 		fx.Provide(fx.Annotate(
 			NewVersionMigrater,
-			fx.As(new(Migrater)),
-			fx.OnStart(func(ctx context.Context, m Migrater) error { return m.Migrate(ctx) }), //nolint:wrapcheck
-			fx.OnStop(func(ctx context.Context, m Migrater) error { return m.Reset(ctx) }),    //nolint:wrapcheck
+			fx.As(new(clpostgres.Migrater)),
+			fx.OnStart(func(ctx context.Context, m clpostgres.Migrater) error { return m.Migrate(ctx) }), //nolint:wrapcheck
+			fx.OnStop(func(ctx context.Context, m clpostgres.Migrater) error { return m.Reset(ctx) }),    //nolint:wrapcheck
 			fx.ParamTags(``, ``, `name:"rw"`, `name:"ro"`)),
 		),
 
