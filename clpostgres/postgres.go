@@ -18,9 +18,16 @@ import (
 	"go.uber.org/zap"
 )
 
+// Migrater implements a migtration strategy that can be run before
+// the database connection (pool) is setup.
+type Migrater interface {
+	Migrate(context.Context) error
+	Reset(context.Context) error
+}
+
 // NewPool inits a raw pgx postgres connection pool. Migrater is specified as a dependency so it
 // force it's lifecycle hooks to be run.
-func NewPool(pcfg *pgxpool.Config, cfg Config, _ *Migrater) (*pgxpool.Pool, error) {
+func NewPool(pcfg *pgxpool.Config, cfg Config, _ Migrater) (*pgxpool.Pool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.PoolConnectionTimeout)
 	defer cancel()
 
@@ -35,7 +42,12 @@ func NewPool(pcfg *pgxpool.Config, cfg Config, _ *Migrater) (*pgxpool.Pool, erro
 // New inits a stdlib sql connection. Any other dependency can optionally be provided as migrated
 // to force it's lifecycle to be run before the database is connected. This is mostly useful to
 // run migration logic (such as initializing the database).
-func New(pcfg *pgxpool.Config, _ *Migrater, trp trace.TracerProvider, mtp metric.MeterProvider) (*sql.DB, error) {
+func New(
+	pcfg *pgxpool.Config,
+	_ Migrater,
+	trp trace.TracerProvider,
+	mtp metric.MeterProvider,
+) (*sql.DB, error) {
 	openopts := []stdlib.OptionOpenDB{}
 	if pcfg.BeforeConnect != nil {
 		openopts = append(openopts, stdlib.OptionBeforeConnect(pcfg.BeforeConnect)) // if set, for IAM auth
@@ -140,14 +152,6 @@ func Prod() fx.Option {
 				return nil
 			}),
 		)),
-		// Provide migrater which will now always run before connecting. If auto-migrate and temporary database
-		// configuration is set this can provide a fully isolated and migrated database for each test.
-		fx.Provide(fx.Annotate(
-			NewMigrater,
-			fx.OnStart(func(ctx context.Context, m *Migrater) error { return m.Migrate(ctx) }),
-			fx.OnStop(func(ctx context.Context, m *Migrater) error { return m.DropDatabase(ctx) }),
-			fx.ParamTags(``, ``, `name:"rw"`, `name:"ro"`)),
-		),
 	)
 }
 
