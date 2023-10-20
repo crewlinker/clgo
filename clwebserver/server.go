@@ -70,6 +70,8 @@ func Prod() fx.Option {
 			fx.OnStart(func(ctx context.Context, logs *zap.Logger, ln *net.TCPListener, s *http.Server) error {
 				go s.Serve(ln) //nolint:errcheck
 
+				logs.Info("http server started", zap.Stringer("addr", ln.Addr()))
+
 				return nil
 			}),
 			fx.OnStop(func(ctx context.Context, logs *zap.Logger, s *http.Server) error {

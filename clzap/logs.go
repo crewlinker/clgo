@@ -21,12 +21,17 @@ type Config struct {
 	Level zapcore.Level `env:"LEVEL" envDefault:"info"`
 	// Outputs configures the zap outputs that will be opened for logging.
 	Outputs []string `env:"OUTPUTS" envDefault:"stderr"`
+	// Configure the level at which fx logs are shown, default to debug
+	FxLevel zapcore.Level `env:"FX_LEVEL" envDefault:"debug"`
 }
 
 // Fx is a convenient option that configures fx to use the zap logger.
 func Fx() fx.Option {
-	return fx.WithLogger(func(l *zap.Logger) fxevent.Logger {
-		return &fxevent.ZapLogger{Logger: l.Named("fx")}
+	return fx.WithLogger(func(l *zap.Logger, cfg Config) fxevent.Logger {
+		zl := &fxevent.ZapLogger{Logger: l.Named("fx")}
+		zl.UseLogLevel(cfg.FxLevel)
+
+		return zl
 	})
 }
 

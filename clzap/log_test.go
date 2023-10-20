@@ -13,6 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 )
 
@@ -31,6 +32,7 @@ var _ = Describe("regular logging", func() {
 		app := fx.New(clzap.Fx(), clzap.Prod(), fx.Populate(&logs),
 			fx.Decorate(func(cfg clzap.Config) clzap.Config {
 				cfg.Outputs = []string{tmpfp}
+				cfg.FxLevel = zapcore.InfoLevel
 
 				return cfg
 			}))
@@ -58,7 +60,7 @@ var _ = Describe("test logging", func() {
 		DeferCleanup(app.Stop)
 	})
 
-	It("should observe fx logging", func() {
-		Expect(obs.FilterMessageSnippet("provided").Len()).To(BeNumerically(">", 0))
+	It("should not observe fx logging", func() {
+		Expect(obs.FilterMessageSnippet("provided").Len()).To(BeNumerically("==", 0))
 	})
 })
