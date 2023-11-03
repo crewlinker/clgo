@@ -54,7 +54,7 @@ func New(cfg Config, logs *zap.Logger, h http.Handler, _ *net.TCPListener) *http
 }
 
 // moduleName standardizes the module name.
-const moduleName = "webserver"
+const moduleName = "clwebserver"
 
 // Prod dependencies.
 func Prod() fx.Option {
