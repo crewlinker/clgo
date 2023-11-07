@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -178,7 +179,7 @@ func (h Handler) runOnDB(ctx context.Context, arn, db string, runf func(context.
 		"postgres://%s:%s@%s/%s",
 		secret.Username,
 		url.QueryEscape(secret.Password),
-		net.JoinHostPort(secret.Host, fmt.Sprintf("%d", secret.Port)),
+		net.JoinHostPort(secret.Host, strconv.FormatInt(int64(secret.Port), 10)),
 		db))
 	if err != nil {
 		return fmt.Errorf("failed to parse connection string: %w", err)

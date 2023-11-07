@@ -13,7 +13,7 @@ import (
 
 // Handler is a generic lambda handler interface.
 type Handler[I, O any] interface {
-	Handle(context.Context, I) (O, error)
+	Handle(ctx context.Context, input I) (O, error)
 }
 
 // Invoke provides the fx Invoke option to start the lambda right after the 'start' lifecycle event. It does
