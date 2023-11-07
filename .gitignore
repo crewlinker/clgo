@@ -15,3 +15,4 @@
 # vendor/
 test-report.xml
 .DS_Store
+*.env
