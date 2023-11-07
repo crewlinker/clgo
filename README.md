@@ -1,4 +1,4 @@
-# clgo [![Test](https://github.com/crewlinker/clgo/actions/workflows/test.yaml/badge.svg)](https://github.com/crewlinker/clgo/actions/workflows/test.yaml)
+# clgo [![Test](https://github.com/crewlinker/clgo/actions/workflows/test.yaml/badge.svg)](https://github.com/crewlinker/clgo/actions/workflows/test.yaml) [![Checks](https://github.com/crewlinker/clgo/actions/workflows/checks.yaml/badge.svg)](https://github.com/crewlinker/clgo/actions/workflows/checks.yaml)
 
 Opinionated but Re-usable Go libraries for the Crewlinker platform
 
