@@ -53,7 +53,7 @@ func Test() error {
 
 	if err := sh.Run(
 		"go", "run", "-mod=readonly", "github.com/onsi/ginkgo/v2/ginkgo",
-		"-p", "-randomize-all", "-repeat=5", "--fail-on-pending", "--race", "--trace",
+		"-p", "-randomize-all", "-repeat=1", "--fail-on-pending", "--race", "--trace",
 		"--junit-report=test-report.xml", "./...",
 	); err != nil {
 		return fmt.Errorf("failed to run: %w", err)

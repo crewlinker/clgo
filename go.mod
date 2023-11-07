@@ -10,14 +10,14 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.18.9
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.9
 	github.com/aws/aws-sdk-go-v2/feature/rds/auth v1.2.5
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.21.5
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.21.5 // indirect
 	github.com/caarlos0/env/v6 v6.10.1
 	github.com/getkin/kin-openapi v0.120.0
 	github.com/go-logr/zapr v1.2.4
 	github.com/jackc/pgx/v5 v5.4.3
 	github.com/joho/godotenv v1.5.1
 	github.com/magefile/mage v1.14.0
-	github.com/onsi/ginkgo/v2 v2.12.1
+	github.com/onsi/ginkgo/v2 v2.13.0
 	github.com/onsi/gomega v1.28.0
 	github.com/redis/go-redis/extra/redisotel/v9 v9.0.5
 	github.com/redis/go-redis/v9 v9.2.1

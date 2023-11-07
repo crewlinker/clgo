@@ -10,7 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/crewlinker/clgo/clconfig"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws"
 	"go.opentelemetry.io/otel/propagation"
@@ -91,26 +90,4 @@ func Prod() fx.Option {
 		// provide the actual aws config
 		fx.Provide(fx.Annotate(New, fx.ParamTags(``, ``, `optional:"true"`, `optional:"true"`))),
 	)
-}
-
-// DynamoEndpointDecorator will change the resolvers to set the dynamodb endpoint since this AWS supports a
-// local version of Dynamo.
-func DynamoEndpointDecorator(epurl string) func(c aws.Config) aws.Config {
-	return func(acfg aws.Config) aws.Config {
-		acfg.EndpointResolverWithOptions = aws.EndpointResolverWithOptionsFunc(func(
-			service, region string, options ...any,
-		) (aws.Endpoint, error) {
-			var aep aws.Endpoint
-			switch service {
-			case dynamodb.ServiceID:
-				aep.URL = epurl
-
-				return aep, nil
-			default:
-				return aep, &aws.EndpointNotFoundError{}
-			}
-		})
-
-		return acfg
-	}
 }

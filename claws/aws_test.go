@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/crewlinker/clgo/claws"
 	"github.com/crewlinker/clgo/clotel"
 	"github.com/crewlinker/clgo/clzap"
@@ -29,7 +28,6 @@ var _ = Describe("config without tracing", Serial, func() {
 
 		app := fx.New(
 			fx.Populate(&cfg),
-			fx.Decorate(claws.DynamoEndpointDecorator("http://foo:1")),
 			clzap.Test(), claws.Prod())
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
@@ -37,10 +35,6 @@ var _ = Describe("config without tracing", Serial, func() {
 
 	It("should construct the config", func() {
 		Expect(cfg.Region).To(Equal("foo-bar-1"))
-
-		ep, err := cfg.EndpointResolverWithOptions.ResolveEndpoint(dynamodb.ServiceID, "eu-west-1")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(ep.URL).To(Equal("http://foo:1"))
 	})
 })
 
