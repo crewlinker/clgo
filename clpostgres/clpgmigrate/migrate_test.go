@@ -16,5 +16,5 @@ func TestPostgres(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	Expect(godotenv.Load(filepath.Join("..", "..", ".test.env"))).To(Succeed())
+	Expect(godotenv.Load(filepath.Join("..", "..", "test.env"))).To(Succeed())
 })

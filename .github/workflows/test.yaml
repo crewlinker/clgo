@@ -21,6 +21,10 @@ jobs:
           go install -mod=readonly github.com/onsi/ginkgo/v2/ginkgo
           go install -mod=readonly github.com/magefile/mage
       - name: Run all tests
+        env:
+          CLPOSTGRES_PORT: 5435
+          CLPOSTGRES_USERNAME: postgres
+          CLPOSTGRES_PASSWORD: postgres
         run: |
           mage -v test
       - name: Publish Test Report

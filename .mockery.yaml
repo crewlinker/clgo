@@ -1,0 +1,9 @@
+with-expecter: true
+filename: "mock_{{.InterfaceNameLower}}_test.go"
+dir: "{{.InterfaceDir}}"
+mockname: "Mock{{.InterfaceName}}"
+outpkg: "{{.PackageName}}_test"
+packages:
+  github.com/crewlinker/clgo/clcdk/postgresresource:
+    interfaces:
+      SecretsManager: {}

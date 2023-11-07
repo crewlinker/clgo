@@ -45,6 +45,16 @@ func Lint() error {
 	return nil
 }
 
+// Generate generates code across the repository.
+func Generate() error {
+	// generate mock types
+	if err := sh.Run("go", "run", "-mod=readonly", "github.com/vektra/mockery/v2"); err != nil {
+		return fmt.Errorf("failed to run mockery: %w", err)
+	}
+
+	return nil
+}
+
 // Test perform the whole project's unit tests.
 func Test() error {
 	if err := Dev(); err != nil {
