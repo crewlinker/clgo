@@ -13,6 +13,7 @@ import (
 	"github.com/crewlinker/clgo/clpostgres"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/stretchr/testify/mock"
 	"go.uber.org/fx"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -41,7 +42,7 @@ var _ = Describe("tenant identifiers", func() {
 var _ = Describe("tenant", func() {
 	var obs *observer.ObservedLogs
 	var hdl *postgresresource.Handler
-	var smc *secretsmanager.Client
+	var msm *MockSecretsManager
 	var rw *pgxpool.Pool
 	var dbcfg *pgxpool.Config
 
@@ -49,7 +50,8 @@ var _ = Describe("tenant", func() {
 
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(
-			fx.Populate(&hdl, &obs, &smc, &rw, &dbcfg),
+			fx.Populate(&hdl, &obs, &rw, &dbcfg),
+			WithMocked(&msm),
 			clpostgres.Test(),
 			postgresresource.Test())
 		Expect(app.Start(ctx)).To(Succeed())
@@ -60,8 +62,6 @@ var _ = Describe("tenant", func() {
 
 		name, updName = postgresresource.TenantName(fmt.Sprintf("ten_%x", b)),
 			postgresresource.TenantName(fmt.Sprintf("upd_ten_%x", b))
-
-		_ = updName
 	})
 
 	AfterEach(func(ctx context.Context) {
@@ -107,28 +107,16 @@ var _ = Describe("tenant", func() {
 	)
 
 	Describe("integration", Ordered, func() {
-		var secretArn string
-
-		BeforeAll(func(ctx context.Context) {
-			secret, err := smc.CreateSecret(ctx, &secretsmanager.CreateSecretInput{
-				Name: aws.String("ClCoreTesting_" + string(name)),
-				SecretString: aws.String(`{
-					"username":"postgres",
-					"password":"postgres",
-					"port":` + os.Getenv("CLPOSTGRES_PORT") + `,
-					"host":"localhost"					
-				}`),
-			})
-			Expect(err).ToNot(HaveOccurred())
-			secretArn = *secret.ARN
-		})
-
-		AfterAll(func(ctx context.Context) {
-			_, err := smc.DeleteSecret(ctx, &secretsmanager.DeleteSecretInput{
-				SecretId:             &secretArn,
-				RecoveryWindowInDays: aws.Int64(7),
-			})
-			Expect(err).ToNot(HaveOccurred())
+		BeforeEach(func() {
+			msm.EXPECT().GetSecretValue(mock.Anything, mock.Anything).
+				Return(&secretsmanager.GetSecretValueOutput{
+					SecretString: aws.String(`{
+									"username":"postgres",
+									"password":"postgres",
+									"port":` + os.Getenv("CLPOSTGRES_PORT") + `,
+									"host":"localhost"
+								}`),
+				}, nil)
 		})
 
 		It("should create", func(ctx context.Context) {
@@ -137,7 +125,7 @@ var _ = Describe("tenant", func() {
 				RequestType:  cfn.RequestCreate,
 				ResourceProperties: map[string]interface{}{
 					"Name":            name,
-					"MasterSecretArn": secretArn,
+					"MasterSecretArn": "some:test:arn",
 				},
 			})
 
@@ -164,7 +152,7 @@ var _ = Describe("tenant", func() {
 				RequestType:  cfn.RequestCreate,
 				ResourceProperties: map[string]interface{}{
 					"Name":            name,
-					"MasterSecretArn": secretArn,
+					"MasterSecretArn": "some:test:arn",
 				},
 			})
 
@@ -182,7 +170,7 @@ var _ = Describe("tenant", func() {
 					RequestType:  cfn.RequestCreate,
 					ResourceProperties: map[string]interface{}{
 						"Name":            name,
-						"MasterSecretArn": secretArn,
+						"MasterSecretArn": "some:test:arn",
 					},
 				})).To(HaveField("PhysicalResourceID", name.ToPhysicalResourceID()))
 
@@ -209,11 +197,11 @@ var _ = Describe("tenant", func() {
 					RequestType:  cfn.RequestUpdate,
 					OldResourceProperties: map[string]interface{}{
 						"Name":            name,
-						"MasterSecretArn": secretArn,
+						"MasterSecretArn": "some:test:arn",
 					},
 					ResourceProperties: map[string]interface{}{
 						"Name":            updName,
-						"MasterSecretArn": secretArn + "_upd",
+						"MasterSecretArn": "some:test:arn" + "_upd",
 					},
 				})
 				Expect(err).To(MatchError(MatchRegexp(`not supported`)))
@@ -225,11 +213,11 @@ var _ = Describe("tenant", func() {
 					RequestType:  cfn.RequestUpdate,
 					OldResourceProperties: map[string]interface{}{
 						"Name":            name,
-						"MasterSecretArn": secretArn,
+						"MasterSecretArn": "some:test:arn",
 					},
 					ResourceProperties: map[string]interface{}{
 						"Name":            updName,
-						"MasterSecretArn": secretArn,
+						"MasterSecretArn": "some:test:arn",
 					},
 				})).To(Equal(postgresresource.Output{
 					PhysicalResourceID: updName.ToPhysicalResourceID(),
@@ -257,11 +245,11 @@ var _ = Describe("tenant", func() {
 					RequestType:  cfn.RequestUpdate,
 					OldResourceProperties: map[string]interface{}{
 						"Name":            name,
-						"MasterSecretArn": secretArn,
+						"MasterSecretArn": "some:test:arn",
 					},
 					ResourceProperties: map[string]interface{}{
 						"Name":            updName,
-						"MasterSecretArn": secretArn,
+						"MasterSecretArn": "some:test:arn",
 					},
 				})
 				Expect(err).To(MatchError(MatchRegexp(`already exists`)))
@@ -280,11 +268,11 @@ var _ = Describe("tenant", func() {
 					RequestType:  cfn.RequestUpdate,
 					OldResourceProperties: map[string]interface{}{
 						"Name":            updName,
-						"MasterSecretArn": secretArn,
+						"MasterSecretArn": "some:test:arn",
 					},
 					ResourceProperties: map[string]interface{}{
 						"Name":            name,
-						"MasterSecretArn": secretArn,
+						"MasterSecretArn": "some:test:arn",
 					},
 				})
 				Expect(err).To(MatchError(MatchRegexp(`already exists`)))
@@ -300,7 +288,7 @@ var _ = Describe("tenant", func() {
 					RequestType:        cfn.RequestDelete,
 					ResourceProperties: map[string]interface{}{
 						"Name":            name,
-						"MasterSecretArn": secretArn,
+						"MasterSecretArn": "some:test:arn",
 					},
 				})).To(Equal(postgresresource.Output{
 					PhysicalResourceID: name.ToPhysicalResourceID(),

@@ -44,12 +44,19 @@ type (
 // Config configures the handler from env.
 type Config struct{}
 
+// SecretsManager provides an interface for reading AWS secrets.
+type SecretsManager interface {
+	GetSecretValue(
+		ctx context.Context, params *secretsmanager.GetSecretValueInput, optFns ...func(*secretsmanager.Options),
+	) (*secretsmanager.GetSecretValueOutput, error)
+}
+
 // Handler handles custom resource requests for Fastly.
 type Handler struct {
 	cfg  Config
 	logs *zap.Logger
 	val  *validator.Validate
-	smc  *secretsmanager.Client
+	smc  SecretsManager
 }
 
 // New inits the handler.
@@ -57,7 +64,7 @@ func New(
 	cfg Config,
 	logs *zap.Logger,
 
-	smc *secretsmanager.Client,
+	smc SecretsManager,
 ) (*Handler, error) {
 	val := validator.New()
 	if err := val.RegisterValidation("resource_ident", func(fl validator.FieldLevel) bool {
@@ -145,7 +152,7 @@ func shared() fx.Option {
 	return fx.Module("lambda/postgresresource",
 		fx.Decorate(func(l *zap.Logger) *zap.Logger { return l.Named(moduleName) }),
 		fx.Provide(fx.Annotate(New)),
-		fx.Provide(secretsmanager.NewFromConfig),
+		fx.Provide(fx.Annotate(secretsmanager.NewFromConfig, fx.As(new(SecretsManager)))),
 		clconfig.Provide[Config](strings.ToUpper(moduleName)+"_"),
 		fx.Provide(fx.Annotate(func(h *Handler) cllambda.Handler[Input, Output] { return h },
 			fx.As(new(cllambda.Handler[Input, Output])))),

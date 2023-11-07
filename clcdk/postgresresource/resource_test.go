@@ -32,3 +32,15 @@ var _ = Describe("full app dependencies", func() {
 		Expect(fx.New(postgresresource.Prod("v0.0.1")).Start(ctx)).To(Succeed())
 	})
 })
+
+// WithMocked is a test helper that mocks handler dependencies.
+func WithMocked(msm **MockSecretsManager) fx.Option {
+	return fx.Options(
+		fx.Decorate(func(postgresresource.SecretsManager) postgresresource.SecretsManager {
+			mock := NewMockSecretsManager(GinkgoT())
+			*msm = mock
+
+			return mock
+		}),
+	)
+}
