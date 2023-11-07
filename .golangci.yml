@@ -54,6 +54,7 @@ issues:
         - forcetypeassert
         - gochecknoglobals
         - lll
+        - revive
     - path: infra/infrastack
       linters:
         - gomnd

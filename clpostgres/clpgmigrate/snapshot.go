@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 
 	"github.com/crewlinker/clgo/clconfig"
@@ -78,7 +79,7 @@ func (m SnapshotMigrater) Migrate(ctx context.Context) error {
 	cmd := exec.CommandContext(ctx,
 		exe,
 		"-h", m.dbcfg.ConnConfig.Host,
-		"-p", fmt.Sprint(m.dbcfg.ConnConfig.Port),
+		"-p", strconv.FormatUint(uint64(m.dbcfg.ConnConfig.Port), 10),
 		"-U", m.dbcfg.ConnConfig.User,
 		"-d", m.dbcfg.ConnConfig.Database,
 		"-a", "-f", tmpf.Name())

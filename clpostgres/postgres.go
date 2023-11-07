@@ -21,8 +21,8 @@ import (
 // Migrater implements a migtration strategy that can be run before
 // the database connection (pool) is setup.
 type Migrater interface {
-	Migrate(context.Context) error
-	Reset(context.Context) error
+	Migrate(ctx context.Context) error
+	Reset(ctx context.Context) error
 }
 
 // NewPool inits a raw pgx postgres connection pool. Migrater is specified as a dependency so it
