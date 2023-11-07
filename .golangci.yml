@@ -4,8 +4,18 @@ linters-settings:
   stylecheck:
     checks: ["all"]
   varnamelen:
+    max-distance: 15
     ignore-names:
-      - db
+      - id # generael identifier
+      - err # error values
+      - db # database connections
+      - tx # database transactions
+      - w # io.Writers
+      - ok # common bool
+      - in # input
+      - rw # read-write database connection
+      - ro # read-only database connection
+      - v # any value
 linters:
   enable-all: true
   disable:
@@ -24,6 +34,8 @@ linters:
     - gci # no way to automate this in the vscode so default ordering is good enough
     - ireturn # our oapi implementations return interfaces all the time
     - depguard # broken or crazy mental model that i'm not understanding
+    - nonamedreturns # makes some functions way more readable
+    - tagliatelle # AWS JSON often doesn't follow this convention
 
 issues:
   include:
