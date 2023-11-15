@@ -4,8 +4,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/caarlos0/env/v6"
 	"github.com/crewlinker/clgo/cllambda"
+	"github.com/crewlinker/clgo/clzap"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.uber.org/fx"
@@ -28,6 +30,18 @@ var _ = Describe("full app dependencies", func() {
 		).Start(ctx)).To(Succeed())
 		Expect(hdlr).ToNot(BeNil())
 	})
+
+	It("should wire up all dependencies as in actual deployment", func(ctx context.Context) {
+		var hdlr lambda.Handler
+		Expect(fx.New(
+			fx.Provide(NewInvokeHandler),
+			clzap.Test(),
+			fx.Supply(env.Options{Environment: map[string]string{"CLZAP_LEVEL": "panic"}}),
+			cllambda.InvokeHandler(),
+			fx.Populate(&hdlr),
+		).Start(ctx)).To(Succeed())
+		Expect(hdlr).ToNot(BeNil())
+	})
 })
 
 type (
@@ -36,6 +50,19 @@ type (
 	// Output for testing.
 	Output = struct{}
 )
+
+// InvokeHandler implements lambda.Handler.
+type InvokeHandler struct{}
+
+// Invoke causes the handler to implement the interface.
+func (InvokeHandler) Invoke(ctx context.Context, payload []byte) ([]byte, error) {
+	return nil, nil
+}
+
+// NewInvokeHandler inits the invoke handler.
+func NewInvokeHandler() lambda.Handler {
+	return &InvokeHandler{}
+}
 
 // Handler for testing.
 type Handler struct{}

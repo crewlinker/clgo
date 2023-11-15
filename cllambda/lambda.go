@@ -16,6 +16,27 @@ type Handler[I, O any] interface {
 	Handle(ctx context.Context, input I) (O, error)
 }
 
+// InvokeHandler provides the fx.Invoke option to start the lambda right after the 'start' lifecycle event. As
+// opposed to [Invoke] it requires a single lambda.Handler dependency to be provided by the application.
+func InvokeHandler() fx.Option {
+	return fx.Invoke(fx.Annotate(func(fxlc fx.Lifecycle, logs *zap.Logger, hdlr lambda.Handler) {
+		logs = logs.Named("lambda")
+		if os.Getenv("AWS_LAMBDA_RUNTIME_API") == "" {
+			return // only add the lambda stat when we're actually executing inside the lambda, for testing
+		}
+
+		fxlc.Append(fx.Hook{OnStart: func(context.Context) error {
+			go lambda.StartWithOptions(hdlr,
+				lambda.WithContext(baseContext(logs)), //nolint:contextcheck
+				lambda.WithEnableSIGTERM(func() {
+					logs.Info("received SIGTERM, shutting down")
+				}))
+
+			return nil
+		}})
+	}))
+}
+
 // Invoke provides the fx Invoke option to start the lambda right after the 'start' lifecycle event. It does
 // not actually start the lambda unless the AWS_LAMBDA_RUNTIME_API is present. Which will be present on a
 // real deployment but not during testing.
@@ -30,7 +51,7 @@ func Invoke[I, O any]() fx.Option {
 			go lambda.StartWithOptions(hdlr.Handle,
 				lambda.WithContext(baseContext(logs)), //nolint:contextcheck
 				lambda.WithEnableSIGTERM(func() {
-					logs.Info("received SIGTERM, shuttding down")
+					logs.Info("received SIGTERM, shutting down")
 				}))
 
 			return nil
