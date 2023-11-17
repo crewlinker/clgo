@@ -47,6 +47,10 @@ var _ = Describe("regular logging", func() {
 		data, err := os.ReadFile(tmpfp)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(data).To(ContainSubstring("provided"))
+
+		By("checking that by default follows lambda format")
+		Expect(data).To(ContainSubstring(`,"message":`))
+		Expect(data).To(ContainSubstring(`,"timestamp":`))
 	})
 })
 

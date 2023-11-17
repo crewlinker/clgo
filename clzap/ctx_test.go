@@ -3,6 +3,7 @@ package clzap_test
 import (
 	"context"
 
+	"github.com/aws/aws-lambda-go/lambdacontext"
 	"github.com/crewlinker/clgo/clzap"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -60,6 +61,10 @@ var _ = Describe("context", func() {
 			SpanID:  trace.SpanID{0x02},
 		}))
 
+		ctx2 = lambdacontext.NewContext(ctx2, &lambdacontext.LambdaContext{
+			AwsRequestID: "79b4f56e-95b1-4643-9700-2807f4e68189",
+		})
+
 		clzap.Log(ctx2).Info("foo")
 		entries := obs.FilterMessage("foo")
 		Expect(entries.Len()).To(Equal(1))
@@ -68,5 +73,7 @@ var _ = Describe("context", func() {
 			HaveKeyWithValue("trace_id", "1-01000000-000000000000000000000000"))
 		Expect(entries.All()[0].ContextMap()).To(
 			HaveKeyWithValue("span_id", "0200000000000000"))
+		Expect(entries.All()[0].ContextMap()).To(
+			HaveKeyWithValue("requestId", "79b4f56e-95b1-4643-9700-2807f4e68189"))
 	})
 })

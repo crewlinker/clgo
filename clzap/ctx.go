@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/aws/aws-lambda-go/lambdacontext"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
@@ -18,6 +19,9 @@ func LoggerFromContext(ctx context.Context) (*zap.Logger, bool) {
 
 	return logs, ok
 }
+
+// LambdaRequestIDKey determines the logging key for the AWS request id from the lambda context.
+var LambdaRequestIDKey = "requestId" //nolint:gochecknoglobals
 
 // Log retrieves a zap logger from the context. If the optional fallback logger is provided this logger is returned
 // when the context has no logger, else a no-op logger is returned. If the context also
@@ -42,6 +46,14 @@ func Log(ctx context.Context, fbl ...*zap.Logger) *zap.Logger {
 	if span != nil && span.SpanContext().HasTraceID() {
 		tid := span.SpanContext().TraceID().String()
 		logs = logs.With(zap.String("trace_id", fmt.Sprintf("1-%s-%s", tid[:8], tid[8:])))
+	}
+
+	// if the lambda context is present we add a request id so logs lines follow JSON format for
+	// lambda application logs as documented here:
+	// https://docs.aws.amazon.com/lambda/latest/dg/monitoring-cloudwatchlogs.html#monitoring-cloudwatchlogs-advanced
+	lc, ok := lambdacontext.FromContext(ctx)
+	if ok {
+		logs = logs.With(zap.String(LambdaRequestIDKey, lc.AwsRequestID))
 	}
 
 	return logs

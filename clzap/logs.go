@@ -23,6 +23,8 @@ type Config struct {
 	Outputs []string `env:"OUTPUTS" envDefault:"stderr"`
 	// Configure the level at which fx logs are shown, default to debug
 	FxLevel zapcore.Level `env:"FX_LEVEL" envDefault:"debug"`
+	// By default it logs to lambda format, this
+	DisableLambdaEncoding bool `env:"DISABLE_LAMBDA_ENCODING"`
 }
 
 // Fx is a convenient option that configures fx to use the zap logger.
@@ -54,6 +56,18 @@ func Prod() fx.Option {
 		}))),
 		// provide dependencies to build the prod logger
 		fx.Provide(zapcore.NewCore, zapcore.NewJSONEncoder, zap.NewProductionEncoderConfig),
+		// customize the to fit AWS Lambda's application log format standard, as documented:
+		// https://docs.aws.amazon.com/lambda/latest/dg/monitoring-cloudwatchlogs.html#monitoring-cloudwatchlogs-advanced
+		fx.Decorate(func(cfg Config, ec zapcore.EncoderConfig) zapcore.EncoderConfig {
+			if cfg.DisableLambdaEncoding {
+				return ec
+			}
+
+			ec.MessageKey = "message"
+			ec.TimeKey = "timestamp"
+
+			return ec
+		}),
 		// allow environment to configure where logs are being synced to
 		fx.Provide(func(cfg Config) (zapcore.WriteSyncer, error) {
 			sync, _, err := zap.Open(cfg.Outputs...)
