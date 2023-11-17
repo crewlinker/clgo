@@ -65,6 +65,7 @@ func Prod() fx.Option {
 
 			ec.MessageKey = "message"
 			ec.TimeKey = "timestamp"
+			ec.EncodeTime = zapcore.ISO8601TimeEncoder
 
 			return ec
 		}),
