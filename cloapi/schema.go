@@ -49,17 +49,15 @@ type SchemaDeployment struct {
 // ExecuteSchemaTmpl executes the schema template file using deployment parameters. It retrurns any error
 // and the hash of the template src so it can be used for content-based versioning.
 func ExecuteSchemaTmpl(src []byte, depl SchemaDeployment) (string, [32]byte, error) {
-	sum := sha256.Sum256(src)
-
 	tmpl, err := template.New("schema").Parse(string(src))
 	if err != nil {
-		return "", sum, fmt.Errorf("failed to parse definition yml: %w", err)
+		return "", [32]byte{}, fmt.Errorf("failed to parse definition yml: %w", err)
 	}
 
 	buf := bytes.NewBuffer(nil)
 	if err := tmpl.Option("missingkey=error").Execute(buf, depl); err != nil {
-		return "", sum, fmt.Errorf("failed to render template: %w", err)
+		return "", [32]byte{}, fmt.Errorf("failed to render template: %w", err)
 	}
 
-	return buf.String(), sum, nil
+	return buf.String(), sha256.Sum256(buf.Bytes()), nil
 }
