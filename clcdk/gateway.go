@@ -73,7 +73,7 @@ func WithOpenApiGateway(
 		&awss3deployment.BucketDeploymentProps{
 			Prune:                jsii.Bool(false),
 			DestinationBucket:    assets,
-			DestinationKeyPrefix: jsii.String(string(prefix)),
+			DestinationKeyPrefix: jsii.String(prefix),
 			Sources: &[]awss3deployment.ISource{
 				awss3deployment.Source_Data(jsii.String(key), jsii.String(def)),
 			},
