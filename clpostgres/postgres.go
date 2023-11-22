@@ -82,8 +82,6 @@ func New(
 const moduleName = "clpostgres"
 
 // Prod configures the DI for providng database connectivity.
-//
-//nolint:funlen
 func Prod() fx.Option {
 	return fx.Module(moduleName,
 		// provide the environment configuration

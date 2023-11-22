@@ -25,7 +25,7 @@ func (c conventions) MainRegion() string {
 }
 
 // Conventions describes the interface for retrieving info that needs to be consistent between
-// the stack and the other programs, i.e: magefiles
+// the stack and the other programs, i.e: magefiles.
 type Conventions interface {
 	InstancedStackName(instance int) string
 	Qualifier() string

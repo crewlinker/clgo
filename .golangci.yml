@@ -1,15 +1,17 @@
 linters-settings:
   revive:
+    rules:
     - name: var-naming
       arguments:
-        - [] # CDK resources shoulda allow for AWS conventions
-        - [] 
+        - ["API"] # CDK resources shoulda allow for AWS conventions
+        - ["API"] 
   funlen:
     lines: 128
   staticcheck:
     checks: ["all"]
   stylecheck:
-    checks: ["all"]
+    checks: ["all","-ST1003"]
+    initialisms: ["API"]
   varnamelen:
     max-distance: 15
     ignore-names:
