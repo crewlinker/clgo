@@ -18,14 +18,6 @@ import (
 	"github.com/crewlinker/clgo/cloapi"
 )
 
-// gatewayConfig describes the config required for setting up gateways.
-type gatewayConfig interface {
-	LogRetention() awslogs.RetentionDays
-	GatewayThrottlingRateLimit() *float64
-	GatewayThrottlingBurstLimit() *float64
-	DomainRecordTTL() awscdk.Duration
-}
-
 // WithOpenApiGateway creates a gateway that is defined by an OpenAPI definition while proxying all
 // requests to a single Lambda Handler. This is done by treating the schema a template that will have
 // certain values replaced. It will pick up changes to this schema and trigger a re-deploy, but changes
@@ -33,7 +25,7 @@ type gatewayConfig interface {
 func WithOpenApiGateway(
 	scope constructs.Construct,
 	name ScopeName,
-	cfg gatewayConfig,
+	cfg Config,
 	handler awslambda.IFunction,
 	schemaTmpl string,
 ) awsapigateway.IRestApi {
@@ -110,7 +102,7 @@ func WithOpenApiGateway(
 // WithProxyGateway will setup a gateway that proxies all requests to a Lambda, with logging and
 // tracing enabled.
 func WithProxyGateway(
-	scope constructs.Construct, name ScopeName, cfg gatewayConfig, handler awslambda.IFunction,
+	scope constructs.Construct, name ScopeName, cfg Config, handler awslambda.IFunction,
 ) awsapigateway.IRestApi {
 	scope, stack := name.ChildScope(scope), awscdk.Stack_Of(scope)
 
@@ -134,7 +126,7 @@ func WithProxyGateway(
 func WithGatewayDomain(
 	scope constructs.Construct,
 	name ScopeName,
-	cfg gatewayConfig,
+	cfg Config,
 	gateway awsapigateway.IRestApi,
 	zone awsroute53.IHostedZone,
 	subDomain string,
@@ -171,7 +163,7 @@ func WithGatewayDomain(
 	return domain
 }
 
-func gatewayDeployOptions(cfg gatewayConfig, logs awslogs.ILogGroup) *awsapigateway.StageOptions {
+func gatewayDeployOptions(cfg Config, logs awslogs.ILogGroup) *awsapigateway.StageOptions {
 	return &awsapigateway.StageOptions{
 		ThrottlingRateLimit:  cfg.GatewayThrottlingRateLimit(),
 		ThrottlingBurstLimit: cfg.GatewayThrottlingBurstLimit(),

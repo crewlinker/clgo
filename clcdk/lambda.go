@@ -1,28 +1,17 @@
 package clcdk
 
 import (
-	"github.com/aws/aws-cdk-go/awscdk/v2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awslambda"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awslogs"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
 )
 
-// sub-set of the total interface for lamba config.
-type lambdaConfig interface {
-	LogRetention() awslogs.RetentionDays
-	LambdaTimeout() awscdk.Duration
-	LambdaReservedConcurrency() *float64
-	LambdaProvisionedConcurrency() *float64
-	LambdaApplicationLogLevel() string
-	LambdaSystemLogLevel() string
-}
-
 // WithNativeLambda creates a lambda for code that compiles Natively (such as Go).
 func WithNativeLambda(
 	scope constructs.Construct,
 	name ScopeName,
-	cfg lambdaConfig,
+	cfg Config,
 	code awslambda.AssetCode,
 	env *map[string]*string,
 	logs awslogs.ILogGroup,
@@ -38,7 +27,7 @@ func WithNativeLambda(
 func WithNodeLambbda(
 	scope constructs.Construct,
 	name ScopeName,
-	cfg lambdaConfig,
+	cfg Config,
 	code awslambda.AssetCode,
 	env *map[string]*string,
 	logs awslogs.ILogGroup,
@@ -55,7 +44,7 @@ func WithNodeLambbda(
 // withLambda creates a standard lambda with a default alias.
 func withLambda(
 	scope constructs.Construct,
-	cfg lambdaConfig,
+	cfg Config,
 	code awslambda.AssetCode,
 	hdlr *string,
 	runtime awslambda.Runtime,

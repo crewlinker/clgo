@@ -17,16 +17,18 @@ var _ = Describe("lambda creation", func() {
 	var app awscdk.App
 	var stack awscdk.Stack
 	var code awslambda.AssetCode
+	var cfg clcdk.Config
 
 	BeforeEach(func() {
 		app = awscdk.NewApp(nil)
+		cfg = clcdk.NewStagingConfig()
 		stack = awscdk.NewStack(app, jsii.String("Stack1"), nil)
 		code = awslambda.AssetCode_FromAsset(jsii.String(
 			filepath.Join("testdata", "pkg1.zip")), nil)
 	})
 
 	It("should create native lambda", func() {
-		clcdk.WithNativeLambda(stack, "Lambda1", clcdk.StagingConfig{}, code, nil, nil)
+		clcdk.WithNativeLambda(stack, "Lambda1", cfg, code, nil, nil)
 
 		tmpl := assertions.Template_FromStack(stack, nil)
 
@@ -41,7 +43,7 @@ var _ = Describe("lambda creation", func() {
 	})
 
 	It("should create Node lambda", func() {
-		clcdk.WithNodeLambbda(stack, "Lambda2", clcdk.StagingConfig{}, code, nil, nil)
+		clcdk.WithNodeLambbda(stack, "Lambda2", cfg, code, nil, nil)
 
 		tmpl := assertions.Template_FromStack(stack, nil)
 
@@ -57,7 +59,7 @@ var _ = Describe("lambda creation", func() {
 
 	It("should re-use provided logs", func() {
 		logs := awslogs.NewLogGroup(stack, jsii.String("Logs1"), nil)
-		clcdk.WithNodeLambbda(stack, "Dar", clcdk.StagingConfig{}, code, nil, logs)
+		clcdk.WithNodeLambbda(stack, "Dar", cfg, code, nil, logs)
 
 		tmpl := assertions.Template_FromStack(stack, nil)
 

@@ -16,11 +16,12 @@ import (
 var _ = Describe("gateway", func() {
 	var app awscdk.App
 	var stack awscdk.Stack
-	var cfg clcdk.StagingConfig
+	var cfg clcdk.Config
 	var code awslambda.AssetCode
 	var zone awsroute53.IHostedZone
 
 	BeforeEach(func() {
+		cfg = clcdk.NewStagingConfig()
 		app = awscdk.NewApp(nil)
 		stack = awscdk.NewStack(app, jsii.String("Stack1"), nil)
 		code = awslambda.AssetCode_FromAsset(jsii.String(
