@@ -1,4 +1,11 @@
 linters-settings:
+  revive:
+    - name: var-naming
+      arguments:
+        - [] # CDK resources shoulda allow for AWS conventions
+        - [] 
+  funlen:
+    lines: 128
   staticcheck:
     checks: ["all"]
   stylecheck:
