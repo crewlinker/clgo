@@ -24,10 +24,25 @@ func (c conventions) MainRegion() string {
 	return c.mainRegion
 }
 
+func (c conventions) EnvSecretName() string {
+	return c.Qualifier() + "EnvSecret"
+}
+
+func (c conventions) StagingEnvName() string {
+	return "stag"
+}
+
+func (c conventions) ProductionEnvName() string {
+	return "prod"
+}
+
 // Conventions describes the interface for retrieving info that needs to be consistent between
 // the stack and the other programs, i.e: magefiles.
 type Conventions interface {
 	InstancedStackName(instance int) string
 	Qualifier() string
 	MainRegion() string
+	EnvSecretName() string
+	StagingEnvName() string
+	ProductionEnvName() string
 }

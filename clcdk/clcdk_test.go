@@ -20,3 +20,16 @@ var _ = Describe("scope", func() {
 		Expect(name.String()).To(Equal(`[Foo]`))
 	})
 })
+
+var _ = Describe("conventions", func() {
+	var conv clcdk.Conventions
+	BeforeEach(func() {
+		conv = clcdk.NewConventions("ClFoo", "eu-west-1")
+	})
+
+	It("should read conventions", func() {
+		Expect(conv.EnvSecretName()).To(Equal(`ClFooEnvSecret`))
+		Expect(conv.StagingEnvName()).To(Equal(`stag`))
+		Expect(conv.ProductionEnvName()).To(Equal(`prod`))
+	})
+})
