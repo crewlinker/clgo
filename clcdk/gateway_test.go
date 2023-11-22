@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-cdk-go/awscdk/v2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/assertions"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awscertificatemanager"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awslambda"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsroute53"
 	"github.com/aws/jsii-runtime-go"
@@ -19,6 +20,7 @@ var _ = Describe("gateway", func() {
 	var cfg clcdk.Config
 	var code awslambda.AssetCode
 	var zone awsroute53.IHostedZone
+	var cert awscertificatemanager.ICertificate
 
 	BeforeEach(func() {
 		cfg = clcdk.NewStagingConfig()
@@ -30,12 +32,16 @@ var _ = Describe("gateway", func() {
 			&awsroute53.PublicHostedZoneProps{
 				ZoneName: jsii.String("stag.example.com"),
 			})
+		cert = awscertificatemanager.NewCertificate(stack, jsii.String("Cert1"),
+			&awscertificatemanager.CertificateProps{
+				DomainName: zone.ZoneName(),
+			})
 	})
 
 	It("proxy gateway", func() {
 		handler := clcdk.WithNativeLambda(stack, "Lambda1", cfg, code, nil, nil)
 		gateway := clcdk.WithProxyGateway(stack, "Gateway1", cfg, handler)
-		clcdk.WithGatewayDomain(stack, "Domain1", cfg, gateway, zone, "api", jsii.String("v1"))
+		clcdk.WithGatewayDomain(stack, "Domain1", cfg, gateway, zone, cert, "api", jsii.String("v1"))
 		tmpl := assertions.Template_FromStack(stack, nil)
 
 		tmpl.ResourceCountIs(jsii.String("AWS::ApiGateway::RestApi"), jsii.Number(1))
@@ -47,10 +53,6 @@ var _ = Describe("gateway", func() {
 		})
 
 		tmpl.HasResourceProperties(jsii.String("AWS::ApiGateway::DomainName"), map[string]any{
-			"DomainName": jsii.String("api.stag.example.com"),
-		})
-
-		tmpl.HasResourceProperties(jsii.String("AWS::CertificateManager::Certificate"), map[string]any{
 			"DomainName": jsii.String("api.stag.example.com"),
 		})
 

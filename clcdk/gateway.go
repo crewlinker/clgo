@@ -129,18 +129,13 @@ func WithGatewayDomain(
 	cfg Config,
 	gateway awsapigateway.IRestApi,
 	zone awsroute53.IHostedZone,
+	cert awscertificatemanager.ICertificate,
 	subDomain string,
 	basePath *string,
 ) awsapigateway.IDomainName {
 	scope = name.ChildScope(scope)
 
 	fullDomain := subDomain + "." + *zone.ZoneName()
-
-	cert := awscertificatemanager.NewCertificate(scope, jsii.String("Certificate"),
-		&awscertificatemanager.CertificateProps{
-			DomainName: jsii.String(fullDomain),
-			Validation: awscertificatemanager.CertificateValidation_FromDns(zone),
-		})
 
 	domain := awsapigateway.NewDomainName(scope, jsii.String("Domain"), &awsapigateway.DomainNameProps{
 		DomainName:     jsii.String(fullDomain),

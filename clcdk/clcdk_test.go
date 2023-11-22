@@ -14,8 +14,16 @@ func TestClcdk(t *testing.T) {
 	RunSpecs(t, "clcdk")
 }
 
-var _ = Describe("scope", func() {
+var _ = Describe("scope", Serial, func() {
 	It("should stringify scope names", func() {
+		var name clcdk.ScopeName = "Foo"
+		Expect(name.String()).To(Equal(`Foo`))
+	})
+
+	It("should stringify scope name with brackets", func() {
+		clcdk.ScopeNameLeftBracket = "["
+		clcdk.ScopeNameRightBracket = "]"
+
 		var name clcdk.ScopeName = "Foo"
 		Expect(name.String()).To(Equal(`[Foo]`))
 	})
