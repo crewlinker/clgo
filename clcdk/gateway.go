@@ -47,16 +47,7 @@ func WithOpenApiGateway(
 		Retention: cfg.LogRetention(),
 	})
 
-	// we use the stack's asset bucket to upload our definition. It assumes the name based on the defeault
-	// synthesizer.
-	assets := awss3.Bucket_FromBucketName(
-		scope, jsii.String("Assets"),
-		jsii.String(fmt.Sprintf("cdk-%s-assets-%s-%s",
-			strings.ToLower(*stack.Synthesizer().BootstrapQualifier()),
-			*stack.Account(),
-			*stack.Region(),
-		)),
-	)
+	definitions := awss3.NewBucket(scope, jsii.String("DefinitionBucket"), &awss3.BucketProps{})
 
 	key, prefix := fmt.Sprintf("%s_%x_api_def.json", *stack.StackName(), sum[:10]),
 		strings.ToLower(string(name))+"_oapi_definitions/"
@@ -64,7 +55,7 @@ func WithOpenApiGateway(
 	deployment := awss3deployment.NewBucketDeployment(scope, jsii.String("Deployment"),
 		&awss3deployment.BucketDeploymentProps{
 			Prune:                jsii.Bool(false),
-			DestinationBucket:    assets,
+			DestinationBucket:    definitions,
 			DestinationKeyPrefix: jsii.String(prefix),
 			Sources: &[]awss3deployment.ISource{
 				awss3deployment.Source_Data(jsii.String(key), jsii.String(def)),
@@ -76,6 +67,7 @@ func WithOpenApiGateway(
 		RestApiName:    jsii.String(fmt.Sprintf("%s%sOpenApiGateway", *stack.StackName(), string(name))),
 		Description:    jsii.String(fmt.Sprintf("%s OpenApi gateway for stack %s", string(name), *stack.StackName())),
 
+		DisableExecuteApiEndpoint: cfg.GatewayDisableExecuteApi(),
 		ApiDefinition: awsapigateway.ApiDefinition_FromBucket(
 			deployment.DeployedBucket(),
 			jsii.String(fmt.Sprintf("%s%s", prefix, key)), nil),
@@ -115,6 +107,8 @@ func WithProxyGateway(
 		RestApiName:    jsii.String(fmt.Sprintf("%s%sProxyGateway", *stack.StackName(), string(name))),
 		Description:    jsii.String(fmt.Sprintf("%s Proxy gateway for stack %s", string(name), *stack.StackName())),
 		Handler:        handler,
+
+		DisableExecuteApiEndpoint: cfg.GatewayDisableExecuteApi(),
 		EndpointTypes: &[]awsapigateway.EndpointType{
 			awsapigateway.EndpointType_REGIONAL,
 		},

@@ -11,7 +11,7 @@ import (
 var _ = Describe("lookup", Serial, func() {
 	var app awscdk.App
 	var stack awscdk.Stack
-	var inp clcdk.BaseInputs
+	var cfg clcdk.Config
 	BeforeEach(func() {
 		app = awscdk.NewApp(nil)
 		stack = awscdk.NewStack(app, jsii.String("Stack1"), &awscdk.StackProps{Env: &awscdk.Environment{
@@ -19,11 +19,15 @@ var _ = Describe("lookup", Serial, func() {
 			Region:  jsii.String("eu-bogus-1"),
 		}})
 
-		inp = clcdk.NewBaseInputs("foo.example.com", "regional:arn", "edge:arn")
+		cfg = clcdk.NewStagingConfig()
+		cfg = cfg.Copy(
+			clcdk.WithMainDomainName(jsii.String("foo.example.com")),
+			clcdk.WithRegionalCertificateArn(jsii.String("regional:arn")),
+			clcdk.WithEdgeCertificateArn(jsii.String("edge:arn")))
 	})
 
 	It("should lookup zone and certs", func() {
-		zone, regionalCert, edgeCert := clcdk.LookupBaseZoneAndCerts(stack, "ZoneAndCerts", inp)
+		zone, regionalCert, edgeCert := clcdk.LookupBaseZoneAndCerts(stack, "ZoneAndCerts", cfg)
 
 		awscdk.NewCfnOutput(stack, jsii.String("ZoneName"), &awscdk.CfnOutputProps{Value: zone.ZoneName()})
 		awscdk.NewCfnOutput(stack, jsii.String("RegCert"), &awscdk.CfnOutputProps{Value: regionalCert.CertificateArn()})

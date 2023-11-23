@@ -68,8 +68,8 @@ func withLambda(
 
 		LogGroup:            logs,
 		LogFormat:           jsii.String("JSON"),
-		ApplicationLogLevel: jsii.String(cfg.LambdaApplicationLogLevel()),
-		SystemLogLevel:      jsii.String(cfg.LambdaSystemLogLevel()),
+		ApplicationLogLevel: cfg.LambdaApplicationLogLevel(),
+		SystemLogLevel:      cfg.LambdaSystemLogLevel(),
 		Environment:         env,
 	})
 

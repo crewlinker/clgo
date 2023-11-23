@@ -77,5 +77,7 @@ var _ = Describe("gateway", func() {
 				"Key": jsii.String("gateway1_oapi_definitions/Stack1_e3b0c44298fc1c149afb_api_def.json"),
 			},
 		})
+
+		tmpl.HasResourceProperties(jsii.String("AWS::S3::Bucket"), map[string]any{})
 	})
 })
