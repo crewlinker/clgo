@@ -29,14 +29,6 @@ func (c conventions) EnvSecretName() string {
 	return c.Qualifier() + "EnvSecret"
 }
 
-func (c conventions) StagingEnvName() string {
-	return "stag"
-}
-
-func (c conventions) ProductionEnvName() string {
-	return "prod"
-}
-
 // Conventions describes the interface for retrieving info that needs to be consistent between
 // the stack and the other programs, i.e: magefiles. Conventions are shared between all stacks,
 // instances, accounts and regions.
@@ -45,6 +37,4 @@ type Conventions interface {
 	Qualifier() string
 	MainRegion() string
 	EnvSecretName() string
-	StagingEnvName() string
-	ProductionEnvName() string
 }

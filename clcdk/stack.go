@@ -13,7 +13,10 @@ import (
 // NewInstancedStack requires a "instance" context variable to allow different copies of the stack
 // to exist in the same AWS account.
 func NewInstancedStack(scope constructs.Construct, conv Conventions, account string) awscdk.Stack {
-	instance := InstanceFromScope(scope)
+	instance, env := InstanceFromScope(scope), EnvironmentFromScope(scope)
+	if env == "" {
+		env = "<none>"
+	}
 
 	return awscdk.NewStack(scope,
 		jsii.String(conv.InstancedStackName(instance)),
@@ -23,12 +26,19 @@ func NewInstancedStack(scope constructs.Construct, conv Conventions, account str
 				Account: jsii.String(account),
 				Region:  jsii.String(conv.MainRegion()),
 			},
-			Description: jsii.String(fmt.Sprintf("%s (instance: %d)",
-				conv.Qualifier(), instance)),
+			Description: jsii.String(fmt.Sprintf("%s (env: %s, instance: %d)",
+				conv.Qualifier(), env, instance)),
 			Synthesizer: awscdk.NewDefaultStackSynthesizer(&awscdk.DefaultStackSynthesizerProps{
 				Qualifier: jsii.String(strings.ToLower(conv.Qualifier())),
 			}),
 		})
+}
+
+// EnvironmentFromScope retrieves the instance name from the context or an empty string.
+func EnvironmentFromScope(s constructs.Construct) string {
+	v, _ := s.Node().TryGetContext(jsii.String("environment")).(string)
+
+	return v
 }
 
 // InstanceFromScope retrieves the instance name from the context or an empty string.
@@ -40,7 +50,7 @@ func InstanceFromScope(s constructs.Construct) int {
 func tryGetCtxNr(s constructs.Construct, name string) int {
 	nrv, _ := s.Node().TryGetContext(jsii.String(name)).(string)
 	if nrv == "" {
-		panic("instance number not in context")
+		nrv = "0"
 	}
 
 	n, err := strconv.Atoi(nrv)

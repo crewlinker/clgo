@@ -37,7 +37,5 @@ var _ = Describe("conventions", func() {
 
 	It("should read conventions", func() {
 		Expect(conv.EnvSecretName()).To(Equal(`ClFooEnvSecret`))
-		Expect(conv.StagingEnvName()).To(Equal(`stag`))
-		Expect(conv.ProductionEnvName()).To(Equal(`prod`))
 	})
 })

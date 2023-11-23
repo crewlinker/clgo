@@ -16,17 +16,30 @@ var _ = Describe("stack", func() {
 
 	BeforeEach(func() {
 		app = awscdk.NewApp(nil)
-		app.Node().SetContext(jsii.String("instance"), jsii.String("1"))
 
 		conv = clcdk.NewConventions("ClFoo", "eu-west-1")
 	})
 
-	It("should create an instanced stack", func() {
+	It("should create an instanced stack with instance context", func() {
+		app.Node().SetContext(jsii.String("instance"), jsii.String("1"))
+		app.Node().SetContext(jsii.String("environment"), jsii.String("dev"))
+
 		stack := clcdk.NewInstancedStack(app, conv, "1111111111")
 
 		tmpl := assertions.Template_FromStack(stack, nil)
 		data := *tmpl.ToJSON()
 
-		Expect(data["Description"]).To(Equal("ClFoo (instance: 1)"))
+		Expect(data["Description"]).To(Equal("ClFoo (env: dev, instance: 1)"))
+	})
+
+	// we don't want the code to panic without an instance or the bootstrap logic won't succeed. In
+	// case of the bootstrap we never have an instance in the context.
+	It("should not panic without instance context", func() {
+		stack := clcdk.NewInstancedStack(app, conv, "1111111111")
+
+		tmpl := assertions.Template_FromStack(stack, nil)
+		data := *tmpl.ToJSON()
+
+		Expect(data["Description"]).To(Equal("ClFoo (env: <none>, instance: 0)"))
 	})
 })
