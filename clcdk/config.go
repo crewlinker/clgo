@@ -33,11 +33,11 @@ type Config interface {
 }
 
 type config struct {
-	LogRetentionVal                 awslogs.RetentionDays
+	LogRetentionVal                 awslogs.RetentionDays `copy:"shallow"`
+	DomainRecordTTLVal              awscdk.Duration       `copy:"shallow"`
+	LambdaTimeoutVal                awscdk.Duration       `copy:"shallow"`
 	GatewayThrottlingRateLimitVal   *float64
 	GatewayThrottlingBurstLimitVal  *float64
-	DomainRecordTTLVal              awscdk.Duration
-	LambdaTimeoutVal                awscdk.Duration
 	LambdaReservedConcurrencyVal    *float64
 	LambdaProvisionedConcurrencyVal *float64
 	LambdaApplicationLogLevelVal    *string
