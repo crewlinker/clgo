@@ -47,7 +47,10 @@ func WithOpenApiGateway(
 		Retention: cfg.LogRetention(),
 	})
 
-	definitions := awss3.NewBucket(scope, jsii.String("DefinitionBucket"), &awss3.BucketProps{})
+	definitions := awss3.NewBucket(scope, jsii.String("DefinitionBucket"), &awss3.BucketProps{
+		RemovalPolicy:     awscdk.RemovalPolicy_DESTROY,
+		AutoDeleteObjects: jsii.Bool(true),
+	})
 
 	key, prefix := fmt.Sprintf("%s_%x_api_def.json", *stack.StackName(), sum[:10]),
 		strings.ToLower(string(name))+"_oapi_definitions/"
