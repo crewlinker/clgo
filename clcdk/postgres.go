@@ -93,6 +93,49 @@ func WithPostgresCustomResources(
 	return provider
 }
 
+// PostgresTenant provides an interface to retrieve information
+// on a unique tenant in a postgres database.
+type PostgresTenant interface {
+	DatabaseName() *string
+	DatabaseUser() *string
+}
+
+// implements the postgres tenant resource.
+type postgresTenant struct {
+	resource awscdk.CustomResource
+}
+
+func (pt postgresTenant) DatabaseName() *string {
+	return pt.resource.GetAttString(jsii.String("DatabaseName"))
+}
+
+func (pt postgresTenant) DatabaseUser() *string {
+	return pt.resource.GetAttString(jsii.String("DatabaseUser"))
+}
+
+// WithPostgresTenant creates a tenant with.
+func WithPostgresTenant(
+	scope constructs.Construct,
+	name ScopeName,
+	providerToken *string,
+	dbSecret awssecretsmanager.ISecret,
+	tenantName string,
+) PostgresTenant {
+	scope = name.ChildScope(scope)
+
+	tenant := awscdk.NewCustomResource(scope,
+		jsii.String("Tenant"), &awscdk.CustomResourceProps{
+			ServiceToken: providerToken,
+			ResourceType: jsii.String("Custom::CrewlinkerPostgresTenant"),
+			Properties: &map[string]any{
+				"Name":            tenantName,
+				"MasterSecretArn": *dbSecret.SecretFullArn(),
+			},
+		})
+
+	return postgresTenant{resource: tenant}
+}
+
 // withPostgresInstance will ensure an AWS RDS postgres instance is either created or imported.
 func WithPostgresInstance(
 	scope constructs.Construct, name ScopeName, cfg Config, vpc awsec2.IVpc,

@@ -7,10 +7,12 @@ import (
 	"github.com/aws/aws-cdk-go/awscdk/v2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/assertions"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsec2"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awssecretsmanager"
 	"github.com/aws/jsii-runtime-go"
 	"github.com/crewlinker/clgo/clcdk"
 
 	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("postgres", func() {
@@ -53,5 +55,18 @@ var _ = Describe("postgres", func() {
 		tmpl.HasResourceProperties(jsii.String("AWS::Lambda::Function"), map[string]any{
 			"Description": "AWS CDK resource provider framework - onEvent (Stack1/PgCustom1/Provider)",
 		})
+	})
+
+	It("should create a custom tenant resource", func() {
+		secret := awssecretsmanager.NewSecret(stack, jsii.String("Secret1"), &awssecretsmanager.SecretProps{})
+
+		tenant := clcdk.WithPostgresTenant(stack, "Tenant1", jsii.String("Token1"), secret, "tenant_1")
+
+		tmpl := assertions.Template_FromStack(stack, nil)
+		tmpl.ResourceCountIs(jsii.String("Custom::CrewlinkerPostgresTenant"), jsii.Number(1))
+
+		Expect(*tenant.DatabaseName()).To(Not(BeEmpty()))
+		Expect(*tenant.DatabaseUser()).To(Not(BeEmpty()))
+		Expect(*tenant.DatabaseUser()).ToNot(Equal(*tenant.DatabaseName()))
 	})
 })
