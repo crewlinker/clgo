@@ -2,6 +2,7 @@ package clcdk
 
 import (
 	"github.com/aws/aws-cdk-go/awscdk/v2"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awsec2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awslogs"
 	"github.com/aws/jsii-runtime-go"
 	"github.com/mitchellh/copystructure"
@@ -30,6 +31,7 @@ type Config interface {
 	MainDomainName() *string
 	RegionalCertificateArn() *string
 	EdgeCertificateArn() *string
+	MainIPSpace() awsec2.IIpAddresses
 }
 
 type config struct {
@@ -47,10 +49,16 @@ type config struct {
 	MainDomainNameVal         *string
 	RegionalCertificateArnVal *string
 	EdgeCertificateArnVal     *string
+	MainIPSpaceVal            awsec2.IIpAddresses
 }
 
 // ConfigOpts describes a configuration option.
 type ConfigOpt func(*config)
+
+// WithMainIPSpace config.
+func WithMainIPSpace(v awsec2.IIpAddresses) ConfigOpt {
+	return func(c *config) { c.MainIPSpaceVal = v }
+}
 
 // WithMainDomainName config.
 func WithMainDomainName(v *string) ConfigOpt {
@@ -174,6 +182,9 @@ func (c config) DomainRecordTTL() awscdk.Duration { return c.DomainRecordTTLVal 
 
 // MainDomainName config.
 func (c config) MainDomainName() *string { return c.MainDomainNameVal }
+
+// MainIPSpace config.
+func (c config) MainIPSpace() awsec2.IIpAddresses { return c.MainIPSpaceVal }
 
 // RegionalCertificateArn config.
 func (c config) RegionalCertificateArn() *string { return c.RegionalCertificateArnVal }

@@ -10,7 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.18.9
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.9
 	github.com/aws/aws-sdk-go-v2/feature/rds/auth v1.2.5
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.15.3
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.21.5 // indirect
 	github.com/caarlos0/env/v6 v6.10.1
 	github.com/getkin/kin-openapi v0.120.0
 	github.com/go-logr/zapr v1.2.4
@@ -64,7 +64,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.12.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.14.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.18.1 // indirect
-	github.com/aws/smithy-go v1.16.0 // indirect
+	github.com/aws/smithy-go v1.17.0 // indirect
 	github.com/brunoscheufler/aws-ecs-metadata-go v0.0.0-20220812150832-b6b31c6eeeaf // indirect
 	github.com/cdklabs/awscdk-asset-awscli-go/awscliv1/v2 v2.2.201 // indirect
 	github.com/cdklabs/awscdk-asset-kubectl-go/kubectlv20/v2 v2.1.2 // indirect

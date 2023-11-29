@@ -57,8 +57,8 @@ github.com/aws/aws-lambda-go v1.40.0 h1:6dKcDpXsTpapfCFF6Debng6CiV/Z3sNHekM6bwhI
 github.com/aws/aws-lambda-go v1.40.0/go.mod h1:jwFe2KmMsHmffA1X2R09hH6lFzJQxzI8qK17ewzbQMM=
 github.com/aws/aws-sdk-go-v2 v1.17.3/go.mod h1:uzbQtefpm44goOPmdKyAlXSNcwlRgF3ePWVW6EtJvvw=
 github.com/aws/aws-sdk-go-v2 v1.21.0/go.mod h1:/RfNgGmRxI+iFOB1OeJUyxiU+9s88k3pfHvDagGEp0M=
-github.com/aws/aws-sdk-go-v2 v1.22.1 h1:sjnni/AuoTXxHitsIdT0FwmqUuNUuHtufcVDErVFT9U=
-github.com/aws/aws-sdk-go-v2 v1.22.1/go.mod h1:Kd0OJtkW3Q0M0lUWGszapWjEvrXDzRW+D21JNsroB+c=
+github.com/aws/aws-sdk-go-v2 v1.23.1 h1:qXaFsOOMA+HsZtX8WoCa+gJnbyW7qyFFBlPqvTSzbaI=
+github.com/aws/aws-sdk-go-v2 v1.23.1/go.mod h1:i1XDttT4rnf6vxc9AuskLc6s7XBee8rlLilKlc03uAA=
 github.com/aws/aws-sdk-go-v2/config v1.18.9 h1:pd+QUO1dvro6vGOuhgglJV6adGunU95xSTSzsQGhKpY=
 github.com/aws/aws-sdk-go-v2/config v1.18.9/go.mod h1:2Lx9yaA/McDeQS8ft+edKrmOd5ry1v1euFQ+oGwUxsM=
 github.com/aws/aws-sdk-go-v2/credentials v1.13.9 h1:oxM/C8eXGsiHH+u0gZGo1++QTFPf+N5MUb1tfaaQMpU=
@@ -101,8 +101,8 @@ github.com/aws/jsii-runtime-go v1.91.0 h1:KJAgMbRY7/Cp2ocV5rIf4GmLBiFYYAMYVDeAeb
 github.com/aws/jsii-runtime-go v1.91.0/go.mod h1:xLBI2fKjWK68+eqqmvkv4HL1f4YUPLiAi5BT3wNUD74=
 github.com/aws/smithy-go v1.13.5/go.mod h1:Tg+OJXh4MB2R/uN61Ko2f6hTZwB/ZYGOtib8J3gBHzA=
 github.com/aws/smithy-go v1.14.2/go.mod h1:Tg+OJXh4MB2R/uN61Ko2f6hTZwB/ZYGOtib8J3gBHzA=
-github.com/aws/smithy-go v1.16.0 h1:gJZEH/Fqh+RsvlJ1Zt4tVAtV6bKkp3cC+R6FCZMNzik=
-github.com/aws/smithy-go v1.16.0/go.mod h1:NukqUGpCZIILqqiV0NIjeFh24kd/FAa4beRb6nbIUPE=
+github.com/aws/smithy-go v1.17.0 h1:wWJD7LX6PBV6etBUwO0zElG0nWN9rUhp0WdYeHSHAaI=
+github.com/aws/smithy-go v1.17.0/go.mod h1:NukqUGpCZIILqqiV0NIjeFh24kd/FAa4beRb6nbIUPE=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
 github.com/benbjohnson/clock v1.3.0 h1:ip6w0uFQkncKQ979AypyG0ER7mqUSBdKLOgAle/AT8A=
 github.com/brunoscheufler/aws-ecs-metadata-go v0.0.0-20220812150832-b6b31c6eeeaf h1:WCnJxXZXx9c8gwz598wvdqmu+YTzB9wx2X1OovK3Le8=
