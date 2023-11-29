@@ -18,11 +18,12 @@ import (
 	"github.com/aws/jsii-runtime-go"
 )
 
-//go:embed postgresresource/build/pkg.zip
+//go:embed builds/postgresresource/pkg.zip
 var preBuildBinary embed.FS
 
+// easily write custom resource binaries during deployment.
 func writePrebuildBinary() (string, error) {
-	binf, err := preBuildBinary.Open(filepath.Join("postgresresource", "build", "pkg.zip"))
+	binf, err := preBuildBinary.Open(filepath.Join("builds", "postgresresource", "pkg.zip"))
 	if err != nil {
 		return "", fmt.Errorf("failed to open custom resource binary package: %w", err)
 	}

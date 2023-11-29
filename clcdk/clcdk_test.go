@@ -19,14 +19,6 @@ var _ = Describe("scope", Serial, func() {
 		var name clcdk.ScopeName = "Foo"
 		Expect(name.String()).To(Equal(`Foo`))
 	})
-
-	It("should stringify scope name with brackets", func() {
-		clcdk.ScopeNameLeftBracket = "["
-		clcdk.ScopeNameRightBracket = "]"
-
-		var name clcdk.ScopeName = "Foo"
-		Expect(name.String()).To(Equal(`[Foo]`))
-	})
 })
 
 var _ = Describe("conventions", func() {

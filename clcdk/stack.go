@@ -21,7 +21,6 @@ func NewSingletonStack(scope constructs.Construct, conv Conventions) awscdk.Stac
 	return awscdk.NewStack(scope,
 		jsii.String(conv.SingletonStackName()),
 		&awscdk.StackProps{
-			CrossRegionReferences: jsii.Bool(true),
 			Env: &awscdk.Environment{
 				Account: jsii.String(conv.Account()),
 				Region:  jsii.String(conv.MainRegion()),
@@ -45,7 +44,6 @@ func NewInstancedStack(scope constructs.Construct, conv Conventions) awscdk.Stac
 	return awscdk.NewStack(scope,
 		jsii.String(conv.InstancedStackName(instance)),
 		&awscdk.StackProps{
-			CrossRegionReferences: jsii.Bool(true),
 			Env: &awscdk.Environment{
 				Account: jsii.String(conv.Account()),
 				Region:  jsii.String(conv.MainRegion()),

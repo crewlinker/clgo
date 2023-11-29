@@ -2,17 +2,8 @@
 package clcdk
 
 import (
-	"fmt"
-
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
-)
-
-var (
-	// ScopeNameLeftBracket defined the left bracket for scope naming printing.
-	ScopeNameLeftBracket = ""
-	// ScopeNameRightBracket defined the right bracket for scope naming printing.
-	ScopeNameRightBracket = ""
 )
 
 // ScopeName is the name of a scope.
@@ -24,5 +15,5 @@ func (sn ScopeName) ChildScope(parent constructs.Construct) constructs.Construct
 }
 
 func (sn ScopeName) String() string {
-	return fmt.Sprintf("%s%s%s", ScopeNameLeftBracket, string(sn), ScopeNameRightBracket)
+	return string(sn)
 }
