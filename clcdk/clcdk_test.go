@@ -32,7 +32,7 @@ var _ = Describe("scope", Serial, func() {
 var _ = Describe("conventions", func() {
 	var conv clcdk.Conventions
 	BeforeEach(func() {
-		conv = clcdk.NewConventions("ClFoo", "eu-west-1")
+		conv = clcdk.NewConventions("ClFoo", "eu-west-1", "11111")
 	})
 
 	It("should read conventions", func() {

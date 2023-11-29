@@ -10,9 +10,33 @@ import (
 	"github.com/aws/jsii-runtime-go"
 )
 
+// NewSingletonStack requires a "instance" context variable to allow different copies of the stack
+// to exist in the same AWS account.
+func NewSingletonStack(scope constructs.Construct, conv Conventions) awscdk.Stack {
+	env := EnvironmentFromScope(scope)
+	if env == "" {
+		env = "<none>"
+	}
+
+	return awscdk.NewStack(scope,
+		jsii.String(conv.SingletonStackName()),
+		&awscdk.StackProps{
+			CrossRegionReferences: jsii.Bool(true),
+			Env: &awscdk.Environment{
+				Account: jsii.String(conv.Account()),
+				Region:  jsii.String(conv.MainRegion()),
+			},
+			Description: jsii.String(fmt.Sprintf("%s (env: %s)",
+				conv.Qualifier(), env)),
+			Synthesizer: awscdk.NewDefaultStackSynthesizer(&awscdk.DefaultStackSynthesizerProps{
+				Qualifier: jsii.String(strings.ToLower(conv.Qualifier())),
+			}),
+		})
+}
+
 // NewInstancedStack requires a "instance" context variable to allow different copies of the stack
 // to exist in the same AWS account.
-func NewInstancedStack(scope constructs.Construct, conv Conventions, account string) awscdk.Stack {
+func NewInstancedStack(scope constructs.Construct, conv Conventions) awscdk.Stack {
 	instance, env := InstanceFromScope(scope), EnvironmentFromScope(scope)
 	if env == "" {
 		env = "<none>"
@@ -23,7 +47,7 @@ func NewInstancedStack(scope constructs.Construct, conv Conventions, account str
 		&awscdk.StackProps{
 			CrossRegionReferences: jsii.Bool(true),
 			Env: &awscdk.Environment{
-				Account: jsii.String(account),
+				Account: jsii.String(conv.Account()),
 				Region:  jsii.String(conv.MainRegion()),
 			},
 			Description: jsii.String(fmt.Sprintf("%s (env: %s, instance: %d)",

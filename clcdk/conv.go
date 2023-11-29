@@ -5,11 +5,12 @@ import "strconv"
 type conventions struct {
 	qualifier  string
 	mainRegion string
+	account    string
 }
 
 // NewConventions inits a convention instance.
-func NewConventions(qual, mainRegion string) Conventions {
-	return conventions{qualifier: qual, mainRegion: mainRegion}
+func NewConventions(qual, mainRegion, account string) Conventions {
+	return conventions{qualifier: qual, mainRegion: mainRegion, account: account}
 }
 
 func (c conventions) InstancedStackName(instance int) string {
@@ -17,8 +18,16 @@ func (c conventions) InstancedStackName(instance int) string {
 		strconv.Itoa(instance)
 }
 
+func (c conventions) SingletonStackName() string {
+	return c.Qualifier()
+}
+
 func (c conventions) Qualifier() string {
 	return c.qualifier
+}
+
+func (c conventions) Account() string {
+	return c.account
 }
 
 func (c conventions) MainRegion() string {
@@ -34,7 +43,9 @@ func (c conventions) EnvSecretName() string {
 // instances, accounts and regions.
 type Conventions interface {
 	InstancedStackName(instance int) string
+	SingletonStackName() string
 	Qualifier() string
 	MainRegion() string
+	Account() string
 	EnvSecretName() string
 }
