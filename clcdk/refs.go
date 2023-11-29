@@ -35,7 +35,7 @@ func Export(scope constructs.Construct, name ScopeName, conv Conventions, val *s
 	desc := conv.Qualifier() + *scope.ToString()
 	ident := strings.ReplaceAll(desc, "/", "")
 
-	awscdk.NewCfnOutput(scope, jsii.String("Outout"), &awscdk.CfnOutputProps{
+	awscdk.NewCfnOutput(scope, jsii.String("Export"), &awscdk.CfnOutputProps{
 		Value:       val,
 		Description: scope.Node().Path(),
 		ExportName:  jsii.String(ident),
