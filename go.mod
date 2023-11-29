@@ -6,11 +6,6 @@ require (
 	ariga.io/atlas v0.14.2
 	github.com/XSAM/otelsql v0.25.0
 	github.com/aws/aws-lambda-go v1.40.0
-	github.com/aws/aws-sdk-go-v2 v1.23.1
-	github.com/aws/aws-sdk-go-v2/config v1.18.9
-	github.com/aws/aws-sdk-go-v2/credentials v1.13.9
-	github.com/aws/aws-sdk-go-v2/feature/rds/auth v1.2.5
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.21.5 // indirect
 	github.com/caarlos0/env/v6 v6.10.1
 	github.com/getkin/kin-openapi v0.120.0
 	github.com/go-logr/zapr v1.2.4
@@ -30,6 +25,10 @@ require (
 
 require (
 	github.com/aws/aws-cdk-go/awscdk/v2 v2.110.0
+	github.com/aws/aws-sdk-go-v2 v1.23.2
+	github.com/aws/aws-sdk-go-v2/config v1.25.8
+	github.com/aws/aws-sdk-go-v2/credentials v1.16.6
+	github.com/aws/aws-sdk-go-v2/feature/rds/auth v1.3.5
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.23.0
 	github.com/aws/constructs-go/constructs/v10 v10.3.0
 	github.com/aws/jsii-runtime-go v1.91.0
@@ -52,20 +51,24 @@ require (
 )
 
 require (
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.14.6 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.2.5 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.5.5 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/ini v1.7.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.21.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.10.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.7.35 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.10.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sqs v1.24.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.17.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.20.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.25.6 // indirect
+)
+
+require (
 	github.com/Masterminds/semver/v3 v3.2.1 // indirect
 	github.com/agext/levenshtein v1.2.1 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.21 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.2.1 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.5.1 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.28 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.14 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.7.35 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.21 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sqs v1.24.5 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.12.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.14.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.18.1 // indirect
 	github.com/aws/smithy-go v1.17.0 // indirect
 	github.com/brunoscheufler/aws-ecs-metadata-go v0.0.0-20220812150832-b6b31c6eeeaf // indirect
 	github.com/cdklabs/awscdk-asset-awscli-go/awscliv1/v2 v2.2.201 // indirect
