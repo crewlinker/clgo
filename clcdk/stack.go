@@ -26,7 +26,7 @@ func NewSingletonStack(scope constructs.Construct, conv Conventions) awscdk.Stac
 				Account: jsii.String(conv.Account()),
 				Region:  jsii.String(conv.MainRegion()),
 			},
-			Description: jsii.String(fmt.Sprintf("%s (env: %s)",
+			Description: jsii.String(fmt.Sprintf("%s (env: %s, singleton)",
 				conv.Qualifier(), env)),
 			Synthesizer: awscdk.NewDefaultStackSynthesizer(&awscdk.DefaultStackSynthesizerProps{
 				Qualifier: jsii.String(strings.ToLower(conv.Qualifier())),
