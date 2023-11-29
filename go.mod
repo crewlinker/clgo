@@ -29,7 +29,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.25.8
 	github.com/aws/aws-sdk-go-v2/credentials v1.16.6
 	github.com/aws/aws-sdk-go-v2/feature/rds/auth v1.3.5
-	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.23.0
+	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.24.2
 	github.com/aws/constructs-go/constructs/v10 v10.3.0
 	github.com/aws/jsii-runtime-go v1.91.0
 	github.com/go-playground/validator/v10 v10.16.0
