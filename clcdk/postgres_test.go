@@ -29,18 +29,23 @@ var _ = Describe("postgres", func() {
 
 	It("should create instance", func() {
 		vpc := clcdk.WithNetwork(stack, "Network1", cfg)
-		clcdk.WithPostgresInstance(stack, "Postgres1", cfg, vpc)
+		clcdk.WithPostgresInstance(stack, "Postgres1", cfg, vpc, 10, 30)
 
 		tmpl := assertions.Template_FromStack(stack, nil)
 
 		tmpl.ResourceCountIs(jsii.String("AWS::RDS::DBInstance"), jsii.Number(1))
 		tmpl.ResourceCountIs(jsii.String("AWS::RDS::DBParameterGroup"), jsii.Number(1))
 		tmpl.ResourceCountIs(jsii.String("AWS::EC2::SecurityGroup"), jsii.Number(1))
+
+		tmpl.HasResourceProperties(jsii.String("AWS::RDS::DBInstance"), map[string]any{
+			"AllocatedStorage":    "10",
+			"MaxAllocatedStorage": 30,
+		})
 	})
 
 	It("should create custom resource provider", func() {
 		vpc := clcdk.WithNetwork(stack, "Network1", cfg)
-		db, dbSecret := clcdk.WithPostgresInstance(stack, "Postgres1", cfg, vpc)
+		db, dbSecret := clcdk.WithPostgresInstance(stack, "Postgres1", cfg, vpc, 10, 30)
 		clcdk.WithPostgresCustomResources(stack, "PgCustom1", cfg, db, dbSecret)
 
 		tmpl := assertions.Template_FromStack(stack, nil)

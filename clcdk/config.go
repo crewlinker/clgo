@@ -32,6 +32,10 @@ type Config interface {
 	RegionalCertificateArn() *string
 	EdgeCertificateArn() *string
 	MainIPSpace() awsec2.IIpAddresses
+
+	RemovalPolicyIfSnapshotable() awscdk.RemovalPolicy
+	RemovalPolicy() awscdk.RemovalPolicy
+	DeletionProtection() *bool
 }
 
 type config struct {
@@ -50,10 +54,29 @@ type config struct {
 	RegionalCertificateArnVal *string
 	EdgeCertificateArnVal     *string
 	MainIPSpaceVal            awsec2.IIpAddresses
+
+	RemovalPolicyIfSnapshotableVal awscdk.RemovalPolicy
+	RemovalPolicyVal               awscdk.RemovalPolicy
+	DeletionProtectionVal          *bool
 }
 
 // ConfigOpts describes a configuration option.
 type ConfigOpt func(*config)
+
+// WithRemovalPolicyIfSnapshotable config.
+func WithRemovalPolicyIfSnapshotable(v awscdk.RemovalPolicy) ConfigOpt {
+	return func(c *config) { c.RemovalPolicyIfSnapshotableVal = v }
+}
+
+// WithRemovalPolicy config.
+func WithRemovalPolicy(v awscdk.RemovalPolicy) ConfigOpt {
+	return func(c *config) { c.RemovalPolicyVal = v }
+}
+
+// WithDeletionProtection config.
+func WithDeletionProtection(v *bool) ConfigOpt {
+	return func(c *config) { c.DeletionProtectionVal = v }
+}
 
 // WithMainIPSpace config.
 func WithMainIPSpace(v awsec2.IIpAddresses) ConfigOpt {
@@ -192,6 +215,21 @@ func (c config) RegionalCertificateArn() *string { return c.RegionalCertificateA
 // EdgeCertificateArnArn config.
 func (c config) EdgeCertificateArn() *string { return c.EdgeCertificateArnVal }
 
+// RemovalPolicyIfSnapshotable config.
+func (c config) RemovalPolicyIfSnapshotable() awscdk.RemovalPolicy {
+	return c.RemovalPolicyIfSnapshotableVal
+}
+
+// RemovalPolicy config.
+func (c config) RemovalPolicy() awscdk.RemovalPolicy {
+	return c.RemovalPolicyVal
+}
+
+// DeletionProtection config.
+func (c config) DeletionProtection() *bool {
+	return c.DeletionProtectionVal
+}
+
 // NewStagingConfig provides a config that provides easy-to-use defeaults for a staging environment.
 func NewStagingConfig() Config {
 	return NewConfig(
@@ -205,5 +243,8 @@ func NewStagingConfig() Config {
 		WithLambdaApplicationLogLevel(jsii.String("DEBUG")),
 		WithLambdaSystemLogLevel(jsii.String("DEBUG")),
 		WithGatewayDisableExecuteApi(jsii.Bool(false)),
+		WithRemovalPolicyIfSnapshotable(awscdk.RemovalPolicy_SNAPSHOT),
+		WithRemovalPolicy(awscdk.RemovalPolicy_DESTROY),
+		WithDeletionProtection(jsii.Bool(false)),
 	)
 }

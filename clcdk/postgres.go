@@ -139,13 +139,12 @@ func WithPostgresTenant(
 // withPostgresInstance will ensure an AWS RDS postgres instance is either created or imported.
 func WithPostgresInstance(
 	scope constructs.Construct, name ScopeName, cfg Config, vpc awsec2.IVpc,
+	allocatedStorageGib, maxAllocatedStorageGib float64,
 ) (awsrds.IDatabaseInstance, awssecretsmanager.ISecret) {
 	scope, stack := name.ChildScope(scope), awscdk.Stack_Of(scope)
 
 	const (
 		// constants for setting up the instance
-		allocatedGiB              = 10
-		maxAllocatedGiB           = 30
 		monitoringIntervalSeconds = 15
 		backupRetentionDays       = 7
 		port                      = 5432
@@ -187,14 +186,14 @@ func WithPostgresInstance(
 
 	// setup the instance
 	instance := awsrds.NewDatabaseInstance(scope, jsii.String("Instance"), &awsrds.DatabaseInstanceProps{
-		RemovalPolicy:      awscdk.RemovalPolicy_SNAPSHOT,
-		DeletionProtection: jsii.Bool(false),
+		RemovalPolicy:      cfg.RemovalPolicyIfSnapshotable(),
+		DeletionProtection: cfg.DeletionProtection(),
 
 		Engine:              engine,
 		InstanceType:        awsec2.InstanceType_Of(awsec2.InstanceClass_BURSTABLE4_GRAVITON, awsec2.InstanceSize_MICRO),
 		Vpc:                 vpc,
-		AllocatedStorage:    jsii.Number(allocatedGiB),    // GiB
-		MaxAllocatedStorage: jsii.Number(maxAllocatedGiB), // GiB
+		AllocatedStorage:    jsii.Number(allocatedStorageGib),    // GiB
+		MaxAllocatedStorage: jsii.Number(maxAllocatedStorageGib), // GiB
 
 		// We use a reference to a secret we create ourselves so we can easily look it up in other stacks (byname)
 		Credentials: awsrds.Credentials_FromSecret(secret, jsii.String("postgres")),
