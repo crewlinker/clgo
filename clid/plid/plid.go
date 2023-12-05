@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/oklog/ulid/v2"
@@ -104,7 +105,7 @@ func (id *ID) UnmarshalJSON(data []byte) error {
 
 // MarshalGQL marshals the identifier.
 func (id ID) MarshalGQL(w io.Writer) {
-	_, _ = w.Write([]byte(id.String()))
+	_, _ = w.Write([]byte(strconv.Quote(id.String())))
 }
 
 // UnmarshalGQL implements the graphql.Unmarshaler interface.

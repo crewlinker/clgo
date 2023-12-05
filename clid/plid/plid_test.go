@@ -73,7 +73,7 @@ var _ = Describe("prefix ulid", func() {
 
 		var buf bytes.Buffer
 		id.MarshalGQL(&buf)
-		Expect(buf.String()).To(Equal("usr-01HGWKKAWGABYZR1S1G9JMY5HZ"))
+		Expect(buf.String()).To(Equal(`"usr-01HGWKKAWGABYZR1S1G9JMY5HZ"`))
 	})
 
 	It("should unmarshal gql", func() {
