@@ -65,6 +65,7 @@ issues:
         - gochecknoglobals
         - lll
         - revive
+        - musttag
     - path: infra/infrastack
       linters:
         - gomnd
