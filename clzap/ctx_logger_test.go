@@ -3,7 +3,7 @@ package clzap_test
 import (
 	"context"
 
-	"github.com/caarlos0/env/v6"
+	"github.com/caarlos0/env/v10"
 	"github.com/crewlinker/clgo/clzap"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/fx"

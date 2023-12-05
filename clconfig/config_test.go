@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/caarlos0/env/v6"
+	"github.com/caarlos0/env/v10"
 	"github.com/crewlinker/clgo/clconfig"
 	"github.com/crewlinker/clgo/clzap"
 	. "github.com/onsi/ginkgo/v2"

@@ -6,7 +6,6 @@ require (
 	ariga.io/atlas v0.14.2
 	github.com/XSAM/otelsql v0.25.0
 	github.com/aws/aws-lambda-go v1.40.0
-	github.com/caarlos0/env/v6 v6.10.1
 	github.com/getkin/kin-openapi v0.120.0
 	github.com/go-logr/zapr v1.2.4
 	github.com/jackc/pgx/v5 v5.4.3
@@ -32,6 +31,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.24.2
 	github.com/aws/constructs-go/constructs/v10 v10.3.0
 	github.com/aws/jsii-runtime-go v1.91.0
+	github.com/caarlos0/env/v10 v10.0.0
 	github.com/go-playground/validator/v10 v10.16.0
 	github.com/mitchellh/copystructure v1.2.0
 	github.com/mitchellh/mapstructure v1.5.0

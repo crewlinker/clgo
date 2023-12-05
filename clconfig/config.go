@@ -4,7 +4,7 @@ package clconfig
 import (
 	"fmt"
 
-	"github.com/caarlos0/env/v6"
+	"github.com/caarlos0/env/v10"
 	"go.uber.org/fx"
 )
 
@@ -18,7 +18,7 @@ func EnvConfigurer[T any](prefix ...string) func(o env.Options) (T, error) {
 			envo.Prefix = prefix[0]
 		}
 
-		if err := env.Parse(&cfg, envo); err != nil {
+		if err := env.ParseWithOptions(&cfg, envo); err != nil {
 			return cfg, fmt.Errorf("failed to parse environment: %w", err)
 		}
 

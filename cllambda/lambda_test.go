@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/caarlos0/env/v6"
+	"github.com/caarlos0/env/v10"
 	"github.com/crewlinker/clgo/cllambda"
 	"github.com/crewlinker/clgo/clzap"
 	. "github.com/onsi/ginkgo/v2"
