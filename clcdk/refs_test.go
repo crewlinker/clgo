@@ -2,6 +2,7 @@ package clcdk_test
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/aws/aws-cdk-go/awscdk/v2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/assertions"
@@ -55,7 +56,7 @@ var _ = Describe("refs", func() {
 
 		By("importing it in another stack")
 		stack2 := awscdk.NewStack(app, jsii.String("Stack2"), nil)
-		stack2.ExportValue(ref1.Dereference(), &awscdk.ExportValueOptions{Name: jsii.String("ReExport1")})
+		stack2.ExportValue(ref1.ImportValue(), &awscdk.ExportValueOptions{Name: jsii.String("ReExport1")})
 
 		By("asserting templates stack1's output")
 		tmpl1 := assertions.Template_FromStack(stack1, nil)
@@ -68,5 +69,7 @@ var _ = Describe("refs", func() {
 		map2 := *tmpl2.ToJSON()
 		json2 := lo.Must(json.Marshal(map2))
 		Expect(json2).To(ContainSubstring(`"Fn::ImportValue":"Stack1:ExportsOutputRef`))
+
+		Expect(strings.Count(string(json2), "Fn::ImportValue")).To(Equal(1))
 	})
 })
