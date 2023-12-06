@@ -16,9 +16,16 @@ func (r tokenRef) ImportValue() *string {
 	return r.token
 }
 
+func (r tokenRef) Dereference() *string {
+	return awscdk.Fn_ImportValue(r.token)
+}
+
 // StdRef replaces [Ref] and uses the CDK native tooling for exporting values.
 type StdRef interface {
-	// ImportValue will use the ref value as a call to Fn:ImportValue
+	// Dereference the value carried by this reference. It results in the use
+	// of Fn::ImportValue.
+	Dereference() *string
+	// ImportValue will use the ref value through the user of Fn:ImportValue
 	ImportValue() *string
 }
 
