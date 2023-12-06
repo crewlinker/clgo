@@ -59,7 +59,7 @@ var _ = Describe("refs", func() {
 		tmpl1 := assertions.Template_FromStack(stack1, nil)
 
 		tmpl1.HasResourceProperties(jsii.String("AWS::SSM::Parameter"), map[string]any{
-			"Name": jsii.String("/Stack1Bucket17BEC06FCBucketName"),
+			"Name": jsii.String("/clcdk/Stack1Bucket17BEC06FCBucketName"),
 			"Type": jsii.String("String"),
 		})
 
@@ -71,7 +71,7 @@ var _ = Describe("refs", func() {
 			},
 		})
 
-		Expect(*ref1.LookupValue(stack2)).To(Equal(`dummy-value-for-/Stack1Bucket17BEC06FCBucketName`))
+		Expect(*ref1.LookupValue(stack2)).To(Equal(`dummy-value-for-/clcdk/Stack1Bucket17BEC06FCBucketName`))
 
 		Expect(*stack2.Dependencies()).To(HaveLen(1))
 		Expect(*(*stack2.Dependencies())[0].StackName()).To(Equal("Stack1"))

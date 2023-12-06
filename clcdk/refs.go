@@ -70,7 +70,7 @@ func WeakExportAttribute(scope constructs.Construct, resource constructs.IConstr
 		panic(fmt.Sprintf("clckd: the attribute method must return a *string value, got: %T", val))
 	}
 
-	paramName := "/" +
+	paramName := "/clcdk/" +
 		*awscdk.Names_UniqueResourceName(resource, &awscdk.UniqueResourceNameOptions{}) +
 		attributeName
 
