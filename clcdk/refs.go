@@ -8,6 +8,27 @@ import (
 	"github.com/aws/jsii-runtime-go"
 )
 
+type tokenRef struct {
+	token *string
+}
+
+func (r tokenRef) Dereference() *string {
+	return awscdk.Fn_ImportValue(r.token)
+}
+
+// StdRef replaces [Ref] and uses the CDK native tooling for exporting values.
+type StdRef interface {
+	// Dereference the value carried by this reference. It results in the use
+	// of Fn::ImportValue.
+	Dereference() *string
+}
+
+// ExportValue uses the CDK's native method on the stack to export any 'v' that
+// is a construct property. It replaces "Export".
+func ExportValue(scope constructs.Construct, v any) StdRef {
+	return tokenRef{awscdk.Stack_Of(scope).ExportValue(v, nil)}
+}
+
 // Ref can be passed between stacks to easy imports and exports.
 type Ref interface {
 	Import(scope constructs.Construct) *string
@@ -27,6 +48,8 @@ func (r ref) Import(scope constructs.Construct) *string {
 }
 
 // Export a value from the stack owning 'scope' in a standardized way.
+//
+// Deprecated: Export is deprecated, instead "ExportValue" should be used.
 func Export(scope constructs.Construct, name ScopeName, conv Conventions, val *string) Ref {
 	stack := awscdk.Stack_Of(scope)
 	scope = name.ChildScope(scope)
