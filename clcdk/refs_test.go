@@ -47,4 +47,33 @@ var _ = Describe("refs", func() {
 
 		Expect(strings.Count(string(json2), "Fn::ImportValue")).To(Equal(1))
 	})
+
+	It("weak refs", func() {
+		By("exporting it from a stack")
+		stack1 := awscdk.NewStack(app, jsii.String("Stack1"), nil)
+		bucket1 := awss3.NewBucket(stack1, jsii.String("Bucket1"), nil)
+
+		ref1 := clcdk.WeakExportAttribute(stack1, bucket1, "BucketName")
+
+		By("asserting templates stack1's output")
+		tmpl1 := assertions.Template_FromStack(stack1, nil)
+
+		tmpl1.HasResourceProperties(jsii.String("AWS::SSM::Parameter"), map[string]any{
+			"Name": jsii.String("/Stack1Bucket17BEC06FCBucketName"),
+			"Type": jsii.String("String"),
+		})
+
+		By("using the weak ref")
+		stack2 := awscdk.NewStack(app, jsii.String("Stack2"), &awscdk.StackProps{
+			Env: &awscdk.Environment{
+				Region:  jsii.String("foo-bar-1"),
+				Account: jsii.String("1111111"),
+			},
+		})
+
+		Expect(*ref1.LookupValue(stack2)).To(Equal(`dummy-value-for-/Stack1Bucket17BEC06FCBucketName`))
+
+		Expect(*stack2.Dependencies()).To(HaveLen(1))
+		Expect(*(*stack2.Dependencies())[0].StackName()).To(Equal("Stack1"))
+	})
 })
