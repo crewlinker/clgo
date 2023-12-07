@@ -70,11 +70,10 @@ func WeakExportAttribute(scope constructs.Construct, resource constructs.IConstr
 		panic(fmt.Sprintf("clckd: the attribute method must return a *string value, got: %T", val))
 	}
 
-	paramName := "/clcdk/" +
-		*awscdk.Names_UniqueResourceName(resource, &awscdk.UniqueResourceNameOptions{}) +
-		attributeName
+	name := *awscdk.Names_UniqueResourceName(resource, &awscdk.UniqueResourceNameOptions{}) + attributeName
+	paramName := "/clcdk/" + name
 
-	awsssm.NewStringParameter(scope, jsii.String("VpcIdParam"), &awsssm.StringParameterProps{
+	awsssm.NewStringParameter(scope, jsii.String(name), &awsssm.StringParameterProps{
 		ParameterName: jsii.String(paramName),
 		StringValue:   val,
 	})
