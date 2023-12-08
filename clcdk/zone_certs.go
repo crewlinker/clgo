@@ -7,20 +7,19 @@ import (
 	"github.com/aws/jsii-runtime-go"
 )
 
-// LookupBaseZoneAndCerts implements the logic for fetching the main public hosted zone, the zone's regional wildcard
-// certificate and the zone's edge certificate. These must be setup manually and provide to the stack. Lookups are
-// generally discouraged but since these values are expected to be "passed in" by hand and not automatically created
-// it is useful most of the times.
-func LookupBaseZoneAndCerts(scope constructs.Construct, name ScopeName, cfg Config) (
+// BaseZoneAndCerts implements the logic for returing HostedZone and certificate constructs from just
+// attrbutes (without lookups).
+func BaseZoneAndCerts(scope constructs.Construct, name ScopeName, cfg Config) (
 	awsroute53.IHostedZone,
 	awscertificatemanager.ICertificate,
 	awscertificatemanager.ICertificate,
 ) {
 	scope = name.ChildScope(scope)
 
-	zone := awsroute53.PublicHostedZone_FromLookup(scope, jsii.String("HostedZone"),
-		&awsroute53.HostedZoneProviderProps{
-			DomainName: cfg.MainDomainName(),
+	zone := awsroute53.PublicHostedZone_FromPublicHostedZoneAttributes(scope, jsii.String("HostedZone"),
+		&awsroute53.PublicHostedZoneAttributes{
+			ZoneName:     cfg.MainDomainName(),
+			HostedZoneId: cfg.MainDomainHostedZoneID(),
 		})
 
 	regional := awscertificatemanager.Certificate_FromCertificateArn(scope,

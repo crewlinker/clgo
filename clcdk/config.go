@@ -29,6 +29,7 @@ type Config interface {
 	LambdaSystemLogLevel() *string
 
 	MainDomainName() *string
+	MainDomainHostedZoneID() *string
 	RegionalCertificateArn() *string
 	EdgeCertificateArn() *string
 	MainIPSpace() awsec2.IIpAddresses
@@ -51,6 +52,7 @@ type config struct {
 	GatewayDisableExecuteApiVal     *bool
 
 	MainDomainNameVal         *string
+	MainDomainHostedZoneIDVal *string
 	RegionalCertificateArnVal *string
 	EdgeCertificateArnVal     *string
 	MainIPSpaceVal            awsec2.IIpAddresses
@@ -86,6 +88,11 @@ func WithMainIPSpace(v awsec2.IIpAddresses) ConfigOpt {
 // WithMainDomainName config.
 func WithMainDomainName(v *string) ConfigOpt {
 	return func(c *config) { c.MainDomainNameVal = v }
+}
+
+// WithMainDomainHostedZoneID config.
+func WithMainDomainHostedZoneID(v *string) ConfigOpt {
+	return func(c *config) { c.MainDomainHostedZoneIDVal = v }
 }
 
 // WithRegionalCertificateArn config.
@@ -205,6 +212,9 @@ func (c config) DomainRecordTTL() awscdk.Duration { return c.DomainRecordTTLVal 
 
 // MainDomainName config.
 func (c config) MainDomainName() *string { return c.MainDomainNameVal }
+
+// MainDomainHostedZoneID config.
+func (c config) MainDomainHostedZoneID() *string { return c.MainDomainHostedZoneIDVal }
 
 // MainIPSpace config.
 func (c config) MainIPSpace() awsec2.IIpAddresses { return c.MainIPSpaceVal }

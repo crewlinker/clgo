@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 )
 
-var _ = Describe("lookup", Serial, func() {
+var _ = Describe("zone and certs", Serial, func() {
 	var app awscdk.App
 	var stack awscdk.Stack
 	var cfg clcdk.Config
@@ -21,13 +21,14 @@ var _ = Describe("lookup", Serial, func() {
 
 		cfg = clcdk.NewStagingConfig()
 		cfg = cfg.Copy(
+			clcdk.WithMainDomainHostedZoneID(jsii.String("111DDDFFFEEE000")),
 			clcdk.WithMainDomainName(jsii.String("foo.example.com")),
 			clcdk.WithRegionalCertificateArn(jsii.String("regional:arn")),
 			clcdk.WithEdgeCertificateArn(jsii.String("edge:arn")))
 	})
 
-	It("should lookup zone and certs", func() {
-		zone, regionalCert, edgeCert := clcdk.LookupBaseZoneAndCerts(stack, "ZoneAndCerts", cfg)
+	It("should init zone and certs", func() {
+		zone, regionalCert, edgeCert := clcdk.BaseZoneAndCerts(stack, "ZoneAndCerts", cfg)
 
 		awscdk.NewCfnOutput(stack, jsii.String("ZoneName"), &awscdk.CfnOutputProps{Value: zone.ZoneName()})
 		awscdk.NewCfnOutput(stack, jsii.String("RegCert"), &awscdk.CfnOutputProps{Value: regionalCert.CertificateArn()})
