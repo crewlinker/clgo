@@ -8,7 +8,9 @@ import (
 )
 
 // LookupBaseZoneAndCerts implements the logic for fetching the main public hosted zone, the zone's regional wildcard
-// certificate and the zone's edge certificate. These must be setup manually and provide to the stack.
+// certificate and the zone's edge certificate. These must be setup manually and provide to the stack. Lookups are
+// generally discouraged but since these values are expected to be "passed in" by hand and not automatically created
+// it is usefull most of the times.
 func LookupBaseZoneAndCerts(scope constructs.Construct, name ScopeName, cfg Config) (
 	awsroute53.IHostedZone,
 	awscertificatemanager.ICertificate,
