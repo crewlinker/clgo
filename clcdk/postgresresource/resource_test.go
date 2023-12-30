@@ -29,7 +29,7 @@ var _ = Describe("full app dependencies", func() {
 		os.Setenv("CLZAP_LEVEL", "panic")
 		DeferCleanup(os.Unsetenv, "CLZAPP_LEVEL")
 
-		Expect(fx.New(postgresresource.Prod("v0.0.1")).Start(ctx)).To(Succeed())
+		Expect(fx.New(postgresresource.Provide("v0.0.1")).Start(ctx)).To(Succeed())
 	})
 })
 

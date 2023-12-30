@@ -25,7 +25,7 @@ var _ = Describe("full app dependencies", func() {
 		var hdlr *Handler
 		Expect(fx.New(
 			fx.Supply(env.Options{Environment: map[string]string{"CLZAP_LEVEL": "panic"}}),
-			cllambda.Lambda[Input, Output](Prod()),
+			cllambda.Lambda[Input, Output](Provide()),
 			fx.Populate(&hdlr),
 		).Start(ctx)).To(Succeed())
 		Expect(hdlr).ToNot(BeNil())
@@ -35,7 +35,7 @@ var _ = Describe("full app dependencies", func() {
 		var hdlr lambda.Handler
 		Expect(fx.New(
 			fx.Provide(NewInvokeHandler),
-			clzap.Test(),
+			clzap.TestProvide(),
 			fx.Supply(env.Options{Environment: map[string]string{"CLZAP_LEVEL": "panic"}}),
 			cllambda.InvokeHandler(),
 			fx.Populate(&hdlr),
@@ -75,7 +75,7 @@ func (Handler) Handle(context.Context, Input) (Output, error) {
 	return Output{}, nil
 }
 
-func Prod() fx.Option {
+func Provide() fx.Option {
 	return fx.Module("lambda_test",
 		fx.Provide(fx.Annotate(New)),
 		fx.Provide(fx.Annotate(func(h *Handler) cllambda.Handler[Input, Output] { return h },

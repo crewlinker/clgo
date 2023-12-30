@@ -18,7 +18,7 @@ var _ = Describe("otel metrics", func() {
 	var mpi metric.MeterProvider
 	var mtr sdkmetric.Reader
 	BeforeEach(func(ctx context.Context) {
-		app := fx.New(fx.Populate(&mtp, &mpi, &mtr), clotel.Test(), clzap.Test())
+		app := fx.New(fx.Populate(&mtp, &mpi, &mtr), clotel.TestProvide(), clzap.TestProvide())
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 	})

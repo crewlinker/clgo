@@ -32,7 +32,7 @@ var _ = Describe("config", func() {
 
 					return c
 				}),
-				clzap.Test(), clpostgres.Prod())
+				clzap.TestProvide(), clpostgres.Provide())
 			Expect(app.Start(ctx)).To(Succeed())
 			DeferCleanup(app.Stop)
 		})
@@ -59,7 +59,7 @@ var _ = Describe("config", func() {
 
 					return pgc
 				}),
-				clzap.Test(), claws.Prod(), clpostgres.Prod())
+				clzap.TestProvide(), claws.Provide(), clpostgres.Provide())
 			Expect(app.Start(ctx)).To(Succeed())
 			DeferCleanup(app.Stop)
 		})

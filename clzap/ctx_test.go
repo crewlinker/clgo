@@ -22,7 +22,7 @@ var _ = Describe("context", func() {
 
 	BeforeEach(func() {
 		ctx1 = context.Background()
-		app := fx.New(clzap.Test(), fx.Populate(&logs, &obs))
+		app := fx.New(clzap.TestProvide(), fx.Populate(&logs, &obs))
 		ctx2 = clzap.WithLogger(context.Background(), logs)
 		Expect(app.Start(ctx1)).To(Succeed())
 		DeferCleanup(app.Stop, ctx1)

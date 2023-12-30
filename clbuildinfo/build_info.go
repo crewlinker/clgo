@@ -35,8 +35,8 @@ func (in Info) Version() string {
 // moduleName for naming conventions.
 const moduleName = "clbuildinfo"
 
-// Prod configures the DI for providng database connectivity.
-func Prod(version string) fx.Option {
+// Provide configures the DI for providng database connectivity.
+func Provide(version string) fx.Option {
 	return fx.Module(moduleName,
 		// provide the environment configuration
 		clconfig.Provide[Config](strings.ToUpper(moduleName)+"_"),
@@ -49,7 +49,7 @@ func Prod(version string) fx.Option {
 	)
 }
 
-// Test provides di for testing where no specific version is required to be provided.
-func Test() fx.Option {
-	return Prod("v0.0.0-test")
+// TestProvide provides di for testing where no specific version is required to be provided.
+func TestProvide() fx.Option {
+	return Provide("v0.0.0-test")
 }

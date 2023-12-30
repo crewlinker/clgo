@@ -52,8 +52,8 @@ var _ = Describe("tenant", func() {
 		app := fx.New(
 			fx.Populate(&hdl, &obs, &rw, &dbcfg),
 			WithMocked(&msm),
-			clpostgres.Test(),
-			postgresresource.Test())
+			clpostgres.TestProvide(),
+			postgresresource.TestProvide())
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 

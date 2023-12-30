@@ -25,8 +25,8 @@ import (
 // moduleName for naming conventions.
 const moduleName = "clotel"
 
-// Base module with di setup Base between test and prod environment.
-func Base() fx.Option {
+// Provide module with di setup Provide between test and prod environment.
+func Provide() fx.Option {
 	return fx.Module(moduleName,
 		// provide the environment configuration
 		clconfig.Provide[Config](strings.ToUpper(moduleName)+"_"),
@@ -59,9 +59,9 @@ func Base() fx.Option {
 	)
 }
 
-// Service provides otel dependencies for container services.
-func Service() fx.Option {
-	return fx.Options(Base(),
+// ServiceProvide provides otel dependencies for container services.
+func ServiceProvide() fx.Option {
+	return fx.Options(Provide(),
 		// service will export traces over grpc
 		fx.Provide(fx.Annotate(newGrpcExporter,
 			fx.OnStart(func(ctx context.Context, e *otlptrace.Exporter) error {
@@ -92,9 +92,9 @@ func Service() fx.Option {
 	)
 }
 
-// Test configures the DI for a test environment.
-func Test() fx.Option {
-	return fx.Options(Base(),
+// TestProvide configures the DI for a test environment.
+func TestProvide() fx.Option {
+	return fx.Options(Provide(),
 		fx.Provide(fx.Annotate(sdkmetric.NewManualReader, fx.As(new(sdkmetric.Reader)))),
 		fx.Provide(fx.Annotate(tracetest.NewInMemoryExporter)),
 		fx.Provide(func(e *tracetest.InMemoryExporter) sdktrace.SpanExporter { return e }),

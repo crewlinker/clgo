@@ -20,7 +20,7 @@ func TestClbuildinfo(t *testing.T) {
 var _ = Describe("build info", func() {
 	var info *clbuildinfo.Info
 	BeforeEach(func(ctx context.Context) {
-		app := fx.New(fx.Populate(&info), clbuildinfo.Test(), clzap.Test())
+		app := fx.New(fx.Populate(&info), clbuildinfo.TestProvide(), clzap.TestProvide())
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 	})

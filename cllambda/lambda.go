@@ -68,8 +68,8 @@ func baseContext(logs *zap.Logger) context.Context {
 // initialize them all in the same way (and even generate the main.go for all lambdas).
 func Lambda[I, O any](o ...fx.Option) fx.Option {
 	return fx.Options(append(o, []fx.Option{
-		clzap.Fx(),     // log fx lines to zap
-		clzap.Prod(),   // provide logging to all handlers
-		Invoke[I, O](), // invoke the lambda
+		clzap.Fx(),      // log fx lines to zap
+		clzap.Provide(), // provide logging to all handlers
+		Invoke[I, O](),  // invoke the lambda
 	}...)...)
 }

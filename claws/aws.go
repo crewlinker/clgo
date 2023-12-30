@@ -80,8 +80,8 @@ func New(
 // moduleName for naming conventions.
 const moduleName = "claws"
 
-// Prod configures the DI for providng database connectivity.
-func Prod() fx.Option {
+// Provide configures the DI for providng database connectivity.
+func Provide() fx.Option {
 	return fx.Module(moduleName,
 		// provide the environment configuration
 		clconfig.Provide[Config](strings.ToUpper(moduleName)+"_"),

@@ -41,7 +41,7 @@ var _ = Describe("config parsing", func() {
 		DeferCleanup(os.Unsetenv, "FOO")
 
 		var cfg1 Conf1
-		app := fx.New(fx.Populate(&cfg1), clzap.Fx(), clzap.Test(), clconfig.Provide[Conf1]())
+		app := fx.New(fx.Populate(&cfg1), clzap.Fx(), clzap.TestProvide(), clconfig.Provide[Conf1]())
 		Expect(app.Start(ctx)).To(Succeed())
 		Expect(app.Stop(ctx)).To(Succeed())
 		Expect(cfg1.Foo).To(Equal("bar"))
@@ -53,7 +53,7 @@ var _ = Describe("config parsing", func() {
 			fx.Supply(env.Options{Environment: map[string]string{"FOO": "bar2"}}),
 			fx.Populate(&cfg1),
 			clzap.Fx(),
-			clzap.Test(),
+			clzap.TestProvide(),
 			clconfig.Provide[Conf1]())
 
 		Expect(app.Start(ctx)).To(Succeed())

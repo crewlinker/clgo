@@ -84,7 +84,7 @@ func buildGoLambda(pkgPath, dstDirName, pkgName string) error {
 	)
 	var Version = "0.0.0"
 	func main(){
-		fx.New(%s.Prod(Version)).Run()
+		fx.New(%s.Provide(Version)).Run()
 	}
 	`, pkgName, pkgPath, pkgName)), os.ModePerm); err != nil {
 		return fmt.Errorf("failed to write lambda main.go: %w", err)

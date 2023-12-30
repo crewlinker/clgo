@@ -28,7 +28,7 @@ var _ = Describe("config without tracing", Serial, func() {
 
 		app := fx.New(
 			fx.Populate(&cfg),
-			clzap.Test(), claws.Prod())
+			clzap.TestProvide(), claws.Provide())
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 	})
@@ -50,7 +50,7 @@ var _ = Describe("config with static credentials", Serial, func() {
 
 				return c
 			}),
-			clzap.Test(), claws.Prod())
+			clzap.TestProvide(), claws.Provide())
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 	})
@@ -67,7 +67,7 @@ var _ = Describe("config with static credentials", Serial, func() {
 var _ = Describe("config with tracing", Serial, func() {
 	var cfg aws.Config
 	BeforeEach(func(ctx context.Context) {
-		app := fx.New(fx.Populate(&cfg), clzap.Test(), claws.Prod(), clotel.Test())
+		app := fx.New(fx.Populate(&cfg), clzap.TestProvide(), claws.Provide(), clotel.TestProvide())
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 	})

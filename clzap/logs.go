@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/crewlinker/clgo/clconfig"
+	"github.com/onsi/ginkgo/v2"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/zap"
@@ -40,9 +41,9 @@ func Fx() fx.Option {
 // moduleName for naming conventions.
 const moduleName = "clzap"
 
-// Prod logging module. It can be used as a fx Module in production binaries to provide
+// Provide logging module. It can be used as a fx Module in production binaries to provide
 // high-performance structured logging.
-func Prod() fx.Option {
+func Provide() fx.Option {
 	return fx.Module(moduleName,
 		// provide the environment configuration
 		clconfig.Provide[Config](strings.ToUpper(moduleName)+"_"),
@@ -79,6 +80,17 @@ func Prod() fx.Option {
 			return sync, nil
 		}),
 	)
+}
+
+// TestProvide is a convenient fx option setup that can easily be included in all tests. It observed the logs
+// for assertion and writes console output to the GinkgoWriter so all logs can easily be inspected if
+// tests fail.
+func TestProvide() fx.Option {
+	return fx.Options(Fx(),
+		// in tests, always provide the ginkgo writer as the output writer so failing tests immediately show
+		// the complete console output.
+		fx.Supply(fx.Annotate(ginkgo.GinkgoWriter, fx.As(new(io.Writer)))),
+		Observed())
 }
 
 // newObservedAndColse outputs a tee logging core that writes to an observed underlying core and also writes

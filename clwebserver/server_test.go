@@ -23,7 +23,7 @@ func TestWebserver(t *testing.T) {
 var _ = Describe("failed to handle webserver", func() {
 	var lnr *net.TCPListener
 	BeforeEach(func(ctx context.Context) {
-		app := fx.New(clwebserver.Prod(),
+		app := fx.New(clwebserver.Provide(),
 			fx.Decorate(func(c clwebserver.Config) clwebserver.Config {
 				c.BindAddrPort = "127.0.0.1:0" // random port for parallel tests
 
@@ -33,7 +33,7 @@ var _ = Describe("failed to handle webserver", func() {
 			fx.Populate(&lnr),
 			fx.Supply(fx.Annotate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}),
 				fx.As(new(http.Handler)))),
-			clzap.Test())
+			clzap.TestProvide())
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Done)
 	})

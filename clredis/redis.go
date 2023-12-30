@@ -90,8 +90,8 @@ func New(
 // moduleName for naming conventions.
 const moduleName = "clredis"
 
-// Prod configures the DI for providng database connectivity.
-func Prod() fx.Option {
+// Provide configures the DI for providng database connectivity.
+func Provide() fx.Option {
 	return fx.Module(moduleName,
 		// provide the environment configuration
 		clconfig.Provide[Config](strings.ToUpper(moduleName)+"_"),
@@ -119,5 +119,5 @@ func Prod() fx.Option {
 	)
 }
 
-// Test configures the DI for a test environment.
-func Test() fx.Option { return fx.Options(Prod()) }
+// TestProvide configures the DI for a test environment.
+func TestProvide() fx.Option { return fx.Options(Provide()) }

@@ -24,7 +24,7 @@ var _ = Describe("context logging", func() {
 	var clogs *clzap.ContextLogger
 	var obs *observer.ObservedLogs
 	BeforeEach(func(ctx context.Context) {
-		app := fx.New(fx.Populate(&logs, &obs), clzap.Test())
+		app := fx.New(fx.Populate(&logs, &obs), clzap.TestProvide())
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 		clogs = clzap.NewTraceContextLogger(logs)
@@ -51,7 +51,7 @@ var _ = Describe("default context logger", func() {
 	var obs *observer.ObservedLogs
 
 	BeforeEach(func(ctx context.Context) {
-		app := fx.New(fx.Populate(&logs, &obs), clzap.Test())
+		app := fx.New(fx.Populate(&logs, &obs), clzap.TestProvide())
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 		ctxlogs = clzap.NewContextLogger(logs)
@@ -75,7 +75,7 @@ var _ = Describe("context logger", func() {
 			fx.Decorate(func(l *zap.Logger) *zap.Logger {
 				return l.WithOptions(zap.WithFatalHook(fatalHook{}))
 			}),
-			clzap.Test())
+			clzap.TestProvide())
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 		ctxlogs = clzap.NewContextLogger(logs, func(ctx context.Context, f []zap.Field) []zap.Field {

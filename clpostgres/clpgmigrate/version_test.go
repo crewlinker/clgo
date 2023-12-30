@@ -20,8 +20,8 @@ var _ = Describe("version migrater", func() {
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(
 			fx.Populate(&sqldb, &dbcfg),
-			clzap.Test(),
-			clpostgres.Test(),
+			clzap.TestProvide(),
+			clpostgres.TestProvide(),
 			clpgmigrate.VersionMigrated("test_data", true))
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(func(ctx context.Context) {

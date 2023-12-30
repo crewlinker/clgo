@@ -56,8 +56,8 @@ func New(cfg Config, logs *zap.Logger, h http.Handler, _ *net.TCPListener) *http
 // moduleName standardizes the module name.
 const moduleName = "clwebserver"
 
-// Prod dependencies.
-func Prod() fx.Option {
+// Provide dependencies.
+func Provide() fx.Option {
 	return fx.Module(moduleName,
 		// provide the config
 		clconfig.Provide[Config](strings.ToUpper(moduleName)+"_"),

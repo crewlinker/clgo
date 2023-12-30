@@ -42,8 +42,8 @@ var _ = Describe("pgx pool", func() {
 			fx.Populate(
 				fx.Annotate(&rwp, fx.ParamTags(`name:"rw"`)),
 				fx.Annotate(&rop, fx.ParamTags(`name:"ro"`))),
-			clpostgres.Test(),
-			clzap.Test())
+			clpostgres.TestProvide(),
+			clzap.TestProvide())
 		Expect(app.Start(ctx)).To(Succeed())
 
 		DeferCleanup(func(ctx context.Context) {
@@ -79,9 +79,9 @@ var _ = Describe("observe", func() {
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(
 			fx.Populate(&logs, &pgs, &obs, &scdb, &tobs, &trp, &mtr),
-			clpostgres.Test(),
-			clzap.Test(),
-			clotel.Test())
+			clpostgres.TestProvide(),
+			clzap.TestProvide(),
+			clotel.TestProvide())
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 

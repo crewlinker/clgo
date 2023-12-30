@@ -28,7 +28,7 @@ var _ = Describe("otel tracing", func() {
 	var tpi trace.TracerProvider
 	var tobs *tracetest.InMemoryExporter
 	BeforeEach(func(ctx context.Context) {
-		app := fx.New(fx.Populate(&trp, &tpi, &tobs), clotel.Test(), clzap.Test())
+		app := fx.New(fx.Populate(&trp, &tpi, &tobs), clotel.TestProvide(), clzap.TestProvide())
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 	})
@@ -68,7 +68,7 @@ var _ = Describe("extra ecs detector", func() {
 			fx.Populate(&det),
 			fx.Supply(fx.Annotate(testDetector{}, fx.As(new(resource.Detector)))),
 			fx.Decorate(clotel.WithExtraEcsAttributes),
-			clzap.Test(),
+			clzap.TestProvide(),
 		)
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)

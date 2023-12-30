@@ -25,8 +25,8 @@ var _ = Describe("snapshot migrater", func() {
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(
 			fx.Populate(&sqldb, &dbcfg, &mig),
-			clzap.Test(),
-			clpostgres.Test(),
+			clzap.TestProvide(),
+			clpostgres.TestProvide(),
 			clpgmigrate.SnapshotMigrated(snapshot1),
 		)
 

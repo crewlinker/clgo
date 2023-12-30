@@ -29,7 +29,7 @@ var _ = Describe("regular logging", func() {
 
 	BeforeEach(func(ctx context.Context) {
 		tmpfp = filepath.Join(os.TempDir(), fmt.Sprintf("test_logging_%d.log", time.Now().UnixNano()))
-		app := fx.New(clzap.Fx(), clzap.Prod(), fx.Populate(&logs),
+		app := fx.New(clzap.Fx(), clzap.Provide(), fx.Populate(&logs),
 			fx.Decorate(func(cfg clzap.Config) clzap.Config {
 				cfg.Outputs = []string{tmpfp}
 				cfg.FxLevel = zapcore.InfoLevel
@@ -59,7 +59,7 @@ var _ = Describe("test logging", func() {
 	var obs *observer.ObservedLogs
 
 	BeforeEach(func(ctx context.Context) {
-		app := fx.New(clzap.Test(), fx.Populate(&logs, &obs))
+		app := fx.New(clzap.TestProvide(), fx.Populate(&logs, &obs))
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 	})

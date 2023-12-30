@@ -81,8 +81,8 @@ func New(
 // moduleName for naming conventions.
 const moduleName = "clpostgres"
 
-// Prod configures the DI for providng database connectivity.
-func Prod() fx.Option {
+// Provide configures the DI for providng database connectivity.
+func Provide() fx.Option {
 	return fx.Module(moduleName,
 		// provide the environment configuration
 		clconfig.Provide[Config](strings.ToUpper(moduleName)+"_"),
@@ -153,9 +153,9 @@ func Prod() fx.Option {
 	)
 }
 
-// Test configures the DI for a test environment.
-func Test() fx.Option {
-	return fx.Options(Prod(),
+// TestProvide configures the DI for a test environment.
+func TestProvide() fx.Option {
+	return fx.Options(Provide(),
 		// we re-provide the read-write sql db as an unnamed *sql.DB and config because that is
 		// what we usually want in tests.
 		fx.Provide(fx.Annotate(func(rw *sql.DB) *sql.DB { return rw }, fx.ParamTags(`name:"rw"`))),

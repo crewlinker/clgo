@@ -156,22 +156,22 @@ func shared() fx.Option {
 		clconfig.Provide[Config](strings.ToUpper(moduleName)+"_"),
 		fx.Provide(fx.Annotate(func(h *Handler) cllambda.Handler[Input, Output] { return h },
 			fx.As(new(cllambda.Handler[Input, Output])))),
-		claws.Prod(),
+		claws.Provide(),
 	)
 }
 
-// Test dependency setup.
-func Test() fx.Option {
+// TestProvide dependency setup.
+func TestProvide() fx.Option {
 	return fx.Options(
-		clzap.Test(),
+		clzap.TestProvide(),
 		shared(),
 	)
 }
 
-// Prod dependency setup.
-func Prod(version string) fx.Option {
+// Provide dependency setup.
+func Provide(version string) fx.Option {
 	return fx.Options(
-		clbuildinfo.Prod(version),
+		clbuildinfo.Provide(version),
 		cllambda.Lambda[Input, Output](shared()),
 	)
 }
