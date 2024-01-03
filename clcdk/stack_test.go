@@ -1,6 +1,8 @@
 package clcdk_test
 
 import (
+	"os"
+
 	"github.com/aws/aws-cdk-go/awscdk/v2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/assertions"
 	"github.com/aws/jsii-runtime-go"
@@ -20,37 +22,75 @@ var _ = Describe("stack", func() {
 		conv = clcdk.NewConventions("ClFoo", "eu-west-1", "111111")
 	})
 
-	It("should create an instanced stack with instance context", func() {
-		app.Node().SetContext(jsii.String("instance"), jsii.String("1"))
-		app.Node().SetContext(jsii.String("environment"), jsii.String("dev"))
+	Describe("V1", func() {
+		It("should create an instanced stack with instance context", func() {
+			app.Node().SetContext(jsii.String("instance"), jsii.String("1"))
+			app.Node().SetContext(jsii.String("environment"), jsii.String("dev"))
 
-		stack := clcdk.NewInstancedStack(app, conv)
-		tmpl := assertions.Template_FromStack(stack, nil)
-		data := *tmpl.ToJSON()
+			stack := clcdk.NewInstancedStackV1(app, conv)
+			tmpl := assertions.Template_FromStack(stack, nil)
+			data := *tmpl.ToJSON()
 
-		Expect(data["Description"]).To(Equal("ClFoo (env: dev, instance: 1)"))
+			Expect(data["Description"]).To(Equal("ClFoo (env: dev, instance: 1)"))
+		})
+
+		It("should create a singleton stack with instance context", func() {
+			app.Node().SetContext(jsii.String("environment"), jsii.String("dev"))
+
+			stack := clcdk.NewSingletonStack(app, conv)
+			tmpl := assertions.Template_FromStack(stack, nil)
+			data := *tmpl.ToJSON()
+
+			Expect(data["Description"]).To(Equal("ClFoo (env: dev, singleton)"))
+			Expect(*awscdk.Stack_Of(stack).Account()).To(Equal("111111"))
+		})
+
+		// we don't want the code to panic without an instance or the bootstrap logic won't succeed. In
+		// case of the bootstrap we never have an instance in the context.
+		It("should not panic without instance context", func() {
+			stack := clcdk.NewInstancedStackV1(app, conv)
+
+			tmpl := assertions.Template_FromStack(stack, nil)
+			data := *tmpl.ToJSON()
+
+			Expect(data["Description"]).To(Equal("ClFoo (env: <none>, instance: 0)"))
+			Expect(*awscdk.Stack_Of(stack).Account()).To(Equal("111111"))
+		})
 	})
 
-	It("should create a singleton stack with instance context", func() {
-		app.Node().SetContext(jsii.String("environment"), jsii.String("dev"))
+	Describe("new", Serial, func() {
+		BeforeEach(func() {
+			os.Setenv("CDK_DEFAULT_REGION", "eu-foo-1")
+			os.Setenv("CDK_DEFAULT_ACCOUNT", "1111111")
+		})
 
-		stack := clcdk.NewSingletonStack(app, conv)
-		tmpl := assertions.Template_FromStack(stack, nil)
-		data := *tmpl.ToJSON()
+		It("should create an instanced stack with instance context", func() {
+			app.Node().SetContext(jsii.String("qualifier"), jsii.String("ClFoo"))
+			app.Node().SetContext(jsii.String("instance"), jsii.String("1"))
+			app.Node().SetContext(jsii.String("environment"), jsii.String("dev"))
 
-		Expect(data["Description"]).To(Equal("ClFoo (env: dev, singleton)"))
-		Expect(*awscdk.Stack_Of(stack).Account()).To(Equal("111111"))
-	})
+			stack := clcdk.NewInstancedStack(app)
+			tmpl := assertions.Template_FromStack(stack, nil)
+			data := *tmpl.ToJSON()
 
-	// we don't want the code to panic without an instance or the bootstrap logic won't succeed. In
-	// case of the bootstrap we never have an instance in the context.
-	It("should not panic without instance context", func() {
-		stack := clcdk.NewInstancedStack(app, conv)
+			Expect(data["Description"]).To(Equal("ClFoo (env: dev, instance: 1)"))
+			Expect(*awscdk.Stack_Of(stack).Account()).To(Equal("1111111"))
+			Expect(*awscdk.Stack_Of(stack).Region()).To(Equal("eu-foo-1"))
+		})
 
-		tmpl := assertions.Template_FromStack(stack, nil)
-		data := *tmpl.ToJSON()
+		// we don't want the code to panic without an instance or the bootstrap logic won't succeed. In
+		// case of the bootstrap we never have an instance in the context.
+		It("should not panic without instance context", func() {
+			app.Node().SetContext(jsii.String("qualifier"), jsii.String("ClFoo"))
 
-		Expect(data["Description"]).To(Equal("ClFoo (env: <none>, instance: 0)"))
-		Expect(*awscdk.Stack_Of(stack).Account()).To(Equal("111111"))
+			stack := clcdk.NewInstancedStack(app)
+
+			tmpl := assertions.Template_FromStack(stack, nil)
+			data := *tmpl.ToJSON()
+
+			Expect(data["Description"]).To(Equal("ClFoo (env: , instance: 0)"))
+			Expect(*awscdk.Stack_Of(stack).Account()).To(Equal("1111111"))
+			Expect(*awscdk.Stack_Of(stack).Region()).To(Equal("eu-foo-1"))
+		})
 	})
 })

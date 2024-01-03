@@ -2,6 +2,7 @@ package clcdk
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
@@ -33,9 +34,10 @@ func NewSingletonStack(scope constructs.Construct, conv Conventions) awscdk.Stac
 		})
 }
 
-// NewInstancedStack requires a "instance" context variable to allow different copies of the stack
+// NewInstancedStackV1 requires a "instance" context variable to allow different copies of the stack
 // to exist in the same AWS account.
-func NewInstancedStack(scope constructs.Construct, conv Conventions) awscdk.Stack {
+// Deprecated: use [NewInstancedStack].
+func NewInstancedStackV1(scope constructs.Construct, conv Conventions) awscdk.Stack {
 	instance, env := InstanceFromScope(scope), EnvironmentFromScope(scope)
 	if env == "" {
 		env = "<none>"
@@ -54,6 +56,32 @@ func NewInstancedStack(scope constructs.Construct, conv Conventions) awscdk.Stac
 				Qualifier: jsii.String(strings.ToLower(conv.Qualifier())),
 			}),
 		})
+}
+
+// NewInstancedStack standardizes the creation of a stack based on three context string
+// parameters: qualifier, instance and environment.
+func NewInstancedStack(app awscdk.App) awscdk.Stack {
+	qual, instance, env := QualifierFromScope(app), InstanceFromScope(app), EnvironmentFromScope(app)
+
+	return awscdk.NewStack(app, jsii.String(qual+strconv.Itoa(instance)),
+		&awscdk.StackProps{
+			Env: &awscdk.Environment{
+				Account: jsii.String(os.Getenv("CDK_DEFAULT_ACCOUNT")),
+				Region:  jsii.String(os.Getenv("CDK_DEFAULT_REGION")),
+			},
+			Description: jsii.String(fmt.Sprintf("%s (env: %s, instance: %d)",
+				qual, env, instance)),
+			Synthesizer: awscdk.NewDefaultStackSynthesizer(&awscdk.DefaultStackSynthesizerProps{
+				Qualifier: jsii.String(strings.ToLower(qual)),
+			}),
+		})
+}
+
+// QualifierFromScope retrieves the qualifier from the context or an empty string.
+func QualifierFromScope(s constructs.Construct) string {
+	v, _ := s.Node().TryGetContext(jsii.String("qualifier")).(string)
+
+	return v
 }
 
 // EnvironmentFromScope retrieves the instance name from the context or an empty string.
