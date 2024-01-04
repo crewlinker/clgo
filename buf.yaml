@@ -1,5 +1,7 @@
 version: v1
 name: buf.build/crewlinker/clgo
+deps:
+  - buf.build/bufbuild/protovalidate
 lint:
   use:
     - DEFAULT

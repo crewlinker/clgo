@@ -7,13 +7,18 @@ import (
 	"strings"
 
 	"connectrpc.com/connect"
+	"connectrpc.com/validate"
+	"github.com/bufbuild/protovalidate-go"
 	"github.com/crewlinker/clgo/clconfig"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 )
 
 // Config configures the components.
-type Config struct{}
+type Config struct {
+	// disables stack trace information in error details
+	DisableStackTraceErrorDetails bool `env:"DISABLE_STACK_TRACE_ERROR_DETAILS"`
+}
 
 // ConstructHandler defines the type for constructing a connectrpc service handler.
 type ConstructHandler[SH any] func(svc SH, opts ...connect.HandlerOption) (string, http.Handler)
@@ -27,13 +32,21 @@ func New[RO, RW any](
 	logs *zap.Logger,
 	ro RO, roc ConstructHandler[RO],
 	rw RW, rwc ConstructHandler[RW],
+
+	// middleware
+	valr *validate.Interceptor,
+	logr *Logger,
+	rcvr *Recoverer,
 ) http.Handler {
 	mux := http.NewServeMux()
 
-	rwp, rwh := rwc(rw)
+	interceptors := connect.WithInterceptors(valr, logr)
+	recoverer := connect.WithRecover(rcvr.handle)
+
+	rwp, rwh := rwc(rw, interceptors, recoverer)
 	mux.Handle(rwp, rwh)
 
-	rop, roh := roc(ro)
+	rop, roh := roc(ro, interceptors, recoverer)
 	mux.Handle(rop, roh)
 
 	return mux
@@ -51,6 +64,12 @@ func Provide[RO, RW any](name string) fx.Option {
 		fx.Decorate(func(l *zap.Logger) *zap.Logger { return l.Named(moduleName) }),
 		// provide as a named http handler
 		fx.Provide(fx.Annotate(New[RO, RW], fx.ResultTags(`name:"`+name+`"`))),
+		// provide middleware constructors
+		fx.Provide(protovalidate.New, NewRecoverer, NewLogger),
+		// provide the validator interceptor
+		fx.Provide(func(val *protovalidate.Validator) (*validate.Interceptor, error) {
+			return validate.NewInterceptor(validate.WithValidator(val)) //nolint:wrapcheck
+		}),
 	)
 }
 

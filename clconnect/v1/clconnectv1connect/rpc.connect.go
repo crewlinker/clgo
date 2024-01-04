@@ -6,8 +6,11 @@ package clconnectv1connect
 
 import (
 	connect "connectrpc.com/connect"
+	context "context"
+	errors "errors"
 	v1 "github.com/crewlinker/clgo/clconnect/v1"
 	http "net/http"
+	strings "strings"
 )
 
 // This is a compile-time assertion to ensure that this generated file and the connect package are
@@ -24,10 +27,24 @@ const (
 	ReadWriteServiceName = "clconnect.v1.ReadWriteService"
 )
 
+// These constants are the fully-qualified names of the RPCs defined in this package. They're
+// exposed at runtime as Spec.Procedure and as the final two segments of the HTTP route.
+//
+// Note that these are different from the fully-qualified method names used by
+// google.golang.org/protobuf/reflect/protoreflect. To convert from these constants to
+// reflection-formatted method names, remove the leading slash and convert the remaining slash to a
+// period.
+const (
+	// ReadWriteServiceCheckHealthProcedure is the fully-qualified name of the ReadWriteService's
+	// CheckHealth RPC.
+	ReadWriteServiceCheckHealthProcedure = "/clconnect.v1.ReadWriteService/CheckHealth"
+)
+
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	readOnlyServiceServiceDescriptor  = v1.File_clconnect_v1_rpc_proto.Services().ByName("ReadOnlyService")
-	readWriteServiceServiceDescriptor = v1.File_clconnect_v1_rpc_proto.Services().ByName("ReadWriteService")
+	readOnlyServiceServiceDescriptor            = v1.File_clconnect_v1_rpc_proto.Services().ByName("ReadOnlyService")
+	readWriteServiceServiceDescriptor           = v1.File_clconnect_v1_rpc_proto.Services().ByName("ReadWriteService")
+	readWriteServiceCheckHealthMethodDescriptor = readWriteServiceServiceDescriptor.Methods().ByName("CheckHealth")
 )
 
 // ReadOnlyServiceClient is a client for the clconnect.v1.ReadOnlyService service.
@@ -72,6 +89,7 @@ type UnimplementedReadOnlyServiceHandler struct{}
 
 // ReadWriteServiceClient is a client for the clconnect.v1.ReadWriteService service.
 type ReadWriteServiceClient interface {
+	CheckHealth(context.Context, *connect.Request[v1.CheckHealthRequest]) (*connect.Response[v1.CheckHealthResponse], error)
 }
 
 // NewReadWriteServiceClient constructs a client for the clconnect.v1.ReadWriteService service. By
@@ -82,15 +100,30 @@ type ReadWriteServiceClient interface {
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
 func NewReadWriteServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) ReadWriteServiceClient {
-	return &readWriteServiceClient{}
+	baseURL = strings.TrimRight(baseURL, "/")
+	return &readWriteServiceClient{
+		checkHealth: connect.NewClient[v1.CheckHealthRequest, v1.CheckHealthResponse](
+			httpClient,
+			baseURL+ReadWriteServiceCheckHealthProcedure,
+			connect.WithSchema(readWriteServiceCheckHealthMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+	}
 }
 
 // readWriteServiceClient implements ReadWriteServiceClient.
 type readWriteServiceClient struct {
+	checkHealth *connect.Client[v1.CheckHealthRequest, v1.CheckHealthResponse]
+}
+
+// CheckHealth calls clconnect.v1.ReadWriteService.CheckHealth.
+func (c *readWriteServiceClient) CheckHealth(ctx context.Context, req *connect.Request[v1.CheckHealthRequest]) (*connect.Response[v1.CheckHealthResponse], error) {
+	return c.checkHealth.CallUnary(ctx, req)
 }
 
 // ReadWriteServiceHandler is an implementation of the clconnect.v1.ReadWriteService service.
 type ReadWriteServiceHandler interface {
+	CheckHealth(context.Context, *connect.Request[v1.CheckHealthRequest]) (*connect.Response[v1.CheckHealthResponse], error)
 }
 
 // NewReadWriteServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -99,8 +132,16 @@ type ReadWriteServiceHandler interface {
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
 func NewReadWriteServiceHandler(svc ReadWriteServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	readWriteServiceCheckHealthHandler := connect.NewUnaryHandler(
+		ReadWriteServiceCheckHealthProcedure,
+		svc.CheckHealth,
+		connect.WithSchema(readWriteServiceCheckHealthMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/clconnect.v1.ReadWriteService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case ReadWriteServiceCheckHealthProcedure:
+			readWriteServiceCheckHealthHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -109,3 +150,7 @@ func NewReadWriteServiceHandler(svc ReadWriteServiceHandler, opts ...connect.Han
 
 // UnimplementedReadWriteServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedReadWriteServiceHandler struct{}
+
+func (UnimplementedReadWriteServiceHandler) CheckHealth(context.Context, *connect.Request[v1.CheckHealthRequest]) (*connect.Response[v1.CheckHealthResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("clconnect.v1.ReadWriteService.CheckHealth is not implemented"))
+}
