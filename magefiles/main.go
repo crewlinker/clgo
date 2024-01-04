@@ -51,6 +51,10 @@ func Generate() error {
 	if err := sh.Run("go", "run", "-mod=readonly", "github.com/vektra/mockery/v2"); err != nil {
 		return fmt.Errorf("failed to run mockery: %w", err)
 	}
+	// generate protobuf
+	if err := sh.Run("buf", "generate"); err != nil {
+		return fmt.Errorf("failed to generate protobuf: %w", err)
+	}
 
 	return nil
 }

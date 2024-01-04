@@ -1,0 +1,10 @@
+version: v1
+name: buf.build/crewlinker/clgo
+lint:
+  use:
+    - DEFAULT
+    - COMMENTS
+    - PACKAGE_NO_IMPORT_CYCLE
+breaking:
+  use:
+    - FILE

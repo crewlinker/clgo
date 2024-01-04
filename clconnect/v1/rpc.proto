@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package clconnect.v1;
+
+// Service with read-only endpoints, it's implementation will receive a
+// read-only postgres connection pool
+service ReadOnlyService {}
+
+// Service that can read and write
+service ReadWriteService {}
