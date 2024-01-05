@@ -37,16 +37,18 @@ func New[RO, RW any](
 	valr *validate.Interceptor,
 	logr *Logger,
 	rcvr *Recoverer,
+	rotx *ROTransacter,
+	rwtx *RWTransacter,
 ) http.Handler {
 	mux := http.NewServeMux()
 
 	interceptors := connect.WithInterceptors(valr, logr)
 	recoverer := connect.WithRecover(rcvr.handle)
 
-	rwp, rwh := rwc(rw, interceptors, recoverer)
+	rwp, rwh := rwc(rw, interceptors, recoverer, connect.WithInterceptors(rwtx))
 	mux.Handle(rwp, rwh)
 
-	rop, roh := roc(ro, interceptors, recoverer)
+	rop, roh := roc(ro, interceptors, recoverer, connect.WithInterceptors(rotx))
 	mux.Handle(rop, roh)
 
 	return mux
@@ -66,6 +68,9 @@ func Provide[RO, RW any](name string) fx.Option {
 		fx.Provide(fx.Annotate(New[RO, RW], fx.ResultTags(`name:"`+name+`"`))),
 		// provide middleware constructors
 		fx.Provide(protovalidate.New, NewRecoverer, NewLogger),
+		// database transactors
+		fx.Provide(fx.Annotate(NewROTransacter, fx.ParamTags(``, ``, `name:"ro"`))),
+		fx.Provide(fx.Annotate(NewRWTransacter, fx.ParamTags(``, ``, `name:"rw"`))),
 		// provide the validator interceptor
 		fx.Provide(func(val *protovalidate.Validator) (*validate.Interceptor, error) {
 			return validate.NewInterceptor(validate.WithValidator(val)) //nolint:wrapcheck

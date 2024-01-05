@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"path/filepath"
 	"testing"
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
@@ -14,6 +15,7 @@ import (
 	"github.com/crewlinker/clgo/clconnect/v1/clconnectv1connect"
 	"github.com/crewlinker/clgo/clpostgres"
 	"github.com/crewlinker/clgo/clzap"
+	"github.com/joho/godotenv"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.uber.org/fx"
@@ -26,6 +28,10 @@ func TestClconnect(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "clconnect")
 }
+
+var _ = BeforeSuite(func() {
+	godotenv.Load(filepath.Join("..", "test.env"))
+})
 
 var _ = Describe("rpc", func() {
 	var hdl http.Handler
@@ -64,6 +70,11 @@ var _ = Describe("rpc", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.Msg.GetEcho()).To(Equal("foo"))
 		Expect(obs.FilterMessage("handling request").All()).To(HaveLen(1))
+	})
+
+	It("should serve read-only", func(ctx context.Context) {
+		_, err := roc.Foo(ctx, &connect.Request[clconnectv1.FooRequest]{})
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("should trigger a server error", func(ctx context.Context) {

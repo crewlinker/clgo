@@ -35,6 +35,8 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
+	// ReadOnlyServiceFooProcedure is the fully-qualified name of the ReadOnlyService's Foo RPC.
+	ReadOnlyServiceFooProcedure = "/clconnect.v1.ReadOnlyService/Foo"
 	// ReadWriteServiceCheckHealthProcedure is the fully-qualified name of the ReadWriteService's
 	// CheckHealth RPC.
 	ReadWriteServiceCheckHealthProcedure = "/clconnect.v1.ReadWriteService/CheckHealth"
@@ -43,12 +45,15 @@ const (
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
 	readOnlyServiceServiceDescriptor            = v1.File_clconnect_v1_rpc_proto.Services().ByName("ReadOnlyService")
+	readOnlyServiceFooMethodDescriptor          = readOnlyServiceServiceDescriptor.Methods().ByName("Foo")
 	readWriteServiceServiceDescriptor           = v1.File_clconnect_v1_rpc_proto.Services().ByName("ReadWriteService")
 	readWriteServiceCheckHealthMethodDescriptor = readWriteServiceServiceDescriptor.Methods().ByName("CheckHealth")
 )
 
 // ReadOnlyServiceClient is a client for the clconnect.v1.ReadOnlyService service.
 type ReadOnlyServiceClient interface {
+	// Foo method for testing
+	Foo(context.Context, *connect.Request[v1.FooRequest]) (*connect.Response[v1.FooResponse], error)
 }
 
 // NewReadOnlyServiceClient constructs a client for the clconnect.v1.ReadOnlyService service. By
@@ -59,15 +64,31 @@ type ReadOnlyServiceClient interface {
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
 func NewReadOnlyServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) ReadOnlyServiceClient {
-	return &readOnlyServiceClient{}
+	baseURL = strings.TrimRight(baseURL, "/")
+	return &readOnlyServiceClient{
+		foo: connect.NewClient[v1.FooRequest, v1.FooResponse](
+			httpClient,
+			baseURL+ReadOnlyServiceFooProcedure,
+			connect.WithSchema(readOnlyServiceFooMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+	}
 }
 
 // readOnlyServiceClient implements ReadOnlyServiceClient.
 type readOnlyServiceClient struct {
+	foo *connect.Client[v1.FooRequest, v1.FooResponse]
+}
+
+// Foo calls clconnect.v1.ReadOnlyService.Foo.
+func (c *readOnlyServiceClient) Foo(ctx context.Context, req *connect.Request[v1.FooRequest]) (*connect.Response[v1.FooResponse], error) {
+	return c.foo.CallUnary(ctx, req)
 }
 
 // ReadOnlyServiceHandler is an implementation of the clconnect.v1.ReadOnlyService service.
 type ReadOnlyServiceHandler interface {
+	// Foo method for testing
+	Foo(context.Context, *connect.Request[v1.FooRequest]) (*connect.Response[v1.FooResponse], error)
 }
 
 // NewReadOnlyServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -76,8 +97,16 @@ type ReadOnlyServiceHandler interface {
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
 func NewReadOnlyServiceHandler(svc ReadOnlyServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	readOnlyServiceFooHandler := connect.NewUnaryHandler(
+		ReadOnlyServiceFooProcedure,
+		svc.Foo,
+		connect.WithSchema(readOnlyServiceFooMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/clconnect.v1.ReadOnlyService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case ReadOnlyServiceFooProcedure:
+			readOnlyServiceFooHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -87,8 +116,13 @@ func NewReadOnlyServiceHandler(svc ReadOnlyServiceHandler, opts ...connect.Handl
 // UnimplementedReadOnlyServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedReadOnlyServiceHandler struct{}
 
+func (UnimplementedReadOnlyServiceHandler) Foo(context.Context, *connect.Request[v1.FooRequest]) (*connect.Response[v1.FooResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("clconnect.v1.ReadOnlyService.Foo is not implemented"))
+}
+
 // ReadWriteServiceClient is a client for the clconnect.v1.ReadWriteService service.
 type ReadWriteServiceClient interface {
+	// Check health endpoint for testing middleware
 	CheckHealth(context.Context, *connect.Request[v1.CheckHealthRequest]) (*connect.Response[v1.CheckHealthResponse], error)
 }
 
@@ -123,6 +157,7 @@ func (c *readWriteServiceClient) CheckHealth(ctx context.Context, req *connect.R
 
 // ReadWriteServiceHandler is an implementation of the clconnect.v1.ReadWriteService service.
 type ReadWriteServiceHandler interface {
+	// Check health endpoint for testing middleware
 	CheckHealth(context.Context, *connect.Request[v1.CheckHealthRequest]) (*connect.Response[v1.CheckHealthResponse], error)
 }
 
