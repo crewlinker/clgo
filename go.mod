@@ -1,9 +1,11 @@
 module github.com/crewlinker/clgo
 
-go 1.20
+go 1.21
+
+toolchain go1.21.6
 
 require (
-	ariga.io/atlas v0.14.2
+	ariga.io/atlas v0.17.0
 	github.com/XSAM/otelsql v0.25.0
 	github.com/aws/aws-lambda-go v1.40.0
 	github.com/getkin/kin-openapi v0.120.0
@@ -41,6 +43,7 @@ require (
 	github.com/mitchellh/copystructure v1.2.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/oklog/ulid/v2 v2.1.0
+	github.com/samber/lo v1.39.0
 	github.com/sourcegraph/conc v0.3.0
 	github.com/stretchr/testify v1.8.4
 	github.com/vektra/mockery/v2 v2.36.1

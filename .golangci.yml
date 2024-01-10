@@ -66,6 +66,7 @@ issues:
         - lll
         - revive
         - musttag
+        - wrapcheck
     - path: infra/infrastack
       linters:
         - gomnd

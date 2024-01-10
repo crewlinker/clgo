@@ -8,18 +8,18 @@ import (
 
 	"ariga.io/atlas/sql/migrate"
 	"ariga.io/atlas/sql/postgres"
-	"ariga.io/atlas/sql/sqltool"
 	"github.com/crewlinker/clgo/clconfig"
 	"github.com/crewlinker/clgo/clpostgres"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
+	"github.com/samber/lo"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 )
 
 // alwaysValidateMigrateDir can be provided as a migration dir to disable checksum validation. This
 // is useful for unit tests that don't need this feature for quick iteration.
-type alwaysValidateMigrateDir struct{ *sqltool.GolangMigrateDir }
+type alwaysValidateMigrateDir struct{ migrate.Dir }
 
 // Checksum implements the logic for re-calculate the directories checksum. But instead we return
 // the checksum in the checksum file to make the validation logic always pass.
@@ -45,7 +45,7 @@ func (dir alwaysValidateMigrateDir) Checksum() (migrate.HashFile, error) {
 }
 
 // VersionMigrated configures the di for testing with a temporary database and auto-migration of a directory.
-func VersionMigrated(migrationDir string, disableValidation bool) fx.Option {
+func VersionMigrated(noChecksumValidate bool) fx.Option {
 	return fx.Options(
 		// provide the environment configuration
 		clconfig.Provide[Config](strings.ToUpper(moduleName)+"_"),
@@ -66,15 +66,10 @@ func VersionMigrated(migrationDir string, disableValidation bool) fx.Option {
 
 			return c
 		}),
-		// provide the optional configuration for a migration dir
-		fx.Provide(func() (migrate.Dir, error) {
-			dir, err := sqltool.NewGolangMigrateDir(migrationDir)
-			if err != nil {
-				return nil, fmt.Errorf("failed to init golang migrate dir: %w", err)
-			}
-
-			if disableValidation {
-				return alwaysValidateMigrateDir{GolangMigrateDir: dir}, nil
+		// decorate dir to disable checksum
+		fx.Decorate(func(dir migrate.Dir) (migrate.Dir, error) {
+			if noChecksumValidate {
+				return alwaysValidateMigrateDir{Dir: dir}, nil
 			}
 
 			return dir, nil
@@ -102,7 +97,7 @@ func NewVersionMigrater(
 		baseMigrater: baseMigrater{
 			cfg:   cfg,
 			dbcfg: rwcfg,
-			logs:  logs.Named("migrater"),
+			logs:  logs.Named("version_migrater"),
 		}, dir: dir,
 	}
 
@@ -141,7 +136,8 @@ func (m VersionMigrater) Migrate(ctx context.Context) error {
 		return fmt.Errorf("failed to init atlas driver: %w", err)
 	}
 
-	exec, err := migrate.NewExecutor(drv, m.dir, migrate.NopRevisionReadWriter{})
+	exec, err := migrate.NewExecutor(drv, m.dir, migrate.NopRevisionReadWriter{},
+		migrate.WithLogger(migrateLogger{logs: m.logs.Named("named")}))
 	if err != nil {
 		return fmt.Errorf("failed to init executor: %w", err)
 	}
@@ -156,4 +152,38 @@ func (m VersionMigrater) Migrate(ctx context.Context) error {
 // Reset drops the migrated state.
 func (m VersionMigrater) Reset(ctx context.Context) error {
 	return m.baseMigrater.reset(ctx)
+}
+
+// migrateLogger logger.
+type migrateLogger struct {
+	logs *zap.Logger
+}
+
+func (l migrateLogger) Log(e migrate.LogEntry) {
+	switch entry := e.(type) {
+	case migrate.LogExecution:
+		l.logs.Info("execution",
+			zap.String("from", entry.From),
+			zap.String("to", entry.To),
+			zap.Strings("files", lo.Map(entry.Files, func(f migrate.File, _ int) string {
+				return f.Name()
+			})))
+	case migrate.LogFile:
+		l.logs.Info("file",
+			zap.String("desc", entry.File.Desc()),
+			zap.String("name", entry.File.Name()),
+			zap.Int("skip", entry.Skip),
+			zap.String("version", entry.Version),
+		)
+	case migrate.LogStmt:
+		l.logs.Info("statement",
+			zap.String("sql", entry.SQL),
+		)
+	case migrate.LogDone:
+		l.logs.Info("done")
+	case migrate.LogError:
+		l.logs.Error("error",
+			zap.Error(entry.Error),
+			zap.String("sql", entry.SQL))
+	}
 }
