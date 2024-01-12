@@ -105,7 +105,9 @@ func newPoolConfig(cfg Config, logs *zap.Logger, host string, awsc aws.Config) (
 	logs.Info("initialized postgres connection config",
 		zap.Any("runtime_params", pcfg.ConnConfig.RuntimeParams),
 		zap.String("ssl_mode", cfg.SSLMode),
+		zap.Bool("iam_auth", cfg.IamAuth),
 		zap.String("user", pcfg.ConnConfig.User),
+		zap.String("password", pcfg.ConnConfig.Password),
 		zap.String("database", pcfg.ConnConfig.Database),
 		zap.String("host", pcfg.ConnConfig.Host),
 		zap.Uint16("port", pcfg.ConnConfig.Port))
