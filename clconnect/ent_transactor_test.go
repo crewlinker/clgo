@@ -38,7 +38,8 @@ var _ = Describe("ent", func() {
 
 			// ent transactor
 			clconnect.ProvideEntTransactors[*modelTx, *modelClient](),
-			fx.Supply(&modelClient{}),
+			fx.Supply(fx.Annotate(&modelClient{}, fx.ResultTags(`name:"rw"`))),
+			fx.Supply(fx.Annotate(&modelClient{}, fx.ResultTags(`name:"ro"`))),
 
 			// general provides
 			fx.Provide(newEntReadOnly, newEntReadWrite),

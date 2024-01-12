@@ -110,8 +110,10 @@ func txEntIntercept[TX EntModelTx, MC EntModelClient[TX]](
 func ProvideEntTransactors[TX EntModelTx, MC EntModelClient[TX]]() fx.Option {
 	return fx.Options(
 		fx.Provide(fx.Annotate(NewEntROTransactor[TX, MC],
+			fx.ParamTags(``, `name:"ro"`),
 			fx.As(new(ROTransacter)))),
 		fx.Provide(fx.Annotate(NewEntRWTransactor[TX, MC],
+			fx.ParamTags(``, `name:"rw"`),
 			fx.As(new(RWTransacter)))),
 	)
 }
