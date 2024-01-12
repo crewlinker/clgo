@@ -10,62 +10,63 @@ import (
 	"github.com/crewlinker/clgo/clzap"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.uber.org/fx"
 	"go.uber.org/zap"
 )
 
-// ROTransacter provides a database transaction in the context.
-type ROTransacter struct {
+// PgxROTransacter provides a database transaction in the context.
+type PgxROTransacter struct {
 	cfg  Config
 	logs *zap.Logger
 	ro   *pgxpool.Pool
 	connect.Interceptor
 }
 
-// NewROTransacter inits the Transacter.
-func NewROTransacter(cfg Config, logs *zap.Logger, ro *pgxpool.Pool) *ROTransacter {
-	intr := &ROTransacter{cfg: cfg, logs: logs.Named("ro_transacter"), ro: ro}
+// NewPgxROTransacter inits the Transacter.
+func NewPgxROTransacter(cfg Config, logs *zap.Logger, ro *pgxpool.Pool) *PgxROTransacter {
+	intr := &PgxROTransacter{cfg: cfg, logs: logs.Named("pgx_ro_transacter"), ro: ro}
 	intr.Interceptor = connect.UnaryInterceptorFunc(intr.intercept)
 
 	return intr
 }
 
-func (l ROTransacter) intercept(next connect.UnaryFunc) connect.UnaryFunc {
+func (l PgxROTransacter) intercept(next connect.UnaryFunc) connect.UnaryFunc {
 	return connect.UnaryFunc(func(
 		ctx context.Context,
 		req connect.AnyRequest,
 	) (connect.AnyResponse, error) {
-		return txIntercept(ctx, l.logs, req, l.ro, next, pgx.TxOptions{
+		return txPgxIntercept(ctx, l.logs, req, l.ro, next, pgx.TxOptions{
 			AccessMode: pgx.ReadOnly,
 		})
 	})
 }
 
-// RWTransacter provides a database transaction in the context.
-type RWTransacter struct {
+// PgxRWTransacter provides a database transaction in the context.
+type PgxRWTransacter struct {
 	cfg  Config
 	logs *zap.Logger
 	rw   *pgxpool.Pool
 	connect.Interceptor
 }
 
-// NewRWTransacter inits the Transacter.
-func NewRWTransacter(cfg Config, logs *zap.Logger, rw *pgxpool.Pool) *RWTransacter {
-	intr := &RWTransacter{cfg: cfg, logs: logs.Named("rw_transacter"), rw: rw}
+// NewPgxRWTransacter inits the Transacter.
+func NewPgxRWTransacter(cfg Config, logs *zap.Logger, rw *pgxpool.Pool) *PgxRWTransacter {
+	intr := &PgxRWTransacter{cfg: cfg, logs: logs.Named("pgx_rw_transacter"), rw: rw}
 	intr.Interceptor = connect.UnaryInterceptorFunc(intr.intercept)
 
 	return intr
 }
 
-func (l RWTransacter) intercept(next connect.UnaryFunc) connect.UnaryFunc {
+func (l PgxRWTransacter) intercept(next connect.UnaryFunc) connect.UnaryFunc {
 	return connect.UnaryFunc(func(
 		ctx context.Context,
 		req connect.AnyRequest,
 	) (connect.AnyResponse, error) {
-		return txIntercept(ctx, l.logs, req, l.rw, next, pgx.TxOptions{})
+		return txPgxIntercept(ctx, l.logs, req, l.rw, next, pgx.TxOptions{})
 	})
 }
 
-func txIntercept(
+func txPgxIntercept(
 	ctx context.Context,
 	logs *zap.Logger,
 	req connect.AnyRequest,
@@ -86,7 +87,7 @@ func txIntercept(
 		}
 	}()
 
-	ctx = cltx.WithTx(ctx, tx)
+	ctx = cltx.WithPgx(ctx, tx)
 
 	resp, err := next(ctx, req)
 	if err != nil {
@@ -99,4 +100,17 @@ func txIntercept(
 	}
 
 	return resp, nil
+}
+
+// ProvidePgxTransactors provides transactors for pgx transactions.
+func ProvidePgxTransactors() fx.Option {
+	return fx.Options(
+		// database transactors
+		fx.Provide(fx.Annotate(NewPgxROTransacter,
+			fx.As(new(ROTransacter)),
+			fx.ParamTags(``, ``, `name:"ro"`))),
+		fx.Provide(fx.Annotate(NewPgxRWTransacter,
+			fx.As(new(RWTransacter)),
+			fx.ParamTags(``, ``, `name:"rw"`))),
+	)
 }

@@ -14,6 +14,24 @@ import (
 	"go.uber.org/zap"
 )
 
+// ROTransacter is an interceptor that add read-only transactions to the context.
+type ROTransacter interface {
+	isROTransacter()
+	connect.Interceptor
+}
+
+func (PgxROTransacter) isROTransacter()         {}
+func (EntROTransactor[TX, MC]) isROTransacter() {}
+
+// RWTransacter is an interceptor that add read-write transactions to the context.
+type RWTransacter interface {
+	isRWTransacter()
+	connect.Interceptor
+}
+
+func (PgxRWTransacter) isRWTransacter()         {}
+func (EntRWTransactor[TX, MC]) isRWTransacter() {}
+
 // Config configures the components.
 type Config struct {
 	// disables stack trace information in error details
@@ -37,8 +55,8 @@ func New[RO, RW any](
 	valr *validate.Interceptor,
 	logr *Logger,
 	rcvr *Recoverer,
-	rotx *ROTransacter,
-	rwtx *RWTransacter,
+	rotx ROTransacter,
+	rwtx RWTransacter,
 ) http.Handler {
 	mux := http.NewServeMux()
 
@@ -68,9 +86,7 @@ func Provide[RO, RW any](name string) fx.Option {
 		fx.Provide(fx.Annotate(New[RO, RW], fx.ResultTags(`name:"`+name+`"`))),
 		// provide middleware constructors
 		fx.Provide(protovalidate.New, NewRecoverer, NewLogger),
-		// database transactors
-		fx.Provide(fx.Annotate(NewROTransacter, fx.ParamTags(``, ``, `name:"ro"`))),
-		fx.Provide(fx.Annotate(NewRWTransacter, fx.ParamTags(``, ``, `name:"rw"`))),
+
 		// provide the validator interceptor
 		fx.Provide(func(val *protovalidate.Validator) (*validate.Interceptor, error) {
 			return validate.NewInterceptor(validate.WithValidator(val)) //nolint:wrapcheck

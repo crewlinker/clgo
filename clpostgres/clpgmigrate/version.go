@@ -137,7 +137,7 @@ func (m VersionMigrater) Migrate(ctx context.Context) error {
 	}
 
 	exec, err := migrate.NewExecutor(drv, m.dir, migrate.NopRevisionReadWriter{},
-		migrate.WithLogger(migrateLogger{logs: m.logs.Named("named")}))
+		migrate.WithLogger(migrateLogger{logs: m.logs.Named("executer")}))
 	if err != nil {
 		return fmt.Errorf("failed to init executor: %w", err)
 	}

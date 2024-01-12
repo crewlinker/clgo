@@ -47,7 +47,7 @@ var ErrInducedServerError = errors.New("induced server error")
 func (rw ReadWrite) CheckHealth(
 	ctx context.Context, req *connect.Request[clconnectv1.CheckHealthRequest],
 ) (*connect.Response[clconnectv1.CheckHealthResponse], error) {
-	if _, err := cltx.Tx(ctx).Exec(ctx, `UPDATE pg_catalog.pg_class SET relname = relname WHERE oid = -1;`); err != nil {
+	if _, err := cltx.Pgx(ctx).Exec(ctx, `UPDATE pg_catalog.pg_class SET relname = relname WHERE oid = -1;`); err != nil {
 		return nil, fmt.Errorf("failed to exec sql: %w", err)
 	}
 
@@ -71,7 +71,7 @@ func (rw ReadWrite) CheckHealth(
 func (rw ReadOnly) Foo(
 	ctx context.Context, req *connect.Request[clconnectv1.FooRequest],
 ) (*connect.Response[clconnectv1.FooResponse], error) {
-	tx := cltx.Tx(ctx)
+	tx := cltx.Pgx(ctx)
 	if _, err := tx.Exec(ctx, `UPDATE pg_catalog.pg_class SET relname = relname WHERE oid = -1;`); err == nil {
 		return nil, errors.New("should fail because read-only") //nolint:goerr113
 	}

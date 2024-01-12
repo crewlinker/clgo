@@ -49,6 +49,7 @@ var _ = Describe("rpc", func() {
 				clconnectv1connect.ReadWriteServiceClient,
 			]("clconnect"),
 
+			clconnect.ProvidePgxTransactors(),
 			fx.Provide(NewReadOnly, NewReadWrite),
 			claws.Provide(),
 			clpostgres.TestProvide(),

@@ -36,18 +36,20 @@ var _ = Describe("tx", func() {
 		DeferCleanup(app.Stop)
 	})
 
-	It("should panic without tx", func(ctx context.Context) {
-		Expect(func() { cltx.Tx(ctx) }).To(Panic())
-	})
+	Describe("pgx", func() {
+		It("should panic without tx", func(ctx context.Context) {
+			Expect(func() { cltx.Pgx(ctx) }).To(Panic())
+		})
 
-	It("should add an remove tx from ctx", func(ctx context.Context) {
-		tx1, err := db.Begin(ctx)
-		Expect(err).ToNot(HaveOccurred())
-		defer tx1.Rollback(ctx)
+		It("should add an remove tx from ctx", func(ctx context.Context) {
+			tx1, err := db.Begin(ctx)
+			Expect(err).ToNot(HaveOccurred())
+			defer tx1.Rollback(ctx)
 
-		ctx = cltx.WithTx(ctx, tx1)
-		tx2 := cltx.Tx(ctx)
+			ctx = cltx.WithPgx(ctx, tx1)
+			tx2 := cltx.Pgx(ctx)
 
-		Expect(tx2).To(Equal(tx1))
+			Expect(tx2).To(Equal(tx1))
+		})
 	})
 })
