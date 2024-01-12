@@ -39,7 +39,7 @@ type Config struct {
 
 	// SSLMode sets tls encryption on the database connection
 	SSLMode string `env:"SSL_MODE" envDefault:"disable"`
-	// IamAuth will cause the password to be set to an IAM token for authentication
+	// IamAuthRegion will cause the password to be set to an IAM token for authentication
 	IamAuthRegion string `env:"IAM_AUTH_REGION"`
 
 	// PoolConnectionTimeout configures how long the pgx pool connect logic waits for the connection to establish
@@ -85,10 +85,6 @@ func newPoolConfig(cfg Config, logs *zap.Logger, host string, awsc aws.Config) (
 				return fmt.Errorf("failed to build iam token: %w", err)
 			}
 
-			logs.Info("seting password to IAM auth token",
-				zap.String("password", pgc.Password),
-				zap.String("token", tok))
-
 			pgc.Password = tok
 
 			return nil
@@ -120,10 +116,17 @@ func newPoolConfig(cfg Config, logs *zap.Logger, host string, awsc aws.Config) (
 
 // buildIamAuthToken will construct a RDS proxy authentication token. We don't run this during the
 // lifecycle phase so we timeout manually with our own context.
-func buildIamAuthToken(ctx context.Context, logs *zap.Logger, port int, username, region string, awsc aws.Config, host string) (string, error) {
+func buildIamAuthToken(
+	ctx context.Context,
+	logs *zap.Logger,
+	port int,
+	username, region string,
+	awsc aws.Config,
+	host string,
+) (string, error) {
 	ep := host + ":" + strconv.Itoa(port)
 
-	logs.Info("building auth token",
+	logs.Info("building IAM auth token",
 		zap.String("username", username),
 		zap.String("region", region),
 		zap.String("ep", ep))
