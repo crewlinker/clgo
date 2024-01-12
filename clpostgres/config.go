@@ -40,7 +40,7 @@ type Config struct {
 	// SSLMode sets tls encryption on the database connection
 	SSLMode string `env:"SSL_MODE" envDefault:"disable"`
 	// IamAuth will cause the password to be set to an IAM token for authentication
-	IamAuth bool `env:"IAM_AUTH"`
+	IamAuthRegion string `env:"IAM_AUTH_REGION"`
 
 	// PoolConnectionTimeout configures how long the pgx pool connect logic waits for the connection to establish
 	PoolConnectionTimeout time.Duration `env:"POOL_CONNECTION_TIMEOUT" envDefault:"10s"`
@@ -73,14 +73,14 @@ func newPoolConfig(cfg Config, logs *zap.Logger, host string, awsc aws.Config) (
 		return nil, fmt.Errorf("failed to parse config from conn string: %w", err)
 	}
 
-	if cfg.IamAuth {
+	if cfg.IamAuthRegion != "" {
 		if awsc.Credentials == nil {
 			return nil, errIAMAuthWithoutAWSConfig
 		}
 
 		// For IAM Auth we need to build a token as a password on every connection attempt
 		pcfg.BeforeConnect = func(ctx context.Context, pgc *pgx.ConnConfig) error {
-			tok, err := buildIamAuthToken(ctx, logs, cfg.Port, cfg.Username, awsc, host)
+			tok, err := buildIamAuthToken(ctx, logs, cfg.Port, cfg.Username, cfg.IamAuthRegion, awsc, host)
 			if err != nil {
 				return fmt.Errorf("failed to build iam token: %w", err)
 			}
@@ -109,7 +109,7 @@ func newPoolConfig(cfg Config, logs *zap.Logger, host string, awsc aws.Config) (
 	logs.Info("initialized postgres connection config",
 		zap.Any("runtime_params", pcfg.ConnConfig.RuntimeParams),
 		zap.String("ssl_mode", cfg.SSLMode),
-		zap.Bool("iam_auth", cfg.IamAuth),
+		zap.String("iam_auth_region", cfg.IamAuthRegion),
 		zap.String("user", pcfg.ConnConfig.User),
 		zap.String("database", pcfg.ConnConfig.Database),
 		zap.String("host", pcfg.ConnConfig.Host),
@@ -120,9 +120,8 @@ func newPoolConfig(cfg Config, logs *zap.Logger, host string, awsc aws.Config) (
 
 // buildIamAuthToken will construct a RDS proxy authentication token. We don't run this during the
 // lifecycle phase so we timeout manually with our own context.
-func buildIamAuthToken(ctx context.Context, logs *zap.Logger, port int, username string, awsc aws.Config, host string) (string, error) {
+func buildIamAuthToken(ctx context.Context, logs *zap.Logger, port int, username, region string, awsc aws.Config, host string) (string, error) {
 	ep := host + ":" + strconv.Itoa(port)
-	region := awsc.Region
 
 	logs.Info("building auth token",
 		zap.String("username", username),

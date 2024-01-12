@@ -52,7 +52,7 @@ var _ = Describe("config", func() {
 			app := fx.New(
 				fx.Populate(&cfgs),
 				fx.Decorate(func(pgc clpostgres.Config) clpostgres.Config {
-					pgc.IamAuth = true
+					pgc.IamAuthRegion = "eu-west-1"
 					pgc.Password = "my-p&assword"
 					pgc.ReadOnlyHostname = "foo.read-only"
 					pgc.ReadWriteHostname = "foo.read-write"
