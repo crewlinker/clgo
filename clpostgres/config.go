@@ -80,7 +80,7 @@ func newPoolConfig(cfg Config, logs *zap.Logger, host string, awsc aws.Config) (
 
 		// For IAM Auth we need to build a token as a password on every connection attempt
 		pcfg.BeforeConnect = func(ctx context.Context, pgc *pgx.ConnConfig) error {
-			tok, err := buildIamAuthToken(ctx, cfg, awsc, host)
+			tok, err := buildIamAuthToken(ctx, logs, cfg.Port, cfg.Username, awsc, host)
 			if err != nil {
 				return fmt.Errorf("failed to build iam token: %w", err)
 			}
@@ -120,8 +120,16 @@ func newPoolConfig(cfg Config, logs *zap.Logger, host string, awsc aws.Config) (
 
 // buildIamAuthToken will construct a RDS proxy authentication token. We don't run this during the
 // lifecycle phase so we timeout manually with our own context.
-func buildIamAuthToken(ctx context.Context, cfg Config, awsc aws.Config, ep string) (string, error) {
-	tok, err := auth.BuildAuthToken(ctx, ep+":"+strconv.Itoa(cfg.Port), awsc.Region, cfg.Username, awsc.Credentials)
+func buildIamAuthToken(ctx context.Context, logs *zap.Logger, port int, username string, awsc aws.Config, host string) (string, error) {
+	ep := host + ":" + strconv.Itoa(port)
+	region := awsc.Region
+
+	logs.Info("building auth token",
+		zap.String("username", username),
+		zap.String("region", region),
+		zap.String("ep", ep))
+
+	tok, err := auth.BuildAuthToken(ctx, ep, region, username, awsc.Credentials)
 	if err != nil {
 		return "", fmt.Errorf("underlying: %w", err)
 	}
