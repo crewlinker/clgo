@@ -1,9 +1,6 @@
 package clcdk_test
 
 import (
-	"bytes"
-	"encoding/json"
-
 	"github.com/aws/aws-cdk-go/awscdk/v2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/assertions"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsec2"
@@ -40,25 +37,6 @@ var _ = Describe("postgres", func() {
 		tmpl.HasResourceProperties(jsii.String("AWS::RDS::DBInstance"), map[string]any{
 			"AllocatedStorage":    "10",
 			"MaxAllocatedStorage": 30,
-		})
-	})
-
-	It("should create custom resource provider", func() {
-		vpc := clcdk.WithNetwork(stack, "Network1", cfg)
-		db, dbSecret := clcdk.WithPostgresInstance(stack, "Postgres1", cfg, vpc, 10, 30)
-		clcdk.WithPostgresCustomResources(stack, "PgCustom1", cfg, db, dbSecret)
-
-		tmpl := assertions.Template_FromStack(stack, nil)
-
-		var buf bytes.Buffer
-		enc := json.NewEncoder(&buf)
-		enc.SetIndent("", " ")
-		enc.Encode(tmpl.ToJSON())
-
-		tmpl.ResourceCountIs(jsii.String("AWS::Lambda::Function"), jsii.Number(3))
-
-		tmpl.HasResourceProperties(jsii.String("AWS::Lambda::Function"), map[string]any{
-			"Description": "AWS CDK resource provider framework - onEvent (Stack1/PgCustom1/Provider)",
 		})
 	})
 

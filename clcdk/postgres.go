@@ -1,97 +1,13 @@
 package clcdk
 
 import (
-	"embed"
-	"fmt"
-	"io"
-	"os"
-	"path/filepath"
-
 	"github.com/aws/aws-cdk-go/awscdk/v2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsec2"
-	"github.com/aws/aws-cdk-go/awscdk/v2/awsiam"
-	"github.com/aws/aws-cdk-go/awscdk/v2/awslambda"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsrds"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awssecretsmanager"
-	"github.com/aws/aws-cdk-go/awscdk/v2/customresources"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
 )
-
-//go:embed builds/postgresresource/pkg.zip
-var preBuildBinary embed.FS
-
-// easily write custom resource binaries during deployment.
-func writePrebuildBinary() (string, error) {
-	binf, err := preBuildBinary.Open(filepath.Join("builds", "postgresresource", "pkg.zip"))
-	if err != nil {
-		return "", fmt.Errorf("failed to open custom resource binary package: %w", err)
-	}
-
-	defer binf.Close()
-
-	tmpf, err := os.CreateTemp("", "clcdk_*.zip")
-	if err != nil {
-		return "", fmt.Errorf("failed to create temp file for custom resource binary pkg: %w", err)
-	}
-
-	defer tmpf.Close()
-
-	if _, err := io.Copy(tmpf, binf); err != nil {
-		return "", fmt.Errorf("failed to copy pre-compiled custom resource to temporary file: %w", err)
-	}
-
-	return tmpf.Name(), nil
-}
-
-// WithPostgresCustomResources provides a custom resource provider to create Postgres resourcesas part of the
-// infrastructure.
-func WithPostgresCustomResources(
-	scope constructs.Construct,
-	name ScopeName,
-	cfg Config,
-	db awsrds.IDatabaseInstance,
-	dbSecret awssecretsmanager.ISecret,
-) customresources.Provider {
-	scope = name.ChildScope(scope)
-
-	const (
-		// constants that configure this resource
-		lambdaTimeoutSeconds = 300
-	)
-
-	assetp, err := writePrebuildBinary()
-	if err != nil {
-		panic("failed to write pre-build binary: " + err.Error())
-	}
-
-	provider := customresources.NewProvider(scope, jsii.String("Provider"), &customresources.ProviderProps{
-		OnEventHandler: awslambda.NewFunction(scope, jsii.String("Lambda"), &awslambda.FunctionProps{
-			Code:         awslambda.AssetCode_FromAsset(jsii.String(assetp), nil),
-			Handler:      jsii.String("bootstrap"),
-			Timeout:      awscdk.Duration_Seconds(jsii.Number(lambdaTimeoutSeconds)),
-			Runtime:      awslambda.Runtime_PROVIDED_AL2(),
-			Architecture: awslambda.Architecture_ARM_64(),
-			LogRetention: cfg.LogRetention(),
-			Environment:  &map[string]*string{},
-			InitialPolicy: &[]awsiam.PolicyStatement{
-				awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
-					Effect:    awsiam.Effect_ALLOW,
-					Actions:   jsii.Strings("secretsmanager:GetSecretValue"),
-					Resources: jsii.Strings(*dbSecret.SecretArn()),
-				}),
-			},
-		}),
-
-		LogRetention: cfg.LogRetention(),
-	})
-
-	// make the provider dependant on the database so destuction
-	// goes in the right orer.
-	provider.Node().AddDependency(db)
-
-	return provider
-}
 
 // PostgresTenant provides an interface to retrieve information
 // on a unique tenant in a postgres database.
