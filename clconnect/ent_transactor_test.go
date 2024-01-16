@@ -6,6 +6,7 @@ import (
 
 	"connectrpc.com/connect"
 	entsql "entgo.io/ent/dialect/sql"
+	"github.com/crewlinker/clgo/clauth"
 	"github.com/crewlinker/clgo/claws"
 	"github.com/crewlinker/clgo/clconnect"
 	clconnectv1 "github.com/crewlinker/clgo/clconnect/v1"
@@ -43,6 +44,7 @@ var _ = Describe("ent", func() {
 
 			// general provides
 			fx.Provide(newEntReadOnly, newEntReadWrite),
+			clauth.TestProvide(map[string]string{}),
 			claws.Provide(),
 			clpostgres.TestProvide(),
 			clzap.TestProvide())

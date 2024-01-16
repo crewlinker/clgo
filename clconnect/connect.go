@@ -57,10 +57,11 @@ func New[RO, RW any](
 	rcvr *Recoverer,
 	rotx ROTransacter,
 	rwtx RWTransacter,
+	auth *Auth,
 ) http.Handler {
 	mux := http.NewServeMux()
 
-	interceptors := connect.WithInterceptors(valr, logr)
+	interceptors := connect.WithInterceptors(valr, logr, auth)
 	recoverer := connect.WithRecover(rcvr.handle)
 
 	rwp, rwh := rwc(rw, interceptors, recoverer, connect.WithInterceptors(rwtx))
@@ -85,8 +86,7 @@ func Provide[RO, RW any](name string) fx.Option {
 		// provide as a named http handler
 		fx.Provide(fx.Annotate(New[RO, RW], fx.ResultTags(`name:"`+name+`"`))),
 		// provide middleware constructors
-		fx.Provide(protovalidate.New, NewRecoverer, NewLogger),
-
+		fx.Provide(protovalidate.New, NewRecoverer, NewLogger, NewAuth),
 		// provide the validator interceptor
 		fx.Provide(func(val *protovalidate.Validator) (*validate.Interceptor, error) {
 			return validate.NewInterceptor(validate.WithValidator(val)) //nolint:wrapcheck

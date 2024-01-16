@@ -1,0 +1,8 @@
+services:
+  self: 
+    url: "$SERVICE_URL$"
+bundles:
+  self:
+    resource: "/bundles/bundle.tar.gz"  
+decision_logs:
+  console: true  

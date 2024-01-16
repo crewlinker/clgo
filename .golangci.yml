@@ -46,6 +46,7 @@ linters:
     - nonamedreturns # makes some functions way more readable
     - tagliatelle # AWS JSON often doesn't follow this convention
     - gochecknoglobals # globals are used all the time
+    - goerr113
 
 issues:
   include:
