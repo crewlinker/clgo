@@ -68,6 +68,7 @@ issues:
         - revive
         - musttag
         - wrapcheck
+        - goconst
     - path: infra/infrastack
       linters:
         - gomnd

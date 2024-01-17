@@ -6,15 +6,10 @@ import (
 
 	"connectrpc.com/connect"
 	entsql "entgo.io/ent/dialect/sql"
-	"github.com/crewlinker/clgo/clauthn"
-	"github.com/crewlinker/clgo/clauthz"
-	"github.com/crewlinker/clgo/claws"
 	"github.com/crewlinker/clgo/clconnect"
 	clconnectv1 "github.com/crewlinker/clgo/clconnect/v1"
 	"github.com/crewlinker/clgo/clconnect/v1/clconnectv1connect"
-	"github.com/crewlinker/clgo/clpostgres"
 	"github.com/crewlinker/clgo/clpostgres/cltx"
-	"github.com/crewlinker/clgo/clzap"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.uber.org/fx"
@@ -29,27 +24,9 @@ var _ = Describe("ent", func() {
 
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(
-			// provide connect apis
 			fx.Populate(fx.Annotate(&hdl, fx.ParamTags(`name:"clconnect"`)), &rwc, &roc, &obs),
-			clconnect.TestProvide[
-				clconnectv1connect.ReadOnlyServiceHandler,
-				clconnectv1connect.ReadWriteServiceHandler,
-				clconnectv1connect.ReadOnlyServiceClient,
-				clconnectv1connect.ReadWriteServiceClient,
-			]("clconnect"),
-
-			// ent transactor
-			clconnect.ProvideEntTransactors[*modelTx, *modelClient](),
-			fx.Supply(fx.Annotate(&modelClient{}, fx.ResultTags(`name:"rw"`))),
-			fx.Supply(fx.Annotate(&modelClient{}, fx.ResultTags(`name:"ro"`))),
-
-			// other provides
-			fx.Provide(newEntReadOnly, newEntReadWrite),
-			clauthn.TestProvide(),
-			clauthz.TestProvide(map[string]string{}),
-			claws.Provide(),
-			clpostgres.TestProvide(),
-			clzap.TestProvide())
+			ProvideEnt(),
+		)
 
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)

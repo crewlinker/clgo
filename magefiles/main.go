@@ -56,6 +56,14 @@ func Generate() error {
 		return fmt.Errorf("failed to generate protobuf: %w", err)
 	}
 
+	// generate OPA bundles
+	if err := sh.Run("opa", "build",
+		"-b", "clauthz/testdata/policies",
+		"-o", "clauthz/testdata/bundles/bundle.tar.gz",
+	); err != nil {
+		return fmt.Errorf("failed to build OPA bundle: %w", err)
+	}
+
 	return nil
 }
 

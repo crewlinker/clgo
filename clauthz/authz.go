@@ -74,7 +74,7 @@ func (a *Authz) Stop(ctx context.Context) (err error) {
 // IsAuthorized the user for a given setup.
 func (a *Authz) IsAuthorized(ctx context.Context, inp any) (bool, error) {
 	res, err := a.opa.Decision(ctx, sdk.DecisionOptions{
-		Path:  "/rpc/allow",
+		Path:  "/authz/allow",
 		Input: inp,
 	})
 	if err != nil {
@@ -91,6 +91,17 @@ func (a *Authz) IsAuthorized(ctx context.Context, inp any) (bool, error) {
 
 // moduleName for consistent component naming.
 const moduleName = "clauthz"
+
+// AllowAll policy always returns allow, for testing.
+func AllowAll() map[string]string {
+	return map[string]string{
+		"main.rego": `
+			package authz
+			import rego.v1		
+			default allow := true
+		`,
+	}
+}
 
 // Provide the auth components as an fx dependency.
 func Provide() fx.Option {

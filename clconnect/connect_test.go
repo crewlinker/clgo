@@ -44,21 +44,8 @@ var _ = Describe("rpc", func() {
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(
 			fx.Populate(fx.Annotate(&hdl, fx.ParamTags(`name:"clconnect"`)), &rwc, &roc, &obs),
-			clconnect.TestProvide[
-				clconnectv1connect.ReadOnlyServiceHandler,
-				clconnectv1connect.ReadWriteServiceHandler,
-				clconnectv1connect.ReadOnlyServiceClient,
-				clconnectv1connect.ReadWriteServiceClient,
-			]("clconnect"),
-
-			clconnect.ProvidePgxTransactors(),
-			clauthn.TestProvide(),
-			clauthz.TestProvide(map[string]string{}),
-
-			fx.Provide(NewReadOnly, NewReadWrite),
-			claws.Provide(),
-			clpostgres.TestProvide(),
-			clzap.TestProvide())
+			ProvidePgx(),
+		)
 
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
@@ -160,3 +147,40 @@ var _ = Describe("rpc", func() {
 		Expect(viol.GetViolations()[0].GetFieldPath()).To(Equal("echo"))
 	})
 })
+
+func ProvidePgx() fx.Option {
+	return fx.Options(
+		Provide(),
+
+		clconnect.ProvidePgxTransactors(),
+		fx.Provide(NewReadOnly, NewReadWrite),
+	)
+}
+
+func ProvideEnt() fx.Option {
+	return fx.Options(
+		Provide(),
+
+		clconnect.ProvideEntTransactors[*modelTx, *modelClient](),
+		fx.Supply(fx.Annotate(&modelClient{}, fx.ResultTags(`name:"rw"`))),
+		fx.Supply(fx.Annotate(&modelClient{}, fx.ResultTags(`name:"ro"`))),
+		fx.Provide(newEntReadOnly, newEntReadWrite),
+	)
+}
+
+func Provide() fx.Option {
+	return fx.Options(
+		clauthn.TestProvide(),
+		clauthz.TestProvide(clauthz.AllowAll()),
+		claws.Provide(),
+		clpostgres.TestProvide(),
+		clzap.TestProvide(),
+
+		clconnect.TestProvide[
+			clconnectv1connect.ReadOnlyServiceHandler,
+			clconnectv1connect.ReadWriteServiceHandler,
+			clconnectv1connect.ReadOnlyServiceClient,
+			clconnectv1connect.ReadWriteServiceClient,
+		]("clconnect"),
+	)
+}

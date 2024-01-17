@@ -38,7 +38,7 @@ var _ = Describe("authz (mocked)", func() {
 			clzap.TestProvide(),
 			clauthz.TestProvide(map[string]string{
 				"main.rego": `
-				package rpc
+				package authz
 				import rego.v1
 			
 				default allow := false
