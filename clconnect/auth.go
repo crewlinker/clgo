@@ -30,9 +30,14 @@ func NewAuth(cfg Config, logs *zap.Logger, authn *clauthn.Authn, authz *clauthz.
 	return lgr
 }
 
-// Identity returns the identity from context as an OpenID token. If there is no
+// WithIdentity returns a context with the openid token.
+func WithIdentity(ctx context.Context, tok openid.Token) context.Context {
+	return context.WithValue(ctx, ctxKey("openid_token"), tok)
+}
+
+// IdentityFromContext returns the identity from context as an OpenID token. If there is no
 // token in the context it returns an empty (anonymous) openid token.
-func Identity(ctx context.Context) openid.Token {
+func IdentityFromContext(ctx context.Context) openid.Token {
 	v, ok := ctx.Value(ctxKey("openid_token")).(openid.Token)
 	if !ok || v == nil {
 		v = openid.New() // anonymous token
@@ -90,7 +95,7 @@ func (l Auth) intercept(next connect.UnaryFunc) connect.UnaryFunc {
 				fmt.Errorf("unauthorized, subject: '%s'", token.Subject()))
 		}
 
-		ctx = context.WithValue(ctx, ctxKey("openid_token"), token)
+		ctx = WithIdentity(ctx, token)
 
 		return next(ctx, req)
 	})

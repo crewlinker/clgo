@@ -115,7 +115,7 @@ func (rw entReadOnly) Foo(
 		panic("must have tx")
 	}
 
-	oid := clconnect.Identity(ctx)
+	oid := clconnect.IdentityFromContext(ctx)
 
 	return &connect.Response[clconnectv1.FooResponse]{
 		Msg: &clconnectv1.FooResponse{Bar: fmt.Sprintf("Name: %s %s", oid.GivenName(), oid.FamilyName())},
