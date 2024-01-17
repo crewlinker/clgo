@@ -39,7 +39,12 @@ type Authz struct {
 
 // NewAuthz inits the auth service.
 func NewAuthz(cfg Config, logs *zap.Logger, bsrv BundleServer) (a *Authz, err error) {
-	return &Authz{bsrv: bsrv, cfg: cfg, logs: logs.Named("authz"), opaw: &zapio.Writer{Log: logs.Named("opa")}}, nil
+	return &Authz{
+		bsrv: bsrv,
+		cfg:  cfg,
+		logs: logs.Named("authz"),
+		opaw: &zapio.Writer{Log: logs.Named("opa")},
+	}, nil
 }
 
 // Start the auth service.

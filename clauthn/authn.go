@@ -19,7 +19,7 @@ import (
 // Config configures the package.
 type Config struct {
 	// PrivateSigningKeys will hold private keys for signing JWTs
-	PubPrivKeySetB64JSON string `env:"PUB_PRIV_KEY_SET_B64_JSON"`
+	PubPrivKeySetB64JSON string `env:"PUB_PRIV_KEY_SET_B64_JSON" envDefault:"eyJrZXlzIjpbXX0="`
 	// DefaultSignKeyID defines the default key id used for signing
 	DefaultSignKeyID string `env:"DEFAULT_SIGN_KEY_ID" envDefault:"key1"`
 }

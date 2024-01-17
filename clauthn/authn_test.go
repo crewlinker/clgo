@@ -19,11 +19,11 @@ func TestAuthn(t *testing.T) {
 }
 
 var _ = Describe("authn", func() {
-	var autn *clauthn.Authn
+	var authn *clauthn.Authn
 
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(
-			fx.Populate(&autn),
+			fx.Populate(&authn),
 			clauthn.TestProvide(),
 			clzap.TestProvide())
 		Expect(app.Start(ctx)).To(Succeed())
@@ -34,18 +34,18 @@ var _ = Describe("authn", func() {
 		tok1, err := openid.NewBuilder().Email("foo@foo.bar").Build()
 		Expect(err).ToNot(HaveOccurred())
 
-		out, err := autn.SignJWT(ctx, tok1)
+		out, err := authn.SignJWT(ctx, tok1)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(out).ToNot(BeEmpty())
 
-		tok2, err := autn.AuthenticateJWT(ctx, out)
+		tok2, err := authn.AuthenticateJWT(ctx, out)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(tok2.Email()).To(Equal("foo@foo.bar"))
 	})
 
 	DescribeTable("AuthenticateJWT", func(ctx SpecContext, inp []byte, expErr OmegaMatcher) {
-		_, err := autn.AuthenticateJWT(ctx, inp)
+		_, err := authn.AuthenticateJWT(ctx, inp)
 		Expect(err).To(expErr)
 	},
 		Entry("empty", nil,
@@ -53,4 +53,21 @@ var _ = Describe("authn", func() {
 		Entry("no key id", []byte(`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c`),
 			MatchError(MatchRegexp(`no key ID`))),
 	)
+})
+
+var _ = Describe("authnprovide", func() {
+	var authn *clauthn.Authn
+
+	BeforeEach(func(ctx context.Context) {
+		app := fx.New(
+			fx.Populate(&authn),
+			clauthn.Provide(),
+			clzap.TestProvide())
+		Expect(app.Start(ctx)).To(Succeed())
+		DeferCleanup(app.Stop)
+	})
+
+	It("should init", func() {
+		Expect(authn).ToNot(BeNil())
+	})
 })
