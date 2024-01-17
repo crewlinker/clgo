@@ -1,4 +1,4 @@
-package clauth
+package clauthz
 
 import (
 	"context"

@@ -4,7 +4,8 @@ import (
 	"context"
 
 	"connectrpc.com/connect"
-	"github.com/crewlinker/clgo/clauth"
+	"github.com/crewlinker/clgo/clauthn"
+	"github.com/crewlinker/clgo/clauthz"
 	"go.uber.org/zap"
 )
 
@@ -12,14 +13,14 @@ import (
 type Auth struct {
 	cfg   Config
 	logs  *zap.Logger
-	authn *clauth.Authn
-	authz *clauth.Authz
+	authn *clauthn.Authn
+	authz *clauthz.Authz
 
 	connect.Interceptor
 }
 
 // NewAuth inits the logger.
-func NewAuth(cfg Config, logs *zap.Logger, authn *clauth.Authn, authz *clauth.Authz) *Auth {
+func NewAuth(cfg Config, logs *zap.Logger, authn *clauthn.Authn, authz *clauthz.Authz) *Auth {
 	lgr := &Auth{cfg: cfg, logs: logs.Named("auth"), authn: authn, authz: authz}
 	lgr.Interceptor = connect.UnaryInterceptorFunc(lgr.intercept)
 

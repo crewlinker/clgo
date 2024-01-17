@@ -1,9 +1,10 @@
-package clauth_test
+package clauthn_test
 
 import (
 	"context"
+	"testing"
 
-	"github.com/crewlinker/clgo/clauth"
+	"github.com/crewlinker/clgo/clauthn"
 	"github.com/crewlinker/clgo/clzap"
 	"github.com/lestrrat-go/jwx/v2/jwt/openid"
 	. "github.com/onsi/ginkgo/v2"
@@ -11,13 +12,19 @@ import (
 	"go.uber.org/fx"
 )
 
+func TestAuthn(t *testing.T) {
+	t.Parallel()
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "clauthn")
+}
+
 var _ = Describe("authn", func() {
-	var autn *clauth.Authn
+	var autn *clauthn.Authn
 
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(
 			fx.Populate(&autn),
-			clauth.TestProvide(map[string]string{}),
+			clauthn.TestProvide(),
 			clzap.TestProvide())
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)

@@ -1,4 +1,4 @@
-package clauth_test
+package clauthz_test
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"io/fs"
 	"testing"
 
-	"github.com/crewlinker/clgo/clauth"
+	"github.com/crewlinker/clgo/clauthz"
 	"github.com/crewlinker/clgo/clzap"
 	"github.com/samber/lo"
 
@@ -16,10 +16,10 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-func TestAuth(t *testing.T) {
+func TestAuthz(t *testing.T) {
 	t.Parallel()
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "clauth")
+	RunSpecs(t, "clauthzz")
 }
 
 //go:embed testdata/bundles
@@ -30,13 +30,13 @@ type TestAuthzInput struct {
 }
 
 var _ = Describe("authz (mocked)", func() {
-	var autz *clauth.Authz
+	var autz *clauthz.Authz
 	var obs *observer.ObservedLogs
 
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(fx.Populate(&autz, &obs),
 			clzap.TestProvide(),
-			clauth.TestProvide(map[string]string{
+			clauthz.TestProvide(map[string]string{
 				"main.rego": `
 				package rpc
 				import rego.v1
@@ -65,13 +65,13 @@ var _ = Describe("authz (mocked)", func() {
 })
 
 var _ = Describe("authz (served)", func() {
-	var autz *clauth.Authz
+	var autz *clauthz.Authz
 	var obs *observer.ObservedLogs
 
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(fx.Populate(&autz, &obs),
-			clauth.BundleProvide(lo.Must(fs.Sub(bundle, "testdata"))),
-			clauth.Provide(),
+			clauthz.BundleProvide(lo.Must(fs.Sub(bundle, "testdata"))),
+			clauthz.Provide(),
 			clzap.TestProvide())
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)

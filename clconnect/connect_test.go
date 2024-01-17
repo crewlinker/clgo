@@ -9,7 +9,8 @@ import (
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	"connectrpc.com/connect"
-	"github.com/crewlinker/clgo/clauth"
+	"github.com/crewlinker/clgo/clauthn"
+	"github.com/crewlinker/clgo/clauthz"
 	"github.com/crewlinker/clgo/claws"
 	"github.com/crewlinker/clgo/clconnect"
 	clconnectv1 "github.com/crewlinker/clgo/clconnect/v1"
@@ -51,7 +52,8 @@ var _ = Describe("rpc", func() {
 			]("clconnect"),
 
 			clconnect.ProvidePgxTransactors(),
-			clauth.TestProvide(map[string]string{}),
+			clauthn.TestProvide(),
+			clauthz.TestProvide(map[string]string{}),
 
 			fx.Provide(NewReadOnly, NewReadWrite),
 			claws.Provide(),
