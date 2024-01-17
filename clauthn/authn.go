@@ -39,7 +39,7 @@ type Authn struct {
 func NewAuthn(cfg Config, logs *zap.Logger, clock jwt.Clock) (*Authn, error) {
 	authn := &Authn{cfg: cfg, logs: logs.Named("authn"), clock: clock}
 
-	dec, err := base64.URLEncoding.DecodeString(cfg.PubPrivKeySetB64JSON)
+	dec, err := base64.StdEncoding.DecodeString(cfg.PubPrivKeySetB64JSON)
 	if err != nil {
 		return nil, fmt.Errorf("faield to decode keys as base64 padding url encoding: %w", err)
 	}
@@ -120,7 +120,7 @@ func TestProvide() fx.Option {
 
 		// set the configuration to have a signing key just for testing: mkjwk.org
 		fx.Decorate(func(cfg Config) Config {
-			cfg.PubPrivKeySetB64JSON = base64.URLEncoding.EncodeToString([]byte(`{
+			cfg.PubPrivKeySetB64JSON = base64.StdEncoding.EncodeToString([]byte(`{
 				"keys": [
 					{
 						"kty": "EC",
