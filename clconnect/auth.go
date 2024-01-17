@@ -30,6 +30,17 @@ func NewAuth(cfg Config, logs *zap.Logger, authn *clauthn.Authn, authz *clauthz.
 	return lgr
 }
 
+// Identity returns the identity from context as an OpenID token. If there is no
+// token in the context it returns an empty (anonymous) openid token.
+func Identity(ctx context.Context) openid.Token {
+	v, ok := ctx.Value(ctxKey("openid_token")).(openid.Token)
+	if !ok || v == nil {
+		v = openid.New() // anonymous token
+	}
+
+	return v
+}
+
 // AuthzInput encodes the full input into the authorization (AuthZ) policy system OPA.
 // It should provide ALL data required to make authorization decisions. It should be fully
 // serializable to JSON.
@@ -78,6 +89,8 @@ func (l Auth) intercept(next connect.UnaryFunc) connect.UnaryFunc {
 			return nil, connect.NewError(connect.CodePermissionDenied,
 				fmt.Errorf("unauthorized, subject: '%s'", token.Subject()))
 		}
+
+		ctx = context.WithValue(ctx, ctxKey("openid_token"), token)
 
 		return next(ctx, req)
 	})

@@ -73,6 +73,9 @@ func New[RO, RW any](
 	return mux
 }
 
+// to scope context keys.
+type ctxKey string
+
 // moduleName for naming conventions.
 const moduleName = "clconnect"
 

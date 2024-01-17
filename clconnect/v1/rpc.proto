@@ -32,7 +32,10 @@ message CheckHealthResponse {
 message FooRequest {}
 
 // Simple test response
-message FooResponse {}
+message FooResponse {
+  // some response data
+  string bar = 1;
+}
 
 // Service with read-only endpoints, it's implementation will receive a
 // read-only postgres connection pool

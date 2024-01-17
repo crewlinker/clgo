@@ -83,6 +83,8 @@ var _ = Describe("auth", func() {
 				Build()))))
 			tok2 = string(lo.Must(authn.SignJWT(ctx, lo.Must(openid.NewBuilder().
 				Subject("sub2").
+				GivenName("John").
+				FamilyName("Doe").
 				Build()))))
 		})
 
@@ -98,8 +100,9 @@ var _ = Describe("auth", func() {
 			req := &connect.Request[clconnectv1.FooRequest]{Msg: &clconnectv1.FooRequest{}}
 			req.Header().Set("Authorization", "Bearer "+tok2)
 
-			_, err := roc.Foo(ctx, req)
+			resp, err := roc.Foo(ctx, req)
 			Expect(err).ToNot(HaveOccurred())
+			Expect(resp.Msg.GetBar()).To(Equal(`Name: John Doe`))
 		})
 	})
 })

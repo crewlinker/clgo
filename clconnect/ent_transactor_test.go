@@ -2,6 +2,7 @@ package clconnect_test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -114,5 +115,9 @@ func (rw entReadOnly) Foo(
 		panic("must have tx")
 	}
 
-	return &connect.Response[clconnectv1.FooResponse]{}, nil
+	oid := clconnect.Identity(ctx)
+
+	return &connect.Response[clconnectv1.FooResponse]{
+		Msg: &clconnectv1.FooResponse{Bar: fmt.Sprintf("Name: %s %s", oid.GivenName(), oid.FamilyName())},
+	}, nil
 }
