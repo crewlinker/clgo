@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"os"
 
 	"connectrpc.com/connect"
 	"github.com/crewlinker/clgo/clauthn"
 	"github.com/crewlinker/clgo/clauthz"
-	"github.com/crewlinker/clgo/clconnect"
 	clconnectv1 "github.com/crewlinker/clgo/clconnect/v1"
 	"github.com/crewlinker/clgo/clconnect/v1/clconnectv1connect"
 	"github.com/lestrrat-go/jwx/v2/jwt/openid"
@@ -27,6 +27,12 @@ var _ = Describe("auth", func() {
 	var authn *clauthn.Authn
 
 	BeforeEach(func(ctx context.Context) {
+		// test the env expand for policy env
+		os.Setenv("ENV_EXPAND_TEST_VALUE", "bar")
+		os.Setenv("CLCONNECT_AUTHZ_POLICY_ENV_INPUT", `{"foo":"$ENV_EXPAND_TEST_VALUE"}`)
+		DeferCleanup(os.Unsetenv, "CLCONNECT_AUTHZ_POLICY_ENV_INPUT")
+		DeferCleanup(os.Unsetenv, "ENV_EXPAND_TEST_VALUE")
+
 		policies := map[string]string{
 			"main.rego": `
 				package authz
@@ -36,18 +42,13 @@ var _ = Describe("auth", func() {
 
 				allow if {
 					input.claims.sub == "sub2"
-					input.env.foo = "bar"
+					input.env.foo == "bar"
 				}
 `,
 		}
 
 		app := fx.New(
 			fx.Populate(fx.Annotate(&hdl, fx.ParamTags(`name:"clconnect"`)), &rwc, &roc, &obs, &authn),
-			fx.Decorate(func(c clconnect.Config) clconnect.Config {
-				c.AuthzPolicyEnvInput = `{"foo":"bar"}` // set some environment for the policy to work
-
-				return c
-			}),
 			fx.Decorate(func(b clauthz.MockBundle) clauthz.MockBundle {
 				return clauthz.MockBundle(policies)
 			}),
