@@ -30,4 +30,17 @@ var _ = Describe("clid field", func() {
 			dialect.Postgres: "varchar(31)",
 		}))
 	})
+
+	It("should validate prefix", func() {
+		Expect(clent.Validator.CLID("foo")("foo-01HMEFW25X3NAWEDGMPPYM1C6K")).To(Succeed())
+		Expect(clent.Validator.CLID("foo")("bar-01HMEFW25X3NAWEDGMPPYM1C6K")).To(
+			MatchError(ContainSubstring(`'bar' is invalid, expected: 'foo'`)))
+	})
+
+	It("should validate prefix", func() {
+		Expect(clent.Validator.CLID("foo")("bar_01HMEFW25X3NAWEDGMPPYM1C6K")).To(
+			MatchError(ContainSubstring(`no separator`)))
+		Expect(clent.Validator.CLID("foo")("foo-ad")).To(
+			MatchError(ContainSubstring(`invalid ulid`)))
+	})
 })

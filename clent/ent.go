@@ -4,11 +4,13 @@ package clent
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/schema/field"
 	"github.com/crewlinker/clgo/clid"
+	"github.com/oklog/ulid/v2"
 )
 
 // Field is a namespace for re-usable fields.
@@ -25,8 +27,35 @@ var Field = struct {
 			GoType(clid.ID{}).
 			DefaultFunc(func() clid.ID {
 				return clid.New(prefix)
-			}).SchemaType(map[string]string{
-			dialect.Postgres: fmt.Sprintf("varchar(%d)", clid.StorageSize),
-		})
+			}).
+			Validate(Validator.CLID(prefix)).
+			SchemaType(map[string]string{
+				dialect.Postgres: fmt.Sprintf("varchar(%d)", clid.StorageSize),
+			})
+	},
+}
+
+// Validator name-spaced re-usable (field validators).
+var Validator = struct {
+	CLID func(string) func(string) error
+}{
+	// CLIDValidator creates a validator for validating CLID fields.
+	CLID: func(expPrefix string) func(s string) error {
+		return func(s string) error {
+			before, after, found := strings.Cut(s, clid.Separator)
+			if !found {
+				return fmt.Errorf("clent: invalid clid, no separator")
+			}
+
+			if _, err := ulid.ParseStrict(after); err != nil {
+				return fmt.Errorf("clent: invalid ulid: %w", err)
+			}
+
+			if before != expPrefix {
+				return fmt.Errorf("clent: provided clid prefix '%s' is invalid, expected: '%s'", before, expPrefix)
+			}
+
+			return nil
+		}
 	},
 }
