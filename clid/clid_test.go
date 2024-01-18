@@ -60,6 +60,8 @@ var _ = Describe("prefix ulid", func() {
 		id, err := clid.NewFromParts("user", mst, entr)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(id.String()).To(Equal(`user-01HGWKKAWGABYZR1S1G9JMY5HZ`))
+
+		Expect(id.String()).To(HaveLen(clid.StorageSize))
 	})
 
 	It("should generate and become value", func() {

@@ -13,12 +13,14 @@ import (
 )
 
 const (
-	// separator for string encoding, we like '-' for showing them in urls.
-	separator = "-"
+	// Separator for string encoding, we like '-' for showing them in urls.
+	Separator = "-"
 	// must be this length, to prevent above through large strings and to make storage size predictable.
-	prefixLen = 4
-	// zeroPrefix is shown when a zero value is encoded, for recognizing that case easily.
-	zeroPrefix = "zzzz"
+	PrefixSize = 4
+	// ZeroPrefix is shown when a zero value is encoded, for recognizing that case easily.
+	ZeroPrefix = "zzzz"
+	// StorageSize determines the size of our identifier when stored, useful for sql schemas.
+	StorageSize = 26 + PrefixSize + 1
 )
 
 // ID implements a prefixed ULID identifier.
@@ -39,8 +41,8 @@ func New(prefix string) (id ID) {
 
 // NewFromParts creates an id from its parts.
 func NewFromParts(prefix string, ms uint64, entr io.Reader) (id ID, err error) {
-	if len(prefix) != prefixLen {
-		panic(fmt.Sprintf("clid: prefix size must be: %d", prefixLen))
+	if len(prefix) != PrefixSize {
+		panic(fmt.Sprintf("clid: prefix size must be: %d", PrefixSize))
 	}
 
 	id.p = prefix
@@ -56,10 +58,10 @@ func NewFromParts(prefix string, ms uint64, entr io.Reader) (id ID, err error) {
 // String implements the fmt.Stringer interface.
 func (id ID) String() string {
 	if id.p == "" {
-		return strings.Join([]string{zeroPrefix, id.d.String()}, separator)
+		return strings.Join([]string{ZeroPrefix, id.d.String()}, Separator)
 	}
 
-	return strings.Join([]string{id.p, id.d.String()}, separator)
+	return strings.Join([]string{id.p, id.d.String()}, Separator)
 }
 
 // Value implements the driver Valuer interface.
@@ -89,9 +91,9 @@ func (id *ID) Scan(v any) error {
 	case string:
 		*id = ID{}
 
-		id.p, after, found = strings.Cut(v, separator)
+		id.p, after, found = strings.Cut(v, Separator)
 		if !found {
-			return ScanError{v: v, m: "missing separator '" + separator + "'"}
+			return ScanError{v: v, m: "missing separator '" + Separator + "'"}
 		}
 
 		id.d, err = ulid.ParseStrict(after)
