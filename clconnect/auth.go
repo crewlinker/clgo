@@ -66,8 +66,8 @@ func IdentityFromContext(ctx context.Context) openid.Token {
 type AuthzInput struct {
 	// Input from the process environment
 	Env map[string]any `json:"env"`
-	// OpenID token
-	OpenID openid.Token `json:"open_id"`
+	// OpenID token as claims
+	Claims openid.Token `json:"claims"`
 	// Procedure encodes the full RPC procedure name. e.g: /acme.foo.v1.FooService/Bar
 	Procedure string `json:"procedure"`
 }
@@ -97,7 +97,7 @@ func (l Auth) intercept(next connect.UnaryFunc) connect.UnaryFunc {
 		// authorization input
 		input := &AuthzInput{
 			Env:       l.envInput,
-			OpenID:    token,
+			Claims:    token,
 			Procedure: req.Spec().Procedure,
 		}
 

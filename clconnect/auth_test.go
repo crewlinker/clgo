@@ -35,7 +35,7 @@ var _ = Describe("auth", func() {
 				default allow := false
 
 				allow if {
-					input.open_id.sub == "sub2"
+					input.claims.sub == "sub2"
 					input.env.foo = "bar"
 				}
 `,
