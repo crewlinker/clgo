@@ -36,6 +36,9 @@ func (EntRWTransactor[TX, MC]) isRWTransacter() {}
 type Config struct {
 	// disables stack trace information in error details
 	DisableStackTraceErrorDetails bool `env:"DISABLE_STACK_TRACE_ERROR_DETAILS"`
+	// allows configuring the 'env' input field send to the policy, allows for configuring input
+	// invariant to the environment
+	AuthzPolicyEnvInput string `env:"AUTHZ_POLICY_ENV_INPUT" envDefault:"{}"`
 }
 
 // ConstructHandler defines the type for constructing a connectrpc service handler.

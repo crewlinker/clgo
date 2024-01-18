@@ -2,6 +2,7 @@ package clconnect
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -19,15 +20,28 @@ type Auth struct {
 	authn *clauthn.Authn
 	authz *clauthz.Authz
 
+	envInput map[string]any
+
 	connect.Interceptor
 }
 
 // NewAuth inits the logger.
-func NewAuth(cfg Config, logs *zap.Logger, authn *clauthn.Authn, authz *clauthz.Authz) *Auth {
-	lgr := &Auth{cfg: cfg, logs: logs.Named("auth"), authn: authn, authz: authz}
+func NewAuth(cfg Config, logs *zap.Logger, authn *clauthn.Authn, authz *clauthz.Authz) (lgr *Auth, err error) {
+	lgr = &Auth{
+		cfg:      cfg,
+		logs:     logs.Named("auth"),
+		authn:    authn,
+		authz:    authz,
+		envInput: map[string]any{},
+	}
+
+	if err = json.Unmarshal([]byte(cfg.AuthzPolicyEnvInput), &lgr.envInput); err != nil {
+		return nil, fmt.Errorf("failed to parse authz policy env input `%s`: %w", cfg.AuthzPolicyEnvInput, err)
+	}
+
 	lgr.Interceptor = connect.UnaryInterceptorFunc(lgr.intercept)
 
-	return lgr
+	return lgr, nil
 }
 
 // WithIdentity returns a context with the openid token.
@@ -50,6 +64,8 @@ func IdentityFromContext(ctx context.Context) openid.Token {
 // It should provide ALL data required to make authorization decisions. It should be fully
 // serializable to JSON.
 type AuthzInput struct {
+	// Input from the process environment
+	Env map[string]any `json:"env"`
 	// OpenID token
 	OpenID openid.Token `json:"open_id"`
 	// Procedure encodes the full RPC procedure name. e.g: /acme.foo.v1.FooService/Bar
@@ -80,6 +96,7 @@ func (l Auth) intercept(next connect.UnaryFunc) connect.UnaryFunc {
 
 		// authorization input
 		input := &AuthzInput{
+			Env:       l.envInput,
 			OpenID:    token,
 			Procedure: req.Spec().Procedure,
 		}

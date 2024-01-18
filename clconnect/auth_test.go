@@ -8,6 +8,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/crewlinker/clgo/clauthn"
 	"github.com/crewlinker/clgo/clauthz"
+	"github.com/crewlinker/clgo/clconnect"
 	clconnectv1 "github.com/crewlinker/clgo/clconnect/v1"
 	"github.com/crewlinker/clgo/clconnect/v1/clconnectv1connect"
 	"github.com/lestrrat-go/jwx/v2/jwt/openid"
@@ -35,12 +36,18 @@ var _ = Describe("auth", func() {
 
 				allow if {
 					input.open_id.sub == "sub2"
+					input.env.foo = "bar"
 				}
 `,
 		}
 
 		app := fx.New(
 			fx.Populate(fx.Annotate(&hdl, fx.ParamTags(`name:"clconnect"`)), &rwc, &roc, &obs, &authn),
+			fx.Decorate(func(c clconnect.Config) clconnect.Config {
+				c.AuthzPolicyEnvInput = `{"foo":"bar"}` // set some environment for the policy to work
+
+				return c
+			}),
 			fx.Decorate(func(b clauthz.MockBundle) clauthz.MockBundle {
 				return clauthz.MockBundle(policies)
 			}),
