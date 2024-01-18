@@ -1,8 +1,9 @@
-package plid_test
+package clid_test
 
 import (
 	"bytes"
 	"database/sql"
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,28 +11,29 @@ import (
 	"testing"
 	"time"
 
-	"github.com/crewlinker/clgo/clid/plid"
+	"github.com/crewlinker/clgo/clid"
 	"github.com/oklog/ulid/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
 var (
-	_ fmt.Stringer     = plid.ID{}
-	_ sql.Scanner      = &plid.ID{}
-	_ json.Marshaler   = plid.ID{}
-	_ json.Unmarshaler = &plid.ID{}
+	_ fmt.Stringer     = clid.ID{}
+	_ sql.Scanner      = &clid.ID{}
+	_ driver.Valuer    = &clid.ID{}
+	_ json.Marshaler   = clid.ID{}
+	_ json.Unmarshaler = &clid.ID{}
 
 	// https://pkg.go.dev/github.com/99designs/gqlgen/graphql#Marshaler
-	_ interface{ MarshalGQL(w io.Writer) } = plid.ID{}
+	_ interface{ MarshalGQL(w io.Writer) } = clid.ID{}
 	// https://pkg.go.dev/github.com/99designs/gqlgen/graphql#Marshaler
-	_ interface{ UnmarshalGQL(v interface{}) error } = &plid.ID{}
+	_ interface{ UnmarshalGQL(v interface{}) error } = &clid.ID{}
 )
 
 func TestClid(t *testing.T) {
 	t.Parallel()
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "clid/plid")
+	RunSpecs(t, "clid/clid")
 }
 
 var _ = Describe("prefix ulid", func() {
@@ -43,32 +45,42 @@ var _ = Describe("prefix ulid", func() {
 		mst = ulid.Timestamp(time.Unix(1701767130, 0))
 	})
 
-	It("should generate new plid", func() {
-		id := plid.New("usr")
+	It("should generate new clid", func() {
+		id := clid.New("usr")
 		Expect(id.String()).To(HavePrefix("usr-"))
 		Expect(id.String()).To(HaveLen(30))
 	})
 
 	It("should stringer zero value", func() {
-		var id plid.ID
+		var id clid.ID
 		Expect(id.String()).To(Equal(`zzz-00000000000000000000000000`))
 	})
 
 	It("should generate and stringer", func() {
-		id, err := plid.NewFromParts("usr", mst, entr)
+		id, err := clid.NewFromParts("usr", mst, entr)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(id.String()).To(Equal(`usr-01HGWKKAWGABYZR1S1G9JMY5HZ`))
 	})
 
+	It("should generate and become value", func() {
+		id, err := clid.NewFromParts("usr", mst, entr)
+		Expect(err).ToNot(HaveOccurred())
+
+		val, err := id.Value()
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(fmt.Sprintf("%T", val)).To(Equal("string"))
+	})
+
 	It("should scan", func() {
-		var id plid.ID
+		var id clid.ID
 		Expect(id.Scan("usr-01HGWKKAWGABYZR1S1G9JMY5HZ")).To(Succeed())
 
 		Expect(id.String()).To(Equal("usr-01HGWKKAWGABYZR1S1G9JMY5HZ"))
 	})
 
 	It("should marshal gql", func() {
-		id, err := plid.NewFromParts("usr", mst, entr)
+		id, err := clid.NewFromParts("usr", mst, entr)
 		Expect(err).ToNot(HaveOccurred())
 
 		var buf bytes.Buffer
@@ -77,44 +89,44 @@ var _ = Describe("prefix ulid", func() {
 	})
 
 	It("should unmarshal gql", func() {
-		var id plid.ID
+		var id clid.ID
 		Expect(id.UnmarshalGQL("usr-01HGWKKAWGABYZR1S1G9JMY5HZ")).To(Succeed())
 
 		Expect(id.String()).To(Equal("usr-01HGWKKAWGABYZR1S1G9JMY5HZ"))
 	})
 
 	It("should marshal json", func() {
-		data, err := json.Marshal(struct{ ID plid.ID }{})
+		data, err := json.Marshal(struct{ ID clid.ID }{})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(data).To(MatchJSON(`{"ID":"zzz-00000000000000000000000000"}`))
 	})
 
 	It("should unmarshal json", func() {
-		var v struct{ ID plid.ID }
+		var v struct{ ID clid.ID }
 		Expect(json.Unmarshal([]byte(`{"ID":"usr-01HGWKKAWGABYZR1S1G9JMY5HZ"}`), &v)).To(Succeed())
 		Expect(v.ID.String()).To(Equal(`usr-01HGWKKAWGABYZR1S1G9JMY5HZ`))
 	})
 
 	Describe("errors", func() {
 		It("should error on invalid scan type", func() {
-			var id plid.ID
-			Expect(id.Scan(1)).To(MatchError(`plid: failed to scan int: type not supported`))
+			var id clid.ID
+			Expect(id.Scan(1)).To(MatchError(`clid: failed to scan int: type not supported`))
 		})
 
 		It("should error on invalid scan format", func() {
-			var id plid.ID
-			Expect(id.Scan("")).To(MatchError(`plid: failed to scan string: missing separator '-'`))
+			var id clid.ID
+			Expect(id.Scan("")).To(MatchError(`clid: failed to scan string: missing separator '-'`))
 		})
 
 		It("should error on invalid ulid format", func() {
-			var id plid.ID
-			Expect(id.Scan("x-z")).To(MatchError(`plid: ulid: bad data size when unmarshaling`))
+			var id clid.ID
+			Expect(id.Scan("x-z")).To(MatchError(`clid: ulid: bad data size when unmarshaling`))
 		})
 
 		It("should error on unmarshal json", func() {
-			var v struct{ ID plid.ID }
+			var v struct{ ID clid.ID }
 			Expect(json.Unmarshal([]byte(`{"ID":1}`), &v)).
-				To(MatchError(`plid: failed to unmarshal as string: json: cannot unmarshal number into Go value of type string`))
+				To(MatchError(`clid: failed to unmarshal as string: json: cannot unmarshal number into Go value of type string`))
 		})
 	})
 })

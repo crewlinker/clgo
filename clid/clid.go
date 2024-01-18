@@ -1,7 +1,8 @@
-// Package plid implements a prefixed ulid ID type.
-package plid
+// Package clid implements a prefixed ulid ID type.
+package clid
 
 import (
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -23,7 +24,7 @@ type ID struct {
 func New(prefix string) (id ID) {
 	id, err := NewFromParts(prefix, ulid.Now(), ulid.DefaultEntropy())
 	if err != nil {
-		panic("plid: " + err.Error())
+		panic("clid: " + err.Error())
 	}
 
 	return
@@ -50,6 +51,11 @@ func (id ID) String() string {
 	return fmt.Sprintf("%s%s%s", id.p, separator, id.d)
 }
 
+// Value implements the driver Valuer interface.
+func (id ID) Value() (driver.Value, error) {
+	return id.String(), nil
+}
+
 // ScanError describes a failure to scan an ID.
 type ScanError struct {
 	v any
@@ -57,7 +63,7 @@ type ScanError struct {
 }
 
 func (e ScanError) Error() string {
-	return fmt.Sprintf("plid: failed to scan %T: %s", e.v, e.m)
+	return fmt.Sprintf("clid: failed to scan %T: %s", e.v, e.m)
 }
 
 // Scan implements the sql.Scanner.
@@ -79,7 +85,7 @@ func (id *ID) Scan(v any) error {
 
 		id.d, err = ulid.ParseStrict(after)
 		if err != nil {
-			return fmt.Errorf("plid: %w", err)
+			return fmt.Errorf("clid: %w", err)
 		}
 
 		return nil
@@ -97,7 +103,7 @@ func (id ID) MarshalJSON() (data []byte, err error) {
 func (id *ID) UnmarshalJSON(data []byte) error {
 	var s string
 	if err := json.Unmarshal(data, &s); err != nil {
-		return fmt.Errorf("plid: failed to unmarshal as string: %w", err)
+		return fmt.Errorf("clid: failed to unmarshal as string: %w", err)
 	}
 
 	return id.Scan(s)
