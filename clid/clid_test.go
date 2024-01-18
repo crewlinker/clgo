@@ -46,24 +46,24 @@ var _ = Describe("prefix ulid", func() {
 	})
 
 	It("should generate new clid", func() {
-		id := clid.New("usr")
-		Expect(id.String()).To(HavePrefix("usr-"))
-		Expect(id.String()).To(HaveLen(30))
+		id := clid.New("user")
+		Expect(id.String()).To(HavePrefix("user-"))
+		Expect(id.String()).To(HaveLen(31))
 	})
 
 	It("should stringer zero value", func() {
 		var id clid.ID
-		Expect(id.String()).To(Equal(`zzz-00000000000000000000000000`))
+		Expect(id.String()).To(Equal(`zzzz-00000000000000000000000000`))
 	})
 
 	It("should generate and stringer", func() {
-		id, err := clid.NewFromParts("usr", mst, entr)
+		id, err := clid.NewFromParts("user", mst, entr)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(id.String()).To(Equal(`usr-01HGWKKAWGABYZR1S1G9JMY5HZ`))
+		Expect(id.String()).To(Equal(`user-01HGWKKAWGABYZR1S1G9JMY5HZ`))
 	})
 
 	It("should generate and become value", func() {
-		id, err := clid.NewFromParts("usr", mst, entr)
+		id, err := clid.NewFromParts("user", mst, entr)
 		Expect(err).ToNot(HaveOccurred())
 
 		val, err := id.Value()
@@ -74,37 +74,37 @@ var _ = Describe("prefix ulid", func() {
 
 	It("should scan", func() {
 		var id clid.ID
-		Expect(id.Scan("usr-01HGWKKAWGABYZR1S1G9JMY5HZ")).To(Succeed())
+		Expect(id.Scan("user-01HGWKKAWGABYZR1S1G9JMY5HZ")).To(Succeed())
 
-		Expect(id.String()).To(Equal("usr-01HGWKKAWGABYZR1S1G9JMY5HZ"))
+		Expect(id.String()).To(Equal("user-01HGWKKAWGABYZR1S1G9JMY5HZ"))
 	})
 
 	It("should marshal gql", func() {
-		id, err := clid.NewFromParts("usr", mst, entr)
+		id, err := clid.NewFromParts("user", mst, entr)
 		Expect(err).ToNot(HaveOccurred())
 
 		var buf bytes.Buffer
 		id.MarshalGQL(&buf)
-		Expect(buf.String()).To(Equal(`"usr-01HGWKKAWGABYZR1S1G9JMY5HZ"`))
+		Expect(buf.String()).To(Equal(`"user-01HGWKKAWGABYZR1S1G9JMY5HZ"`))
 	})
 
 	It("should unmarshal gql", func() {
 		var id clid.ID
-		Expect(id.UnmarshalGQL("usr-01HGWKKAWGABYZR1S1G9JMY5HZ")).To(Succeed())
+		Expect(id.UnmarshalGQL("user-01HGWKKAWGABYZR1S1G9JMY5HZ")).To(Succeed())
 
-		Expect(id.String()).To(Equal("usr-01HGWKKAWGABYZR1S1G9JMY5HZ"))
+		Expect(id.String()).To(Equal("user-01HGWKKAWGABYZR1S1G9JMY5HZ"))
 	})
 
 	It("should marshal json", func() {
 		data, err := json.Marshal(struct{ ID clid.ID }{})
 		Expect(err).ToNot(HaveOccurred())
-		Expect(data).To(MatchJSON(`{"ID":"zzz-00000000000000000000000000"}`))
+		Expect(data).To(MatchJSON(`{"ID":"zzzz-00000000000000000000000000"}`))
 	})
 
 	It("should unmarshal json", func() {
 		var v struct{ ID clid.ID }
-		Expect(json.Unmarshal([]byte(`{"ID":"usr-01HGWKKAWGABYZR1S1G9JMY5HZ"}`), &v)).To(Succeed())
-		Expect(v.ID.String()).To(Equal(`usr-01HGWKKAWGABYZR1S1G9JMY5HZ`))
+		Expect(json.Unmarshal([]byte(`{"ID":"user-01HGWKKAWGABYZR1S1G9JMY5HZ"}`), &v)).To(Succeed())
+		Expect(v.ID.String()).To(Equal(`user-01HGWKKAWGABYZR1S1G9JMY5HZ`))
 	})
 
 	Describe("errors", func() {

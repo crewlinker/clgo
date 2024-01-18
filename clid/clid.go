@@ -12,7 +12,14 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-const separator = "-"
+const (
+	// separator for string encoding, we like '-' for showing them in urls.
+	separator = "-"
+	// must be this length, to prevent above through large strings and to make storage size predictable.
+	prefixLen = 4
+	// zeroPrefix is shown when a zero value is encoded, for recognizing that case easily.
+	zeroPrefix = "zzzz"
+)
 
 // ID implements a prefixed ULID identifier.
 type ID struct {
@@ -32,6 +39,10 @@ func New(prefix string) (id ID) {
 
 // NewFromParts creates an id from its parts.
 func NewFromParts(prefix string, ms uint64, entr io.Reader) (id ID, err error) {
+	if len(prefix) != prefixLen {
+		panic(fmt.Sprintf("clid: prefix size must be: %d", prefixLen))
+	}
+
 	id.p = prefix
 
 	id.d, err = ulid.New(ms, entr)
@@ -45,10 +56,10 @@ func NewFromParts(prefix string, ms uint64, entr io.Reader) (id ID, err error) {
 // String implements the fmt.Stringer interface.
 func (id ID) String() string {
 	if id.p == "" {
-		return fmt.Sprintf("zzz%s%s", separator, id.d) // for zero value stringing
+		return strings.Join([]string{zeroPrefix, id.d.String()}, separator)
 	}
 
-	return fmt.Sprintf("%s%s%s", id.p, separator, id.d)
+	return strings.Join([]string{id.p, id.d.String()}, separator)
 }
 
 // Value implements the driver Valuer interface.
