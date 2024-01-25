@@ -31,6 +31,7 @@ var Field = struct {
 			Validate(Validator.CLID(prefix)).
 			SchemaType(map[string]string{
 				dialect.Postgres: fmt.Sprintf("varchar(%d)", clid.StorageSize),
+				dialect.MySQL:    fmt.Sprintf("varchar(%d)", clid.StorageSize),
 			})
 	},
 }
