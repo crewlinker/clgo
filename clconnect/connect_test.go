@@ -44,7 +44,7 @@ var _ = Describe("rpc", func() {
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(
 			fx.Populate(fx.Annotate(&hdl, fx.ParamTags(`name:"clconnect"`)), &rwc, &roc, &obs),
-			ProvidePgx(),
+			ProvideNoTx(),
 		)
 
 		Expect(app.Start(ctx)).To(Succeed())
@@ -148,19 +148,24 @@ var _ = Describe("rpc", func() {
 	})
 })
 
+func ProvideNoTx() fx.Option {
+	return fx.Options(
+		Provide(),
+		fx.Provide(NewReadOnly, NewReadWrite),
+	)
+}
+
 func ProvidePgx() fx.Option {
 	return fx.Options(
 		Provide(),
-
 		clconnect.ProvidePgxTransactors(),
-		fx.Provide(NewReadOnly, NewReadWrite),
+		fx.Provide(NewPgxReadOnly, NewPgxReadWrite),
 	)
 }
 
 func ProvideEnt() fx.Option {
 	return fx.Options(
 		Provide(),
-
 		clconnect.ProvideEntTransactors[*modelTx, *modelClient](),
 		fx.Supply(fx.Annotate(&modelClient{}, fx.ResultTags(`name:"rw"`))),
 		fx.Supply(fx.Annotate(&modelClient{}, fx.ResultTags(`name:"ro"`))),

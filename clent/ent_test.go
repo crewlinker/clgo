@@ -28,6 +28,7 @@ var _ = Describe("clid field", func() {
 		Expect(field.Descriptor().Name).To(Equal(`id2`))
 		Expect(field.Descriptor().SchemaType).To(Equal(map[string]string{
 			dialect.Postgres: "varchar(31)",
+			dialect.MySQL:    "varchar(31)",
 		}))
 	})
 

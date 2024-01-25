@@ -19,7 +19,7 @@ import (
 func TestAuthz(t *testing.T) {
 	t.Parallel()
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "clauthzz")
+	RunSpecs(t, "clauthz")
 }
 
 //go:embed testdata/bundles
