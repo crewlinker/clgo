@@ -13,18 +13,17 @@ import (
 
 // NewRegionalSingletonStack represents a stack of which only one exists per region but
 // multiple may exist per account.
-func NewRegionalSingletonStack(app awscdk.App, region, regionQualifier string) awscdk.Stack {
+func NewRegionalSingletonStack(app awscdk.App, region, idSuffix string) awscdk.Stack {
 	qual, env := QualifierFromScope(app), EnvironmentFromScope(app)
-	qual += regionQualifier
 
-	return awscdk.NewStack(app, jsii.String(qual),
+	return awscdk.NewStack(app, jsii.String(qual+idSuffix),
 		&awscdk.StackProps{
 			Env: &awscdk.Environment{
 				Account: jsii.String(os.Getenv("CDK_DEFAULT_ACCOUNT")),
 				Region:  jsii.String(region),
 			},
-			Description: jsii.String(fmt.Sprintf("%s (env: %s, singleton)",
-				qual, env)),
+			Description: jsii.String(fmt.Sprintf("%s (env: %s, singleton, %s)",
+				qual, env, region)),
 			Synthesizer: awscdk.NewDefaultStackSynthesizer(&awscdk.DefaultStackSynthesizerProps{
 				Qualifier: jsii.String(strings.ToLower(qual)),
 			}),

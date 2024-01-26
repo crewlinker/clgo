@@ -108,7 +108,8 @@ var _ = Describe("stack", func() {
 			tmpl := assertions.Template_FromStack(stack, nil)
 			data := *tmpl.ToJSON()
 
-			Expect(data["Description"]).To(Equal("ClFooEUB (env: dev, singleton)"))
+			Expect(*stack.Node().Id()).To(Equal(`ClFooEUB`))
+			Expect(data["Description"]).To(Equal("ClFoo (env: dev, singleton, eu-bar-2)"))
 			Expect(*awscdk.Stack_Of(stack).Account()).To(Equal("2222222"))
 			Expect(*awscdk.Stack_Of(stack).Region()).To(Equal("eu-bar-2"))
 		})
