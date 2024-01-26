@@ -13,7 +13,26 @@ import (
 
 // NewSingletonStack requires a "instance" context variable to allow different copies of the stack
 // to exist in the same AWS account.
-func NewSingletonStack(scope constructs.Construct, conv Conventions) awscdk.Stack {
+func NewSingletonStack(app awscdk.App, region string) awscdk.Stack {
+	qual, env := QualifierFromScope(app), EnvironmentFromScope(app)
+
+	return awscdk.NewStack(app, jsii.String(qual+"S"),
+		&awscdk.StackProps{
+			Env: &awscdk.Environment{
+				Account: jsii.String(os.Getenv("CDK_DEFAULT_ACCOUNT")),
+				Region:  jsii.String(region),
+			},
+			Description: jsii.String(fmt.Sprintf("%s (env: %s, singleton)",
+				qual, env)),
+			Synthesizer: awscdk.NewDefaultStackSynthesizer(&awscdk.DefaultStackSynthesizerProps{
+				Qualifier: jsii.String(strings.ToLower(qual)),
+			}),
+		})
+}
+
+// NewSingletonStackV1 requires a "instance" context variable to allow different copies of the stack
+// to exist in the same AWS account.
+func NewSingletonStackV1(scope constructs.Construct, conv Conventions) awscdk.Stack {
 	env := EnvironmentFromScope(scope)
 	if env == "" {
 		env = "<none>"
