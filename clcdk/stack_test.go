@@ -104,11 +104,11 @@ var _ = Describe("stack", func() {
 			app.Node().SetContext(jsii.String("qualifier"), jsii.String("ClFoo"))
 			app.Node().SetContext(jsii.String("environment"), jsii.String("dev"))
 
-			stack := clcdk.NewSingletonStack(app, "eu-bar-2")
+			stack := clcdk.NewRegionalSingletonStack(app, "eu-bar-2", "EUB")
 			tmpl := assertions.Template_FromStack(stack, nil)
 			data := *tmpl.ToJSON()
 
-			Expect(data["Description"]).To(Equal("ClFoo (env: dev, singleton)"))
+			Expect(data["Description"]).To(Equal("ClFooEUB (env: dev, singleton)"))
 			Expect(*awscdk.Stack_Of(stack).Account()).To(Equal("2222222"))
 			Expect(*awscdk.Stack_Of(stack).Region()).To(Equal("eu-bar-2"))
 		})

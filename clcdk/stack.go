@@ -11,12 +11,13 @@ import (
 	"github.com/aws/jsii-runtime-go"
 )
 
-// NewSingletonStack requires a "instance" context variable to allow different copies of the stack
-// to exist in the same AWS account.
-func NewSingletonStack(app awscdk.App, region string) awscdk.Stack {
+// NewRegionalSingletonStack represents a stack of which only one exists per region but
+// multiple may exist per account.
+func NewRegionalSingletonStack(app awscdk.App, region, regionQualifier string) awscdk.Stack {
 	qual, env := QualifierFromScope(app), EnvironmentFromScope(app)
+	qual += regionQualifier
 
-	return awscdk.NewStack(app, jsii.String(qual+"S"),
+	return awscdk.NewStack(app, jsii.String(qual),
 		&awscdk.StackProps{
 			Env: &awscdk.Environment{
 				Account: jsii.String(os.Getenv("CDK_DEFAULT_ACCOUNT")),
