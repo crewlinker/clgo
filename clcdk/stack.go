@@ -11,6 +11,24 @@ import (
 	"github.com/aws/jsii-runtime-go"
 )
 
+// NewRegionalInstancedStack represents a stack of which multiple may exist per region.
+func NewRegionalInstancedStack(app awscdk.App, region, idSuffix string) awscdk.Stack {
+	qual, instance, env := QualifierFromScope(app), InstanceFromScope(app), EnvironmentFromScope(app)
+
+	return awscdk.NewStack(app, jsii.String(qual+idSuffix+strconv.Itoa(instance)),
+		&awscdk.StackProps{
+			Env: &awscdk.Environment{
+				Account: jsii.String(os.Getenv("CDK_DEFAULT_ACCOUNT")),
+				Region:  jsii.String(region),
+			},
+			Description: jsii.String(fmt.Sprintf("%s (env: %s, instance: %d, %s)",
+				qual, env, instance, region)),
+			Synthesizer: awscdk.NewDefaultStackSynthesizer(&awscdk.DefaultStackSynthesizerProps{
+				Qualifier: jsii.String(strings.ToLower(qual)),
+			}),
+		})
+}
+
 // NewRegionalSingletonStack represents a stack of which only one exists per region but
 // multiple may exist per account.
 func NewRegionalSingletonStack(app awscdk.App, region, idSuffix string) awscdk.Stack {

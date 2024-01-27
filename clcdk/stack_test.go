@@ -94,7 +94,7 @@ var _ = Describe("stack", func() {
 		})
 	})
 
-	Describe("new singleton", Serial, func() {
+	Describe("new regional singleton", Serial, func() {
 		BeforeEach(func() {
 			os.Setenv("CDK_DEFAULT_REGION", "eu-foo-1")
 			os.Setenv("CDK_DEFAULT_ACCOUNT", "2222222")
@@ -110,6 +110,28 @@ var _ = Describe("stack", func() {
 
 			Expect(*stack.Node().Id()).To(Equal(`ClFooEUB`))
 			Expect(data["Description"]).To(Equal("ClFoo (env: dev, singleton, eu-bar-2)"))
+			Expect(*awscdk.Stack_Of(stack).Account()).To(Equal("2222222"))
+			Expect(*awscdk.Stack_Of(stack).Region()).To(Equal("eu-bar-2"))
+		})
+	})
+
+	Describe("new regional instanced", Serial, func() {
+		BeforeEach(func() {
+			os.Setenv("CDK_DEFAULT_REGION", "eu-foo-1")
+			os.Setenv("CDK_DEFAULT_ACCOUNT", "2222222")
+		})
+
+		It("should create an instanced stack with instance context", func() {
+			app.Node().SetContext(jsii.String("qualifier"), jsii.String("ClFoo"))
+			app.Node().SetContext(jsii.String("instance"), jsii.String("2"))
+			app.Node().SetContext(jsii.String("environment"), jsii.String("dev"))
+
+			stack := clcdk.NewRegionalInstancedStack(app, "eu-bar-2", "EUB")
+			tmpl := assertions.Template_FromStack(stack, nil)
+			data := *tmpl.ToJSON()
+
+			Expect(*stack.Node().Id()).To(Equal(`ClFooEUB2`))
+			Expect(data["Description"]).To(Equal("ClFoo (env: dev, instance: 2, eu-bar-2)"))
 			Expect(*awscdk.Stack_Of(stack).Account()).To(Equal("2222222"))
 			Expect(*awscdk.Stack_Of(stack).Region()).To(Equal("eu-bar-2"))
 		})
