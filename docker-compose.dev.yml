@@ -32,3 +32,13 @@ services:
       interval: 1s
       timeout: 5s
       retries: 10
+  mysql:
+    image: mysql:8.0
+    restart: always
+    ports:
+      - "43306:3306"
+    environment:
+      - LANG=C.UTF-8
+      - MYSQL_DATABASE=mysql
+      - MYSQL_ROOT_PASSWORD=mysql
+      - MYSQL_INITDB_CHARSET=utf8mb4_0900_ai_ci

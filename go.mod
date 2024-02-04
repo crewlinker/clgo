@@ -54,6 +54,7 @@ require (
 	github.com/bufbuild/protovalidate-go v0.4.3
 	github.com/caarlos0/env/v10 v10.0.0
 	github.com/go-playground/validator/v10 v10.17.0
+	github.com/go-sql-driver/mysql v1.7.1
 	github.com/go-stack/stack v1.8.1
 	github.com/lestrrat-go/jwx/v2 v2.0.19
 	github.com/mitchellh/copystructure v1.2.0
