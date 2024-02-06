@@ -21,6 +21,7 @@ func NewRegionalInstancedStack(app awscdk.App, region, idSuffix string) awscdk.S
 				Account: jsii.String(os.Getenv("CDK_DEFAULT_ACCOUNT")),
 				Region:  jsii.String(region),
 			},
+			CrossRegionReferences: jsii.Bool(true),
 			Description: jsii.String(fmt.Sprintf("%s (env: %s, instance: %d, %s)",
 				qual, env, instance, region)),
 			Synthesizer: awscdk.NewDefaultStackSynthesizer(&awscdk.DefaultStackSynthesizerProps{
@@ -40,6 +41,7 @@ func NewRegionalSingletonStack(app awscdk.App, region, idSuffix string) awscdk.S
 				Account: jsii.String(os.Getenv("CDK_DEFAULT_ACCOUNT")),
 				Region:  jsii.String(region),
 			},
+			CrossRegionReferences: jsii.Bool(true),
 			Description: jsii.String(fmt.Sprintf("%s (env: %s, singleton, %s)",
 				qual, env, region)),
 			Synthesizer: awscdk.NewDefaultStackSynthesizer(&awscdk.DefaultStackSynthesizerProps{
