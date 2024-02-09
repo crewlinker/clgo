@@ -4,19 +4,22 @@ import (
 	"github.com/aws/aws-cdk-go/awscdk/v2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsec2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsecs"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awsroute53"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
 )
 
 type imports struct {
-	vpc     awsec2.IVpc
-	cluster awsecs.ICluster
+	vpc        awsec2.IVpc
+	cluster    awsecs.ICluster
+	hostedZone awsroute53.IHostedZone
 }
 
 // Imports describe resources imported from the "core" stack.
 type Imports interface {
 	VPC() awsec2.IVpc
 	Cluster() awsecs.ICluster
+	HostedZone() awsroute53.IHostedZone
 }
 
 const (
@@ -43,11 +46,18 @@ func NewImports(scope constructs.Construct, importPrefix string) Imports {
 		HasEc2Capacity: jsii.Bool(true),
 	})
 
+	con.hostedZone = awsroute53.HostedZone_FromHostedZoneAttributes(scope, jsii.String("HostedZone"),
+		&awsroute53.HostedZoneAttributes{
+			HostedZoneId: awscdk.Fn_ImportValue(jsii.String(importPrefix + ":HostedZoneId")),
+			ZoneName:     awscdk.Fn_ImportValue(jsii.String(importPrefix + ":HostedZoneName")),
+		})
+
 	return con
 }
 
-func (con imports) Cluster() awsecs.ICluster { return con.cluster }
-func (con imports) VPC() awsec2.IVpc         { return con.vpc }
+func (con imports) Cluster() awsecs.ICluster           { return con.cluster }
+func (con imports) VPC() awsec2.IVpc                   { return con.vpc }
+func (con imports) HostedZone() awsroute53.IHostedZone { return con.hostedZone }
 
 // ImportCapacityProviderName will use the importPrefix and instanceID to import its capacity provider name.
 func ImportCapacityProviderName(importPrefix, instanceID string) *string {
