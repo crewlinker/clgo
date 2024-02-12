@@ -7,12 +7,15 @@ import (
 	"net/http"
 )
 
+// HandlerFunc mirrors the http.HandlerFunc but with a generic context type and error return.
+type HandlerFunc[C context.Context] func(C, http.ResponseWriter, *http.Request) error
+
 // Handle takes a handler function with a customizable context that is able to return an error. To support
 // this the response is buffered until the handler is done. If an error occurs the buffer is discarded and
 // a full replacement response can be formulated. The underlying buffer is re-used between requests for
 // improved performance.
 func Handle[C context.Context](
-	hdlf func(C, http.ResponseWriter, *http.Request) error, os ...Option[C],
+	hdlf HandlerFunc[C], os ...Option[C],
 ) http.HandlerFunc {
 	opts := applyOptions(os)
 
