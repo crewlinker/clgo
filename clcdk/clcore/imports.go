@@ -15,6 +15,9 @@ type imports struct {
 	cluster    awsecs.ICluster
 	hostedZone awsroute53.IHostedZone
 	repository awsecr.IRepository
+
+	postgresReadWriteHostname *string
+	postgresReadOnlyHostname  *string
 }
 
 // Imports describe resources imported from the "core" stack.
@@ -23,6 +26,8 @@ type Imports interface {
 	Cluster() awsecs.ICluster
 	HostedZone() awsroute53.IHostedZone
 	Repository() awsecr.IRepository
+	PostgresReadOnlyHostname() *string
+	PostgresReadWriteHostname() *string
 }
 
 const (
@@ -64,6 +69,9 @@ func NewImports(scope constructs.Construct, importPrefix string) Imports {
 			RepositoryName: awscdk.Fn_ImportValue(jsii.String(importPrefix + ":ContainerRepositoryName")),
 		})
 
+	con.postgresReadOnlyHostname = awscdk.Fn_ImportValue(jsii.String(importPrefix + ":PostgresReadOnlyHostname"))
+	con.postgresReadWriteHostname = awscdk.Fn_ImportValue(jsii.String(importPrefix + ":PostgresReadWriteHostname"))
+
 	return con
 }
 
@@ -71,6 +79,8 @@ func (con imports) Cluster() awsecs.ICluster           { return con.cluster }
 func (con imports) VPC() awsec2.IVpc                   { return con.vpc }
 func (con imports) HostedZone() awsroute53.IHostedZone { return con.hostedZone }
 func (con imports) Repository() awsecr.IRepository     { return con.repository }
+func (con imports) PostgresReadOnlyHostname() *string  { return con.postgresReadOnlyHostname }
+func (con imports) PostgresReadWriteHostname() *string { return con.postgresReadWriteHostname }
 
 // ImportCapacityProviderName will use the importPrefix and instanceID to import its capacity provider name.
 func ImportCapacityProviderName(importPrefix, instanceID string) *string {
