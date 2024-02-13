@@ -3,6 +3,7 @@ package clcore
 import (
 	"github.com/aws/aws-cdk-go/awscdk/v2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsec2"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awsecr"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsecs"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsroute53"
 	"github.com/aws/constructs-go/constructs/v10"
@@ -13,6 +14,7 @@ type imports struct {
 	vpc        awsec2.IVpc
 	cluster    awsecs.ICluster
 	hostedZone awsroute53.IHostedZone
+	repository awsecr.IRepository
 }
 
 // Imports describe resources imported from the "core" stack.
@@ -20,6 +22,7 @@ type Imports interface {
 	VPC() awsec2.IVpc
 	Cluster() awsecs.ICluster
 	HostedZone() awsroute53.IHostedZone
+	Repository() awsecr.IRepository
 }
 
 const (
@@ -28,7 +31,7 @@ const (
 
 // NewImports inits imported resources from the "Core".
 func NewImports(scope constructs.Construct, importPrefix string) Imports {
-	con := imports{}
+	con, stack := imports{}, awscdk.Stack_Of(scope)
 
 	con.vpc = awsec2.Vpc_FromVpcAttributes(scope, jsii.String("Vpc"), &awsec2.VpcAttributes{
 		VpcId: awscdk.Fn_ImportValue(jsii.String(importPrefix + ":VpcId")),
@@ -52,12 +55,22 @@ func NewImports(scope constructs.Construct, importPrefix string) Imports {
 			ZoneName:     awscdk.Fn_ImportValue(jsii.String(importPrefix + ":HostedZoneName")),
 		})
 
+	con.repository = awsecr.Repository_FromRepositoryAttributes(scope, jsii.String("Repository"),
+		&awsecr.RepositoryAttributes{
+			RepositoryArn: jsii.Sprintf("arn:aws:ecr:%s:%s:repository/%s",
+				*stack.Region(),
+				*stack.Account(),
+				*awscdk.Fn_ImportValue(jsii.String(importPrefix + ":ContainerRepositoryName"))),
+			RepositoryName: awscdk.Fn_ImportValue(jsii.String(importPrefix + ":ContainerRepositoryName")),
+		})
+
 	return con
 }
 
 func (con imports) Cluster() awsecs.ICluster           { return con.cluster }
 func (con imports) VPC() awsec2.IVpc                   { return con.vpc }
 func (con imports) HostedZone() awsroute53.IHostedZone { return con.hostedZone }
+func (con imports) Repository() awsecr.IRepository     { return con.repository }
 
 // ImportCapacityProviderName will use the importPrefix and instanceID to import its capacity provider name.
 func ImportCapacityProviderName(importPrefix, instanceID string) *string {
