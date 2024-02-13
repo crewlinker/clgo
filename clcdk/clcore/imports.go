@@ -6,15 +6,17 @@ import (
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsecr"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsecs"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsroute53"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awssecretsmanager"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
 )
 
 type imports struct {
-	vpc        awsec2.IVpc
-	cluster    awsecs.ICluster
-	hostedZone awsroute53.IHostedZone
-	repository awsecr.IRepository
+	vpc          awsec2.IVpc
+	cluster      awsecs.ICluster
+	hostedZone   awsroute53.IHostedZone
+	repository   awsecr.IRepository
+	globalSecret awssecretsmanager.ISecret
 
 	postgresReadWriteHostname *string
 	postgresReadOnlyHostname  *string
@@ -28,6 +30,7 @@ type Imports interface {
 	Repository() awsecr.IRepository
 	PostgresReadOnlyHostname() *string
 	PostgresReadWriteHostname() *string
+	GlobalSecret() awssecretsmanager.ISecret
 }
 
 const (
@@ -72,15 +75,20 @@ func NewImports(scope constructs.Construct, importPrefix string) Imports {
 	con.postgresReadOnlyHostname = awscdk.Fn_ImportValue(jsii.String(importPrefix + ":PostgresReadOnlyHostname"))
 	con.postgresReadWriteHostname = awscdk.Fn_ImportValue(jsii.String(importPrefix + ":PostgresReadWriteHostname"))
 
+	con.globalSecret = awssecretsmanager.Secret_FromSecretCompleteArn(scope,
+		jsii.String("GlobalSecret"),
+		awscdk.Fn_ImportValue(jsii.String(importPrefix+":GlobalSecretFullArn")))
+
 	return con
 }
 
-func (con imports) Cluster() awsecs.ICluster           { return con.cluster }
-func (con imports) VPC() awsec2.IVpc                   { return con.vpc }
-func (con imports) HostedZone() awsroute53.IHostedZone { return con.hostedZone }
-func (con imports) Repository() awsecr.IRepository     { return con.repository }
-func (con imports) PostgresReadOnlyHostname() *string  { return con.postgresReadOnlyHostname }
-func (con imports) PostgresReadWriteHostname() *string { return con.postgresReadWriteHostname }
+func (con imports) Cluster() awsecs.ICluster                { return con.cluster }
+func (con imports) VPC() awsec2.IVpc                        { return con.vpc }
+func (con imports) HostedZone() awsroute53.IHostedZone      { return con.hostedZone }
+func (con imports) Repository() awsecr.IRepository          { return con.repository }
+func (con imports) PostgresReadOnlyHostname() *string       { return con.postgresReadOnlyHostname }
+func (con imports) PostgresReadWriteHostname() *string      { return con.postgresReadWriteHostname }
+func (con imports) GlobalSecret() awssecretsmanager.ISecret { return con.globalSecret }
 
 // ImportCapacityProviderName will use the importPrefix and instanceID to import its capacity provider name.
 func ImportCapacityProviderName(importPrefix, instanceID string) *string {
