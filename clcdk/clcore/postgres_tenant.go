@@ -22,11 +22,27 @@ type postgresTenant struct {
 type PostgresTenant interface {
 	Secret() awssecretsmanager.ISecret
 	SecretFromReplicated(scope constructs.Construct) awssecretsmanager.ISecret
+
+	DatabaseName() *string
+	DatabaseUser() *string
+	PasswordSecretName() *string
 }
 
 // Secret itself for the local region.
 func (con postgresTenant) Secret() awssecretsmanager.ISecret {
 	return con.secret
+}
+
+func (con postgresTenant) DatabaseName() *string {
+	return con.database.GetAttString(jsii.String("DatabaseName"))
+}
+
+func (con postgresTenant) DatabaseUser() *string {
+	return con.user.GetAttString(jsii.String("RoleName"))
+}
+
+func (con postgresTenant) PasswordSecretName() *string {
+	return con.user.GetAttString(con.password.SecretName())
 }
 
 // SecretFromReplicated returns a secret that is configured to be replicated.
@@ -38,13 +54,10 @@ func (con postgresTenant) SecretFromReplicated(scope constructs.Construct) awsse
 // NewPostgresTenant makes sure that the tenant.
 func NewPostgresTenant(
 	scope constructs.Construct,
-	idSuffix string,
 	providerToken *string,
 	replicaRegions []string,
 ) PostgresTenant {
-	con, scope, stack := postgresTenant{},
-		constructs.NewConstruct(scope, jsii.String("PostgresTenant"+idSuffix)),
-		awscdk.Stack_Of(scope)
+	con, scope := postgresTenant{}, constructs.NewConstruct(scope, jsii.String("PostgresTenant"))
 	qual, instance := clcdk.QualifierFromScope(scope), clcdk.InstanceFromScope(scope)
 
 	const passwordLength = 40
@@ -98,22 +111,6 @@ func NewPostgresTenant(
 			"password": con.password.SecretValue(), // this will not update if the secret value is changed/rotated
 		},
 	})
-
-	// export the tenant info so migration scripts can read and use it.
-	awscdk.Stack_Of(scope).ExportValue(con.database.GetAttString(jsii.String("DatabaseName")),
-		&awscdk.ExportValueOptions{
-			Name: jsii.String(*stack.StackName() + ":PostgresDatabaseName" + idSuffix),
-		})
-
-	awscdk.Stack_Of(scope).ExportValue(con.user.GetAttString(jsii.String("RoleName")),
-		&awscdk.ExportValueOptions{
-			Name: jsii.String(*stack.StackName() + ":PostgresDatabaseUser" + idSuffix),
-		})
-
-	awscdk.Stack_Of(scope).ExportValue(con.password.SecretName(),
-		&awscdk.ExportValueOptions{
-			Name: jsii.String(*stack.StackName() + ":PostgresDatabasePasswordSecretName" + idSuffix),
-		})
 
 	return con
 }
