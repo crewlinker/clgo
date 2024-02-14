@@ -42,7 +42,7 @@ func (con postgresTenant) DatabaseUser() *string {
 }
 
 func (con postgresTenant) PasswordSecretName() *string {
-	return con.user.GetAttString(con.password.SecretName())
+	return con.password.SecretName()
 }
 
 // SecretFromReplicated returns a secret that is configured to be replicated.
