@@ -116,6 +116,13 @@ func NewInstancedStack(app awscdk.App) awscdk.Stack {
 		})
 }
 
+// VersionFromScope retrieves the instance name from the context or an empty string.
+func VersionFromScope(s constructs.Construct) string {
+	v, _ := s.Node().TryGetContext(jsii.String("version")).(string)
+
+	return v
+}
+
 // QualifierFromScope retrieves the qualifier from the context or an empty string.
 func QualifierFromScope(s constructs.Construct) string {
 	v, _ := s.Node().TryGetContext(jsii.String("qualifier")).(string)
