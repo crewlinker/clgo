@@ -44,6 +44,8 @@ func NewWebService(
 	minHealthPercent int,
 	hostHeaderCondition string,
 	pathPatternCondition string,
+	environment *map[string]*string,
+	secrets *map[string]awsecs.Secret,
 ) WebService {
 	con, scope := webService{}, constructs.NewConstruct(scope, jsii.String("WebService"+idSuffix))
 	qual, instance := clcdk.QualifierFromScope(scope), clcdk.InstanceFromScope(scope)
@@ -68,6 +70,8 @@ func NewWebService(
 				StreamPrefix: jsii.String(serviceName), // e.g: clatsback1rpc
 				LogGroup:     con.logs,
 			}),
+			Environment: environment,
+			Secrets:     secrets,
 		})
 
 	con.service = awsecs.NewEc2Service(scope, jsii.String("Service"), &awsecs.Ec2ServiceProps{
