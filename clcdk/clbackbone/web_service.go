@@ -42,6 +42,7 @@ func NewWebService(
 	healthCheckPath string,
 	desiredCount int,
 	minHealthPercent int,
+	maxHealthPercent int,
 	hostHeaderCondition string,
 	pathPatternCondition string,
 	environment *map[string]*string,
@@ -79,6 +80,7 @@ func NewWebService(
 		TaskDefinition:    con.definition,
 		DesiredCount:      jsii.Number(desiredCount),
 		MinHealthyPercent: jsii.Number(minHealthPercent),
+		MaxHealthyPercent: jsii.Number(maxHealthPercent),
 		CapacityProviderStrategies: &[]*awsecs.CapacityProviderStrategy{
 			{
 				CapacityProvider: capacityProviderName,
@@ -87,12 +89,23 @@ func NewWebService(
 		},
 	})
 
+	const (
+		healthCheckintervalSec = 5
+		healthThresholdCount   = 2
+	)
+
 	con.targetGroup = awselbv2.NewApplicationTargetGroup(scope, jsii.String("TargetGroup"),
 		&awselbv2.ApplicationTargetGroupProps{
 			Vpc:      vpc,
 			Protocol: awselbv2.ApplicationProtocol_HTTP,
 			HealthCheck: &awselbv2.HealthCheck{
 				Path: jsii.String(healthCheckPath),
+
+				// "You can speed up the health-check process if your service starts up and stabilizes in under 10
+				// seconds. To speed up the process, reduce the number of checks and the interval between the checks."
+				// https://docs.aws.amazon.com/AmazonECS/latest/bestpracticesguide/load-balancer-healthcheck.html
+				Interval:              awscdk.Duration_Seconds(jsii.Number(healthCheckintervalSec)),
+				HealthyThresholdCount: jsii.Number(healthThresholdCount),
 			},
 			Targets: &[]awselbv2.IApplicationLoadBalancerTarget{
 				con.service.LoadBalancerTarget(&awsecs.LoadBalancerTargetOptions{
@@ -103,6 +116,10 @@ func NewWebService(
 		})
 
 	conditions := []awselbv2.ListenerCondition{}
+
+	// quicker deregistration, see:
+	// https://docs.aws.amazon.com/AmazonECS/latest/bestpracticesguide/load-balancer-connection-draining.html
+	con.targetGroup.SetAttribute(jsii.String("deregistration_delay.timeout_seconds"), jsii.String("5"))
 
 	if hostHeaderCondition != "" {
 		conditions = append(conditions, awselbv2.ListenerCondition_HostHeaders(
