@@ -43,6 +43,8 @@ type Imports interface {
 
 	DBCustomProviderToken() *string
 	T3aSmallCapacityProviderName() *string
+
+	MainRepository() awsecr.IRepository
 }
 
 // NewMainRegionImport inits the imports construct.
@@ -111,3 +113,4 @@ func (c imports) DBROHostName() *string                 { return c.postgresReadO
 func (c imports) DBRWHostName() *string                 { return c.postgresReadWriteHostname }
 func (c imports) DBCustomProviderToken() *string        { return c.postgresCustomResourceProviderToken }
 func (c imports) T3aSmallCapacityProviderName() *string { return c.t3aSmallCapacityProviderName }
+func (c imports) MainRepository() awsecr.IRepository    { return c.mainRepository }
