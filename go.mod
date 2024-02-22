@@ -1,8 +1,6 @@
 module github.com/crewlinker/clgo
 
-go 1.21
-
-toolchain go1.21.6
+go 1.22
 
 require (
 	ariga.io/atlas v0.17.0
