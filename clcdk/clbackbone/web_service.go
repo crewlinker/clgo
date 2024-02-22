@@ -90,8 +90,9 @@ func NewWebService(
 	})
 
 	const (
-		healthCheckintervalSec = 5
-		healthThresholdCount   = 2
+		healthCheckIntervalSec    = 5
+		healthCheckTimeoutSec     = 2
+		healthCheckThresholdCount = 2
 	)
 
 	con.targetGroup = awselbv2.NewApplicationTargetGroup(scope, jsii.String("TargetGroup"),
@@ -104,8 +105,10 @@ func NewWebService(
 				// "You can speed up the health-check process if your service starts up and stabilizes in under 10
 				// seconds. To speed up the process, reduce the number of checks and the interval between the checks."
 				// https://docs.aws.amazon.com/AmazonECS/latest/bestpracticesguide/load-balancer-healthcheck.html
-				Interval:              awscdk.Duration_Seconds(jsii.Number(healthCheckintervalSec)),
-				HealthyThresholdCount: jsii.Number(healthThresholdCount),
+				Interval:                awscdk.Duration_Seconds(jsii.Number(healthCheckIntervalSec)),
+				Timeout:                 awscdk.Duration_Seconds(jsii.Number(healthCheckTimeoutSec)),
+				HealthyThresholdCount:   jsii.Number(healthCheckThresholdCount),
+				UnhealthyThresholdCount: jsii.Number(healthCheckThresholdCount),
 			},
 			Targets: &[]awselbv2.IApplicationLoadBalancerTarget{
 				con.service.LoadBalancerTarget(&awsecs.LoadBalancerTargetOptions{
