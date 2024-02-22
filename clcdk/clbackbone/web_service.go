@@ -28,6 +28,8 @@ type webService struct {
 type WebService interface{}
 
 // NewWebService creates a web service construct.
+//
+//nolint:funlen
 func NewWebService(
 	scope constructs.Construct,
 	idSuffix string,
@@ -47,6 +49,7 @@ func NewWebService(
 	pathPatternCondition string,
 	environment *map[string]*string,
 	secrets *map[string]awsecs.Secret,
+	healthCheckCommand []string,
 ) WebService {
 	con, scope := webService{}, constructs.NewConstruct(scope, jsii.String("WebService"+idSuffix))
 	qual, instance := clcdk.QualifierFromScope(scope), clcdk.InstanceFromScope(scope)
@@ -59,6 +62,24 @@ func NewWebService(
 
 	con.definition = awsecs.NewEc2TaskDefinition(scope, jsii.String("Definition"),
 		&awsecs.Ec2TaskDefinitionProps{})
+
+	const (
+		containerHealthCheckIntervalSecs    = 30
+		containerHealthCheckTimeoutSecs     = 6
+		containerHealthCheckRetries         = 3
+		containerHealthCheckStartPeriodSecs = 1
+	)
+
+	var containerHealthCheck *awsecs.HealthCheck
+	if len(healthCheckCommand) > 0 {
+		containerHealthCheck = &awsecs.HealthCheck{
+			Command:     jsii.Strings(healthCheckCommand...),
+			Interval:    awscdk.Duration_Seconds(jsii.Number(containerHealthCheckIntervalSecs)),
+			Timeout:     awscdk.Duration_Seconds(jsii.Number(containerHealthCheckTimeoutSecs)),
+			Retries:     jsii.Number(containerHealthCheckRetries),
+			StartPeriod: awscdk.Duration_Seconds(jsii.Number(containerHealthCheckStartPeriodSecs)),
+		}
+	}
 
 	con.mainContainer = con.definition.AddContainer(jsii.String("Main"),
 		&awsecs.ContainerDefinitionOptions{
@@ -73,6 +94,7 @@ func NewWebService(
 			}),
 			Environment: environment,
 			Secrets:     secrets,
+			HealthCheck: containerHealthCheck,
 		})
 
 	con.service = awsecs.NewEc2Service(scope, jsii.String("Service"), &awsecs.Ec2ServiceProps{
