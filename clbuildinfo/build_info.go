@@ -20,8 +20,8 @@ type Info struct {
 }
 
 // New initializes the build info component.
-func New(cfg Config, version string) *Info {
-	return &Info{
+func New(cfg Config, version string) Info {
+	return Info{
 		cfg:     cfg,
 		version: version,
 	}
