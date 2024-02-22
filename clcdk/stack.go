@@ -11,6 +11,13 @@ import (
 	"github.com/aws/jsii-runtime-go"
 )
 
+// RegionAcronyms holds acronyms for building CDK identifiers.
+var RegionAcronyms = map[string]string{
+	"eu-central-1":   "Fra",
+	"eu-west-1":      "Ire",
+	"ap-southeast-1": "Sin",
+}
+
 // NewRegionalInstancedStack represents a stack of which multiple may exist per region.
 func NewRegionalInstancedStack(app awscdk.App, region, idSuffix string) awscdk.Stack {
 	qual, instance, env := QualifierFromScope(app), InstanceFromScope(app), EnvironmentFromScope(app)
