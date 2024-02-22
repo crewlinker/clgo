@@ -18,6 +18,12 @@ var RegionAcronyms = map[string]string{
 	"ap-southeast-1": "Sin",
 }
 
+// FormatDockerImageTag standardizes how docker images in the repositories are called given the project
+// qualifier, the dockerTarget name and the version.
+func FormatDockerImageTag(qualifier, targetName, version string) string {
+	return fmt.Sprintf("%s_%s_%s", strings.ToLower(qualifier), targetName, version)
+}
+
 // NewRegionalInstancedStack represents a stack of which multiple may exist per region.
 func NewRegionalInstancedStack(app awscdk.App, region, idSuffix string) awscdk.Stack {
 	qual, instance, env := QualifierFromScope(app), InstanceFromScope(app), EnvironmentFromScope(app)
