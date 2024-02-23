@@ -50,6 +50,7 @@ func NewWebService(
 	environment *map[string]*string,
 	secrets *map[string]awsecs.Secret,
 	healthCheckCommand []string,
+	authenticateOidcOptions *awselbv2.AuthenticateOidcOptions,
 ) WebService {
 	con, scope := webService{}, constructs.NewConstruct(scope, jsii.String("WebService"+idSuffix))
 	qual, instance := clcdk.QualifierFromScope(scope), clcdk.InstanceFromScope(scope)
@@ -158,14 +159,24 @@ func NewWebService(
 		))
 	}
 
+	// by default, the action is just to use the target group
+	action := awselbv2.ListenerAction_Forward(&[]awselbv2.IApplicationTargetGroup{
+		con.targetGroup,
+	}, nil)
+
+	// if authentication is set, the default action is wrapped
+	if authenticateOidcOptions != nil {
+		authenticateOidcOptions.Next = action
+
+		action = awselbv2.ListenerAction_AuthenticateOidc(authenticateOidcOptions)
+	}
+
 	con.listenerRule = awselbv2.NewApplicationListenerRule(scope, jsii.String("ListenerRule"),
 		&awselbv2.ApplicationListenerRuleProps{
 			Listener:   loadBalancerListener,
 			Priority:   jsii.Number(listenerPriority),
 			Conditions: &conditions,
-			Action: awselbv2.ListenerAction_Forward(&[]awselbv2.IApplicationTargetGroup{
-				con.targetGroup,
-			}, nil),
+			Action:     action,
 		})
 
 	return con
