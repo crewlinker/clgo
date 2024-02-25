@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsecs"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awselasticloadbalancingv2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsroute53"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awssecretsmanager"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
 )
@@ -19,6 +20,7 @@ type imports struct {
 	hostedZone           awsroute53.IHostedZone
 	mainRepository       awsecr.IRepository
 	loadBalancerListener awselasticloadbalancingv2.IApplicationListener
+	mainSecret           awssecretsmanager.ISecret
 
 	postgresReadWriteHostname           *string
 	postgresReadOnlyHostname            *string
@@ -45,6 +47,8 @@ type Imports interface {
 	T3aSmallCapacityProviderName() *string
 
 	MainRepository() awsecr.IRepository
+
+	MainSecret() awssecretsmanager.ISecret
 }
 
 // NewMainRegionImport inits the imports construct.
@@ -98,6 +102,10 @@ func NewMainRegionImport(scope constructs.Construct, importPrefix string) Import
 			DefaultPort: jsii.Number(httpsPort),
 		})
 
+	con.mainSecret = awssecretsmanager.Secret_FromSecretCompleteArn(scope,
+		jsii.String(importPrefix+"SecretsMain"),
+		awscdk.Fn_ImportValue(jsii.String(importPrefix+":SecretsMainFullArn")))
+
 	return con
 }
 
@@ -114,3 +122,4 @@ func (c imports) DBRWHostName() *string                 { return c.postgresReadW
 func (c imports) DBCustomProviderToken() *string        { return c.postgresCustomResourceProviderToken }
 func (c imports) T3aSmallCapacityProviderName() *string { return c.t3aSmallCapacityProviderName }
 func (c imports) MainRepository() awsecr.IRepository    { return c.mainRepository }
+func (c imports) MainSecret() awssecretsmanager.ISecret { return c.mainSecret }
