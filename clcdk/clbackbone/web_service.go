@@ -25,7 +25,9 @@ type webService struct {
 }
 
 // WebService construct.
-type WebService interface{}
+type WebService interface {
+	TargetGroup() awselbv2.IApplicationTargetGroup
+}
 
 // NewWebService creates a web service construct.
 //
@@ -181,3 +183,5 @@ func NewWebService(
 
 	return con
 }
+
+func (con webService) TargetGroup() awselbv2.IApplicationTargetGroup { return con.targetGroup }
