@@ -35,6 +35,28 @@ var _ = BeforeSuite(func() {
 	godotenv.Load(filepath.Join("..", "test.env"))
 })
 
+var _ = Describe("rpc no auth", func() {
+	var hdl http.Handler
+	var rwc clconnectv1connect.ReadWriteServiceClient
+	var roc clconnectv1connect.ReadOnlyServiceClient
+
+	BeforeEach(func(ctx context.Context) {
+		app := fx.New(
+			fx.Populate(fx.Annotate(&hdl, fx.ParamTags(`name:"clconnect"`)), &rwc, &roc),
+			ProvideNoAuth(),
+		)
+
+		Expect(app.Start(ctx)).To(Succeed())
+		DeferCleanup(app.Stop)
+	})
+
+	It("should provide", func() {
+		Expect(hdl).ToNot(BeNil())
+		Expect(rwc).ToNot(BeNil())
+		Expect(roc).ToNot(BeNil())
+	})
+})
+
 var _ = Describe("rpc", func() {
 	var hdl http.Handler
 	var rwc clconnectv1connect.ReadWriteServiceClient
@@ -147,6 +169,20 @@ var _ = Describe("rpc", func() {
 		Expect(viol.GetViolations()[0].GetFieldPath()).To(Equal("echo"))
 	})
 })
+
+func ProvideNoAuth() fx.Option {
+	return fx.Options(
+		clzap.TestProvide(),
+		fx.Provide(NewReadOnly, NewReadWrite),
+
+		clconnect.TestProvide[
+			clconnectv1connect.ReadOnlyServiceHandler,
+			clconnectv1connect.ReadWriteServiceHandler,
+			clconnectv1connect.ReadOnlyServiceClient,
+			clconnectv1connect.ReadWriteServiceClient,
+		]("clconnect"),
+	)
+}
 
 func ProvideNoTx() fx.Option {
 	return fx.Options(

@@ -64,10 +64,16 @@ func New[RO, RW any](
 ) http.Handler {
 	mux := http.NewServeMux()
 
-	interceptors := connect.WithInterceptors(valr, logr, auth)
+	baseIntercepts := []connect.Interceptor{valr, logr}
+	if auth != nil {
+		baseIntercepts = append(baseIntercepts, auth)
+	}
+
+	interceptors := connect.WithInterceptors(baseIntercepts...)
 	recoverer := connect.WithRecover(rcvr.handle)
 
 	rwopts := []connect.HandlerOption{interceptors, recoverer}
+
 	if rwtx != nil {
 		rwopts = append(rwopts, connect.WithInterceptors(rwtx))
 	}
@@ -102,7 +108,7 @@ func Provide[RO, RW any](name string) fx.Option {
 		// provide as a named http handler
 		fx.Provide(fx.Annotate(New[RO, RW],
 			// the transacters are optional, so we can use connect rpc without
-			fx.ParamTags(``, ``, ``, ``, ``, ``, ``, ``, ``, ``, `optional:"true"`, `optional:"true"`),
+			fx.ParamTags(``, ``, ``, ``, ``, ``, ``, ``, ``, `optional:"true"`, `optional:"true"`, `optional:"true"`),
 			fx.ResultTags(`name:"`+name+`"`))),
 		// provide middleware constructors
 		fx.Provide(protovalidate.New, NewRecoverer, NewLogger, NewAuth),
