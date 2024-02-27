@@ -119,18 +119,25 @@ func Provide[RO, RW any](name string) fx.Option {
 	)
 }
 
+// TestMiddleware can be provided in tests to wrap the test http.Handler with middleware.
+type TestMiddleware func(next http.Handler) http.Handler
+
 // TestProvide provides dependencies for testing.
 func TestProvide[RO, RW, ROC, ROW any](name string) fx.Option {
 	return fx.Options(
 		Provide[RO, RW](name),
 
 		// setup an test server for test clients to use
-		fx.Provide(fx.Annotate(func(h http.Handler, lc fx.Lifecycle) *httptest.Server {
+		fx.Provide(fx.Annotate(func(h http.Handler, lc fx.Lifecycle, tmwr TestMiddleware) *httptest.Server {
+			if tmwr != nil {
+				h = tmwr(h) // wrap if test middleware is provided
+			}
+
 			s := httptest.NewServer(h)
 			lc.Append(fx.StopHook(s.Close))
 
 			return s
-		}, fx.ParamTags(`name:"`+name+`"`))),
+		}, fx.ParamTags(`name:"`+name+`"`, ``, `optional:"true"`))),
 		// provide test clients for base rpc service
 		fx.Provide(func(s *httptest.Server, scf ConstructClient[ROC]) ROC {
 			return scf(http.DefaultClient, s.URL)
