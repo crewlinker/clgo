@@ -25,7 +25,7 @@ func Handle[C context.Context](
 
 		ctx, err := opts.ctxBuilder(req)
 		if err != nil {
-			opts.errHandler(resp, req, err)
+			opts.noCtxErrHandler(resp, req, err)
 
 			return
 		}

@@ -38,10 +38,11 @@ func WithContextErrorHandling[C context.Context](f ErrorHandlerFunc[C]) Option[C
 }
 
 // WithErrorHandling allows for custom error handling in case there is no context available. This
-// happens when the context builder has failed for some reason.
+// happens when the context builder has failed for some reason. If no specific error handler is set
+// for errors with a context this handler is used.
 func WithErrorHandling[C context.Context](f NoContextErrorHandlerFunc) Option[C] {
 	return func(o *opts[C]) {
-		o.errHandler = f
+		o.noCtxErrHandler = f
 	}
 }
 
@@ -72,11 +73,11 @@ type ContextBuilderFunc[C context.Context] func(r *http.Request) (C, error)
 
 // opts for the handling.
 type opts[C context.Context] struct {
-	ctxBuilder    ContextBuilderFunc[C]
-	errHandler    NoContextErrorHandlerFunc
-	ctxErrHandler ErrorHandlerFunc[C]
-	panicHandler  PanicHandlerFunc[C]
-	bufLimit      int
+	ctxBuilder      ContextBuilderFunc[C]
+	noCtxErrHandler NoContextErrorHandlerFunc
+	ctxErrHandler   ErrorHandlerFunc[C]
+	panicHandler    PanicHandlerFunc[C]
+	bufLimit        int
 }
 
 // defaultErrHandler simply returns an internal server error when an error occurred.
@@ -113,9 +114,9 @@ func defaultPanicHandler[C context.Context](
 func applyOptions[C context.Context](olist []Option[C]) opts[C] {
 	var merged opts[C]
 	merged.bufLimit = -1
-	merged.errHandler = defaultErrHandler
+	merged.noCtxErrHandler = defaultErrHandler
 	merged.ctxErrHandler = func(c C, w http.ResponseWriter, r *http.Request, err error) {
-		merged.errHandler(w, r, err) // by default, just call the no-context variant
+		merged.noCtxErrHandler(w, r, err) // by default, just call the no-context variant
 	}
 	merged.ctxBuilder = defaultCtxBuilder[C]
 	merged.panicHandler = defaultPanicHandler[C]
