@@ -62,6 +62,8 @@ func (o Ory) BrowserLoginURL() *url.URL {
 func (o Ory) Private(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
 		inp, t0 := o.front.ToSession(req.Context()), time.Now()
+		inp = inp.Cookie(req.Header.Get("Cookie"))
+
 		sess, _, err := o.front.ToSessionExecute(inp) //nolint:bodyclose // closed by library
 		if (err != nil && sess == nil) || (err == nil && !*sess.Active) {
 			o.logs.Info("unauthenticated", zap.Error(err), zap.Any("session", sess), zap.Duration("rtt", time.Since(t0)))
