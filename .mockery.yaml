@@ -4,5 +4,6 @@ dir: "{{.InterfaceDir}}"
 mockname: "Mock{{.InterfaceName}}"
 outpkg: "{{.PackageName}}_test"
 packages:
-  github.com/crewlinker/clgo/clcdk:
-    interfaces: {}
+  github.com/crewlinker/clgo/clory:
+    interfaces:
+      FrontendAPI:
