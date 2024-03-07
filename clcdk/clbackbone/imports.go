@@ -22,10 +22,7 @@ type imports struct {
 	loadBalancerListener awselasticloadbalancingv2.IApplicationListener
 	mainSecret           awssecretsmanager.ISecret
 
-	postgresReadWriteHostname           *string
-	postgresReadOnlyHostname            *string
-	t3aSmallCapacityProviderName        *string
-	postgresCustomResourceProviderToken *string
+	t3aSmallCapacityProviderName *string
 }
 
 const (
@@ -40,10 +37,6 @@ type Imports interface {
 	LoadBalancerListener() awselasticloadbalancingv2.IApplicationListener
 	HostedZone() awsroute53.IHostedZone
 
-	DBROHostName() *string
-	DBRWHostName() *string
-
-	DBCustomProviderToken() *string
 	T3aSmallCapacityProviderName() *string
 
 	MainRepository() awsecr.IRepository
@@ -86,13 +79,8 @@ func NewMainRegionImport(scope constructs.Construct, importPrefix string) Import
 			RepositoryName: awscdk.Fn_ImportValue(jsii.String(importPrefix + ":ContainerRegistryMainRepositoryName")),
 		})
 
-	con.postgresReadOnlyHostname = awscdk.Fn_ImportValue(jsii.String(importPrefix + ":PostgresReadOnlyHostname"))
-	con.postgresReadWriteHostname = awscdk.Fn_ImportValue(jsii.String(importPrefix + ":PostgresReadWriteHostname"))
-
 	con.t3aSmallCapacityProviderName = awscdk.Fn_ImportValue(
 		jsii.String(importPrefix + ":CapacityT3aSmall:CapacityProviderName"))
-	con.postgresCustomResourceProviderToken = awscdk.Fn_ImportValue(
-		jsii.String(importPrefix + ":PostgresCustomResourceProviderToken"))
 
 	con.loadBalancerListener = awselasticloadbalancingv2.ApplicationListener_FromApplicationListenerAttributes(scope,
 		jsii.String("LoadBalancerListener"), &awselasticloadbalancingv2.ApplicationListenerAttributes{
@@ -117,9 +105,6 @@ func (c imports) LoadBalancerListener() awselasticloadbalancingv2.IApplicationLi
 
 func (c imports) HostedZone() awsroute53.IHostedZone    { return c.hostedZone }
 func (c imports) ContainerCluster() awsecs.ICluster     { return c.cluster }
-func (c imports) DBROHostName() *string                 { return c.postgresReadOnlyHostname }
-func (c imports) DBRWHostName() *string                 { return c.postgresReadWriteHostname }
-func (c imports) DBCustomProviderToken() *string        { return c.postgresCustomResourceProviderToken }
 func (c imports) T3aSmallCapacityProviderName() *string { return c.t3aSmallCapacityProviderName }
 func (c imports) MainRepository() awsecr.IRepository    { return c.mainRepository }
 func (c imports) MainSecret() awssecretsmanager.ISecret { return c.mainSecret }
