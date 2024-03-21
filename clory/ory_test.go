@@ -15,6 +15,7 @@ import (
 	orysdk "github.com/ory/client-go"
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/fx"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestOryauth(t *testing.T) {
@@ -26,10 +27,11 @@ func TestOryauth(t *testing.T) {
 var _ = Describe("di", func() {
 	var ory *clory.Ory
 	var front *MockFrontendAPI
+	var obs *observer.ObservedLogs
 
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(
-			fx.Populate(&ory),
+			fx.Populate(&ory, &obs),
 			clory.Provide(),
 			clzap.TestProvide(),
 			WithMocked(&front))
@@ -37,12 +39,81 @@ var _ = Describe("di", func() {
 		DeferCleanup(app.Stop)
 	})
 
-	It("should provide dep", func() {
-		Expect(ory).ToNot(BeNil())
-	})
-
 	It("should return login url", func() {
 		Expect(ory.BrowserLoginURL().String()).To(Equal("http://localhost:4000/self-service/login/browser"))
+	})
+
+	Describe("authentication", func() {
+		Describe("non-public", func() {
+			It("should unauthenticate with: nill session", func(ctx context.Context) {
+				front.EXPECT().ToSession(mock.Anything).Return(orysdk.FrontendAPIToSessionRequest{})
+				front.EXPECT().ToSessionExecute(mock.Anything).Return(nil, nil, nil)
+
+				sess, err := ory.Authenticate(ctx, "session=session", false)
+				Expect(err).To(MatchError(clory.ErrUnauthenticated))
+				Expect(sess).To(BeNil())
+				Expect(obs.FilterMessage("unauthenticated").All()[0].ContextMap()["reason"]).To(Equal(`session or active state is nil`))
+			})
+
+			It("should unauthenticate with: nil active state", func(ctx context.Context) {
+				front.EXPECT().ToSession(mock.Anything).Return(orysdk.FrontendAPIToSessionRequest{})
+				front.EXPECT().ToSessionExecute(mock.Anything).Return(&orysdk.Session{}, nil, nil)
+
+				sess, err := ory.Authenticate(ctx, "session=session", false)
+				Expect(err).To(MatchError(clory.ErrUnauthenticated))
+				Expect(sess).To(BeNil())
+				Expect(obs.FilterMessage("unauthenticated").All()[0].ContextMap()["reason"]).To(Equal(`session or active state is nil`))
+			})
+
+			It("should unauthenticate with: inactive", func(ctx context.Context) {
+				front.EXPECT().ToSession(mock.Anything).Return(orysdk.FrontendAPIToSessionRequest{})
+				front.EXPECT().ToSessionExecute(mock.Anything).Return(&orysdk.Session{Active: orysdk.PtrBool(false)}, nil, nil)
+
+				sess, err := ory.Authenticate(ctx, "session=session", false)
+				Expect(err).To(MatchError(clory.ErrUnauthenticated))
+				Expect(sess).To(BeNil())
+				Expect(obs.FilterMessage("unauthenticated").All()[0].ContextMap()["reason"]).To(Equal(`session is inactive`))
+			})
+
+			It("should unauthenticate with: inactive", func(ctx context.Context) {
+				front.EXPECT().ToSession(mock.Anything).Return(orysdk.FrontendAPIToSessionRequest{})
+				front.EXPECT().ToSessionExecute(mock.Anything).Return(nil, nil, errors.New("some error"))
+
+				sess, err := ory.Authenticate(ctx, "session=session", false)
+				Expect(err).To(MatchError(clory.ErrUnauthenticated))
+				Expect(sess).To(BeNil())
+				Expect(obs.FilterMessage("unauthenticated").All()[0].ContextMap()["reason"]).To(Equal(`error from Ory`))
+			})
+
+			It("should authenticate with:", func(ctx context.Context) {
+				front.EXPECT().ToSession(mock.Anything).Return(orysdk.FrontendAPIToSessionRequest{})
+				front.EXPECT().ToSessionExecute(mock.Anything).Return(&orysdk.Session{Active: orysdk.PtrBool(true)}, nil, nil)
+
+				sess, err := ory.Authenticate(ctx, "session=session", false)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(sess).ToNot(BeNil())
+				Expect(*sess.Active).To(BeTrue())
+
+				Expect(obs.FilterMessage("authenticated").All()[0].ContextMap()["session"]).ToNot(BeNil())
+			})
+		})
+
+		Describe("public", func() {
+			It("should unauthenticate with: inactive", func(ctx context.Context) {
+				front.EXPECT().ToSession(mock.Anything).Return(orysdk.FrontendAPIToSessionRequest{})
+				front.EXPECT().ToSessionExecute(mock.Anything).Return(nil, nil, errors.New("some error"))
+
+				sess, err := ory.Authenticate(ctx, "session=session", true)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(sess).ToNot(BeNil())
+				Expect(obs.FilterMessage("authenticated as anonymous").All()[0].ContextMap()["reason"]).To(Equal(`error from Ory`))
+				Expect(obs.FilterMessage("authenticated as anonymous").All()[0].ContextMap()["session"]).ToNot(BeNil())
+
+				Expect(*sess.Active).To(BeTrue())
+				Expect(sess.Id).To(Equal(clory.AnonymousSessionID))
+				Expect(sess.Identity.Id).To(Equal(clory.AnonymousIdentityID))
+			})
+		})
 	})
 
 	Describe("private middleware", func() {

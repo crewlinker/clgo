@@ -6,4 +6,5 @@ outpkg: "{{.PackageName}}_test"
 packages:
   github.com/crewlinker/clgo/clory:
     interfaces:
-      FrontendAPI:
+      FrontendAPI: 
+      PermissionAPI: 
