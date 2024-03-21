@@ -5,6 +5,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/crewlinker/clgo/clory"
+	"github.com/crewlinker/clgo/clzap"
 	orysdk "github.com/ory/client-go"
 	"github.com/samber/lo"
 	"go.uber.org/fx"
@@ -37,8 +38,7 @@ func NewOryAuth(
 
 	inj.Interceptor = connect.UnaryInterceptorFunc(inj.intercept)
 
-	logs.Info("ory auth initialized",
-		zap.Strings("public_rpc_procedures", lo.Keys(cfg.PublicRPCProcedures)))
+	logs.Info("ory auth initialized", zap.Strings("public_rpc_procedures", lo.Keys(cfg.PublicRPCProcedures)))
 
 	return inj, nil
 }
@@ -54,6 +54,11 @@ func (l OryAuth) intercept(next connect.UnaryFunc) connect.UnaryFunc {
 		ctx context.Context,
 		req connect.AnyRequest,
 	) (resp connect.AnyResponse, err error) {
+		clzap.Log(ctx, l.logs).Debug("auth interceptor started",
+			zap.Any("headers", req.Header()),
+			zap.String("http_method", req.HTTPMethod()),
+			zap.Any("spec", req.Spec()))
+
 		sess, err := l.ory.Authenticate(ctx, req.Header().Get("cookie"), l.IsPublicRPCMethod(req.Spec()))
 		if err != nil {
 			return nil, connect.NewError(connect.CodeUnauthenticated, err)
