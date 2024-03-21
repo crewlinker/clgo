@@ -21,6 +21,10 @@ type Config struct {
 	// allows configuring the 'env' input field send to the policy, allows for configuring input
 	// invariant to the environment
 	AuthzPolicyEnvInput string `env:"AUTHZ_POLICY_ENV_INPUT,expand" envDefault:"{}"`
+
+	// PublicRPCProcedures configures the ConnectRPC methods that are plublic. For these procedures a special
+	// "anonymous" session will be passed to other middleware.
+	PublicRPCProcedures map[string]bool `env:"PUBLIC_RPC_PROCEDURES"`
 }
 
 // ROTransacter is an interceptor that add read-only transactions to the context.
@@ -53,41 +57,58 @@ func New[RO, RW any](
 	logs *zap.Logger,
 	ro RO, roc ConstructHandler[RO],
 	rw RW, rwc ConstructHandler[RW],
-
-	// middleware
-	valr *validate.Interceptor,
-	logr *Logger,
 	rcvr *Recoverer,
-	auth *Auth,
-	rotx ROTransacter,
-	rwtx RWTransacter,
+
+	// required middleware (interceptors)
+	logr *Logger,
+	valr *validate.Interceptor,
+
+	// optional middleware (interceptors)
+	roTx ROTransacter, // optional
+	rwTx RWTransacter, // optional
+	joAuth *JWTOPAAuth, // optional
+	oryAuth *OryAuth, // optional
 ) http.Handler {
 	mux := http.NewServeMux()
 
+	// base interceptors
 	baseIntercepts := []connect.Interceptor{valr, logr}
-	if auth != nil {
-		baseIntercepts = append(baseIntercepts, auth)
+
+	// optional injectors, check for nil
+	{
+		if joAuth != nil {
+			baseIntercepts = append(baseIntercepts, joAuth)
+		}
+		if oryAuth != nil {
+			baseIntercepts = append(baseIntercepts, oryAuth)
+		}
 	}
 
+	// base options
 	interceptors := connect.WithInterceptors(baseIntercepts...)
 	recoverer := connect.WithRecover(rcvr.handle)
 
-	rwopts := []connect.HandlerOption{interceptors, recoverer}
+	// setup read-write specific options (interceptors)
+	{
+		rwopts := []connect.HandlerOption{interceptors, recoverer}
+		if rwTx != nil {
+			rwopts = append(rwopts, connect.WithInterceptors(rwTx))
+		}
 
-	if rwtx != nil {
-		rwopts = append(rwopts, connect.WithInterceptors(rwtx))
+		rwp, rwh := rwc(rw, rwopts...)
+		mux.Handle(rwp, rwh)
 	}
 
-	rwp, rwh := rwc(rw, rwopts...)
-	mux.Handle(rwp, rwh)
+	// setup read-only specific options (interceptors)
+	{
+		roopts := []connect.HandlerOption{interceptors, recoverer}
+		if roTx != nil {
+			roopts = append(roopts, connect.WithInterceptors(roTx))
+		}
 
-	roopts := []connect.HandlerOption{interceptors, recoverer}
-	if rotx != nil {
-		roopts = append(roopts, connect.WithInterceptors(rotx))
+		rop, roh := roc(ro, roopts...)
+		mux.Handle(rop, roh)
 	}
-
-	rop, roh := roc(ro, roopts...)
-	mux.Handle(rop, roh)
 
 	return mux
 }
@@ -108,10 +129,11 @@ func Provide[RO, RW any](name string) fx.Option {
 		// provide as a named http handler
 		fx.Provide(fx.Annotate(New[RO, RW],
 			// the transacters are optional, so we can use connect rpc without
-			fx.ParamTags(``, ``, ``, ``, ``, ``, ``, ``, ``, `optional:"true"`, `optional:"true"`, `optional:"true"`),
+			fx.ParamTags(``, ``, ``, ``, ``, ``, ``, ``, ``,
+				`optional:"true"`, `optional:"true"`, `optional:"true"`, `optional:"true"`),
 			fx.ResultTags(`name:"`+name+`"`))),
-		// provide middleware constructors
-		fx.Provide(protovalidate.New, NewRecoverer, NewLogger, NewAuth),
+		// provide mandatory middleware constructors
+		fx.Provide(protovalidate.New, NewRecoverer, NewLogger),
 		// provide the validator interceptor
 		fx.Provide(func(val *protovalidate.Validator) (*validate.Interceptor, error) {
 			return validate.NewInterceptor(validate.WithValidator(val)) //nolint:wrapcheck

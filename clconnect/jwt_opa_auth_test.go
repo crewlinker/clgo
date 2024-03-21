@@ -9,6 +9,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/crewlinker/clgo/clauthn"
 	"github.com/crewlinker/clgo/clauthz"
+	"github.com/crewlinker/clgo/clconnect"
 	clconnectv1 "github.com/crewlinker/clgo/clconnect/v1"
 	"github.com/crewlinker/clgo/clconnect/v1/clconnectv1connect"
 	"github.com/lestrrat-go/jwx/v2/jwt/openid"
@@ -52,7 +53,7 @@ var _ = Describe("auth", func() {
 			fx.Decorate(func(b clauthz.MockBundle) clauthz.MockBundle {
 				return clauthz.MockBundle(policies)
 			}),
-
+			fx.Provide(clconnect.NewJWTOPAAuth),
 			ProvideEnt(),
 		)
 

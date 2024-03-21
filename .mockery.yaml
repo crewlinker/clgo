@@ -8,3 +8,6 @@ packages:
     interfaces:
       FrontendAPI: 
       PermissionAPI: 
+  github.com/crewlinker/clgo/clconnect:
+    interfaces:
+      Ory:

@@ -13,8 +13,8 @@ import (
 	"go.uber.org/zap"
 )
 
-// Auth provides authn and authz as an injector.
-type Auth struct {
+// JWTOPAAuth provides authn and authz as an injector.
+type JWTOPAAuth struct {
 	cfg   Config
 	logs  *zap.Logger
 	authn *clauthn.Authn
@@ -25,11 +25,13 @@ type Auth struct {
 	connect.Interceptor
 }
 
-// NewAuth inits the logger.
-func NewAuth(cfg Config, logs *zap.Logger, authn *clauthn.Authn, authz *clauthz.Authz) (lgr *Auth, err error) {
-	lgr = &Auth{
+// NewJWTOPAAuth inits an interceptor that uses JWT for Authn and OPA for Authz.
+func NewJWTOPAAuth(
+	cfg Config, logs *zap.Logger, authn *clauthn.Authn, authz *clauthz.Authz,
+) (lgr *JWTOPAAuth, err error) {
+	lgr = &JWTOPAAuth{
 		cfg:      cfg,
-		logs:     logs.Named("auth"),
+		logs:     logs.Named("jwt_opa_auth"),
 		authn:    authn,
 		authz:    authz,
 		envInput: map[string]any{},
@@ -73,7 +75,7 @@ type AuthzInput struct {
 }
 
 // intercept implements the actual authorization.
-func (l Auth) intercept(next connect.UnaryFunc) connect.UnaryFunc {
+func (l JWTOPAAuth) intercept(next connect.UnaryFunc) connect.UnaryFunc {
 	return connect.UnaryFunc(func(
 		ctx context.Context,
 		req connect.AnyRequest,

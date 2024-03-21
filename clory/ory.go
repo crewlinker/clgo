@@ -21,9 +21,6 @@ import (
 type Config struct {
 	// Ory endpoint.
 	Endpoint *url.URL `env:"ENDPOINT" envDefault:"http://localhost:4000"`
-	// PublicRPCProcedures configures the ConnectRPC methods that are plublic. For these procedures a special
-	// "anonymous" session will be passed to other middleware.
-	PublicRPCProcedures map[string]bool `env:"PUBLIC_RPC_PROCEDURES"`
 }
 
 // Ory auth module.
