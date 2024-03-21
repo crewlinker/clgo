@@ -2,6 +2,7 @@
 package clconnect
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -110,6 +111,14 @@ func New[RO, RW any](
 		rop, roh := roc(ro, roopts...)
 		mux.Handle(rop, roh)
 	}
+
+	// finally, serve a "not found" handler that renders the most minimal error according to the spec
+	// https://connectrpc.com/docs/protocol/#error-end-stream
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprintf(w, `{"code": "unimplemented"}`)
+	})
 
 	return mux
 }

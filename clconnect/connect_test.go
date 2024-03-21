@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/http/httptest"
 	"path/filepath"
 	"testing"
 
@@ -90,6 +91,15 @@ var _ = Describe("rpc", func() {
 	It("should serve read-only", func(ctx context.Context) {
 		_, err := roc.Foo(ctx, &connect.Request[clconnectv1.FooRequest]{})
 		Expect(err).ToNot(HaveOccurred())
+	})
+
+	It("should serve not found", func(ctx context.Context) {
+		rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/bogus", nil)
+		hdl.ServeHTTP(rec, req)
+
+		Expect(rec.Result().StatusCode).To(Equal(404))
+		Expect(rec.Header().Get("Content-Type")).To(Equal("application/json"))
+		Expect(rec.Body.String()).To(Equal(`{"code": "unimplemented"}`))
 	})
 
 	It("should trigger a server error", func(ctx context.Context) {
