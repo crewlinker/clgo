@@ -33,8 +33,7 @@ var _ = Describe("ory auth", func() {
 
 				return c
 			}),
-			fx.Provide(clconnect.NewOryAuth),
-			fx.Provide(func(c *clory.Ory) clconnect.Ory { return c }),
+			clconnect.ProvideOryAuth(),
 			clory.Provide(),
 			Provide(),
 			fx.Provide(NewOryAuthReadOnly, NewOryAuthReadWrite),

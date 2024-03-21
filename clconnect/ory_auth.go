@@ -7,6 +7,7 @@ import (
 	"github.com/crewlinker/clgo/clory"
 	orysdk "github.com/ory/client-go"
 	"github.com/samber/lo"
+	"go.uber.org/fx"
 	"go.uber.org/zap"
 )
 
@@ -62,4 +63,12 @@ func (l OryAuth) intercept(next connect.UnaryFunc) connect.UnaryFunc {
 
 		return next(ctx, req)
 	})
+}
+
+// ProvideOryAuth provides injector for ory-based auth.
+func ProvideOryAuth() fx.Option {
+	return fx.Options(
+		fx.Provide(NewOryAuth),
+		fx.Provide(func(o *clory.Ory) Ory { return o }),
+	)
 }

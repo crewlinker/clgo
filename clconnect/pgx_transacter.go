@@ -82,8 +82,8 @@ func txPgxIntercept(
 	}
 
 	defer func() {
-		if rberr := tx.Rollback(ctx); rberr != nil {
-			logs.Error("failed to rollback tx", zap.Error(err))
+		if rberr := tx.Rollback(ctx); rberr != nil && !errors.Is(rberr, pgx.ErrTxClosed) {
+			logs.Error("failed to rollback tx", zap.Error(rberr))
 		}
 	}()
 
