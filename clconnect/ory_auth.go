@@ -6,6 +6,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/crewlinker/clgo/clory"
 	orysdk "github.com/ory/client-go"
+	"github.com/samber/lo"
 	"go.uber.org/zap"
 )
 
@@ -34,6 +35,9 @@ func NewOryAuth(
 	}
 
 	inj.Interceptor = connect.UnaryInterceptorFunc(inj.intercept)
+
+	logs.Info("ory auth initialized",
+		zap.Strings("public_rpc_procedures", lo.Keys(cfg.PublicRPCProcedures)))
 
 	return inj, nil
 }

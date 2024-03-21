@@ -79,6 +79,7 @@ func New[RO, RW any](
 		if joAuth != nil {
 			baseIntercepts = append(baseIntercepts, joAuth)
 		}
+
 		if oryAuth != nil {
 			baseIntercepts = append(baseIntercepts, oryAuth)
 		}
