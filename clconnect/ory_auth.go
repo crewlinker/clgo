@@ -57,7 +57,8 @@ func (l OryAuth) intercept(next connect.UnaryFunc) connect.UnaryFunc {
 		clzap.Log(ctx, l.logs).Debug("auth interceptor started",
 			zap.Any("headers", req.Header()),
 			zap.String("http_method", req.HTTPMethod()),
-			zap.Any("spec", req.Spec()))
+			zap.Stringer("spec_idempotency_level", req.Spec().IdempotencyLevel),
+			zap.String("spec_procedure", req.Spec().Procedure))
 
 		sess, err := l.ory.Authenticate(ctx, req.Header().Get("cookie"), l.IsPublicRPCMethod(req.Spec()))
 		if err != nil {
