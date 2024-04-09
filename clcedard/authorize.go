@@ -78,7 +78,7 @@ func (c *Client) authorize(ctx context.Context, in *Input) (*Output, error) {
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.cfg.BaseURL+"/authorize", bytes.NewReader(input))
 	if err != nil {
-		return nil, fmt.Errorf("failed to init request: %w", err)
+		return nil, fmt.Errorf("failed to init HTTP request: %w", err)
 	}
 
 	signed, err := c.signedJWT(ctx)
@@ -91,7 +91,7 @@ func (c *Client) authorize(ctx context.Context, in *Input) (*Output, error) {
 
 	resp, err := c.htcl.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to perform request: %w", err)
+		return nil, fmt.Errorf("failed to perform HTTP request: %w", err)
 	}
 
 	defer resp.Body.Close()
@@ -100,10 +100,10 @@ func (c *Client) authorize(ctx context.Context, in *Input) (*Output, error) {
 	case resp.StatusCode == http.StatusOK:
 	case resp.StatusCode >= 400 && resp.StatusCode < 500:
 		//nolint: wrapcheck
-		return nil, backoff.Permanent(fmt.Errorf("client error code: %d, body: %s", resp.StatusCode,
+		return nil, backoff.Permanent(fmt.Errorf("client error: %q, HTTP body: %q", resp.Status,
 			string(lo.Must1(io.ReadAll(resp.Body)))))
 	default:
-		return nil, fmt.Errorf("non-client error code: %d, body: %s", resp.StatusCode,
+		return nil, fmt.Errorf("non-client error: %q, HTTP body: %q", resp.Status,
 			string(lo.Must1(io.ReadAll(resp.Body))))
 	}
 
