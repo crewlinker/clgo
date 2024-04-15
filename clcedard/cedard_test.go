@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"testing"
 
 	"github.com/crewlinker/clgo/clcedard"
 	"github.com/crewlinker/clgo/clzap"
+	"github.com/joho/godotenv"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/samber/lo"
@@ -20,6 +22,10 @@ func TestClcedard(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "clcedard")
 }
+
+var _ = BeforeSuite(func() {
+	godotenv.Load(filepath.Join("..", "test.env"))
+})
 
 func serve(w http.ResponseWriter, r *http.Request) {
 	var input clcedard.Input
@@ -73,13 +79,13 @@ var _ = Describe("clcedard", func() {
 		})
 
 		It("should fail unauthorized", func(ctx context.Context) {
-			res, err := ccl.IsAuthorized(ctx, &clcedard.Input{Principal: "unauthorized"})
+			res, err := ccl.IsAuthorized(ctx, &clcedard.Input{InputItem: clcedard.InputItem{Principal: "unauthorized"}})
 			Expect(err).To(MatchError(MatchRegexp("401")))
 			Expect(res).To(BeFalse())
 		})
 
 		It("should fail with errors", func(ctx context.Context) {
-			res, err := ccl.IsAuthorized(ctx, &clcedard.Input{Principal: "cedar-errors"})
+			res, err := ccl.IsAuthorized(ctx, &clcedard.Input{InputItem: clcedard.InputItem{Principal: "cedar-errors"}})
 			Expect(err).To(MatchError(MatchRegexp("error1")))
 			Expect(res).To(BeFalse())
 		})

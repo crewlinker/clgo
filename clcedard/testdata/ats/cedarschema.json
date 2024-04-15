@@ -1,0 +1,61 @@
+{
+  "Ats": {
+    "entityTypes": {
+      "Application": {
+        "memberOfTypes": [],
+        "shape": {
+          "attributes": {},
+          "type": "Record"
+        }
+      },
+      "User": {
+        "memberOfTypes": [],
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "ownerOfOrganizations": {
+              "type": "Set",
+              "element": {
+                "name": "Organization",
+                "type": "Entity"
+              }
+            }
+          }
+        }
+      },
+      "Organization": {
+        "memberOfTypes": [],
+        "shape": {
+          "attributes": {},
+          "type": "Record"
+        }
+      }
+    },
+    "actions": {
+      "gSuperAdminActions": {
+        "memberOf": [],
+        "appliesTo": {
+          "resourceTypes": [],
+          "principalTypes": []
+        }
+      },
+      "initRealm": {
+        "memberOf": [
+          {
+            "id": "gSuperAdminActions"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": ["User"],
+          "resourceTypes": ["Application"],
+          "context": {
+            "type": "Record",
+            "attributes": {
+              "source_ip": { "type": "Extension", "name": "ipaddr" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -17,15 +18,34 @@ import (
 	"go.uber.org/zap"
 )
 
-// Input for authorzation.
-type Input struct {
+// BatchInput describes a set of inputs to all be checked at the same time.
+type BatchInput struct {
+	Policies string         `json:"policies"`
+	Entities []any          `json:"entities"`
+	Schema   map[string]any `json:"schema"`
+	Items    []InputItem    `json:"items"`
+}
+
+// BatchOutput describes the output of batching a set of authorization checks.
+type BatchOutput struct {
+	Items []Output `json:"items"`
+}
+
+// InputItem represents the input for a single authorization
+// check.
+type InputItem struct {
 	Principal string         `json:"principal"`
 	Action    string         `json:"action"`
 	Resource  string         `json:"resource"`
-	Policies  string         `json:"policies"`
 	Context   map[string]any `json:"context"`
-	Schema    map[string]any `json:"schema"`
-	Entities  []any          `json:"entities"`
+}
+
+// Input for authorzation.
+type Input struct {
+	InputItem
+	Policies string         `json:"policies"`
+	Schema   map[string]any `json:"schema"`
+	Entities []any          `json:"entities"`
 }
 
 // Output from authorization.
@@ -35,14 +55,26 @@ type Output struct {
 	ErrorMessages []string `json:"error_messages"`
 }
 
-// IsAuthorized returns true the authorization returned an Allow decision
-// without errors. Otherwise, it returns false.
-func (c *Client) IsAuthorized(ctx context.Context, in *Input) (bool, error) {
-	out, err := c.Authorize(ctx, in)
+// BatchIsAuthorized returns a list of booleans indicating whether each input is authorized.
+// Any errors are gathered and returned as a single error.
+func (c Client) BatchIsAuthorized(ctx context.Context, in *BatchInput) (ress []bool, err error) {
+	out, err := c.BatchAuthorize(ctx, in)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
+	for _, item := range out.Items {
+		res, e := outputRes(item)
+		err = errors.Join(e)
+
+		ress = append(ress, res)
+	}
+
+	return
+}
+
+// outputRes decides the bool result and optional error.
+func outputRes(out Output) (bool, error) {
 	res := false
 	if out.Decision == "Allow" {
 		res = true
@@ -55,6 +87,31 @@ func (c *Client) IsAuthorized(ctx context.Context, in *Input) (bool, error) {
 	return res, nil
 }
 
+// IsAuthorized returns true the authorization returned an Allow decision
+// without errors. Otherwise, it returns false.
+func (c *Client) IsAuthorized(ctx context.Context, in *Input) (bool, error) {
+	out, err := c.Authorize(ctx, in)
+	if err != nil {
+		return false, err
+	}
+
+	return outputRes(*out)
+}
+
+// Authorize asks the cedard service authorizes the given input.
+func (c *Client) BatchAuthorize(ctx context.Context, in *BatchInput) (out *BatchOutput, err error) {
+	bof := backoff.NewExponentialBackOff()
+	bof.MaxElapsedTime = c.cfg.BackoffMaxElapsedTime
+
+	//nolint: wrapcheck
+	return out, backoff.Retry(func() error {
+		out = new(BatchOutput)
+		c.logs.Info("authorize failed, retrying", zap.Error(err))
+
+		return c.doRequest(ctx, "/authorize_batch", in, out)
+	}, backoff.WithContext(bof, ctx))
+}
+
 // Authorize asks the cedard service authorizes the given input.
 func (c *Client) Authorize(ctx context.Context, in *Input) (out *Output, err error) {
 	bof := backoff.NewExponentialBackOff()
@@ -62,28 +119,28 @@ func (c *Client) Authorize(ctx context.Context, in *Input) (out *Output, err err
 
 	//nolint: wrapcheck
 	return out, backoff.Retry(func() error {
-		out, err = c.authorize(ctx, in)
+		out = new(Output)
 		c.logs.Info("authorize failed, retrying", zap.Error(err))
 
-		return err
+		return c.doRequest(ctx, "/authorize", in, out)
 	}, backoff.WithContext(bof, ctx))
 }
 
-// authorize performs the actual authorization request.
-func (c *Client) authorize(ctx context.Context, in *Input) (*Output, error) {
+// doRequest peforms the HTTP request with json (de)serialization.
+func (c *Client) doRequest(ctx context.Context, path string, in, out any) error {
 	input, err := json.Marshal(in)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal input: %w", err)
+		return fmt.Errorf("failed to marshal input: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.cfg.BaseURL+"/authorize", bytes.NewReader(input))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.cfg.BaseURL+path, bytes.NewReader(input))
 	if err != nil {
-		return nil, fmt.Errorf("failed to init HTTP request: %w", err)
+		return fmt.Errorf("failed to init HTTP request: %w", err)
 	}
 
 	signed, err := c.signedJWT(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to sign jwt: %w", err)
+		return fmt.Errorf("failed to sign jwt: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -91,7 +148,7 @@ func (c *Client) authorize(ctx context.Context, in *Input) (*Output, error) {
 
 	resp, err := c.htcl.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to perform HTTP request: %w", err)
+		return fmt.Errorf("failed to perform HTTP request: %w", err)
 	}
 
 	defer resp.Body.Close()
@@ -100,19 +157,18 @@ func (c *Client) authorize(ctx context.Context, in *Input) (*Output, error) {
 	case resp.StatusCode == http.StatusOK:
 	case resp.StatusCode >= 400 && resp.StatusCode < 500:
 		//nolint: wrapcheck
-		return nil, backoff.Permanent(fmt.Errorf("client error: %q, HTTP body: %q", resp.Status,
+		return backoff.Permanent(fmt.Errorf("client error: %q, HTTP body: %q", resp.Status,
 			string(lo.Must1(io.ReadAll(resp.Body)))))
 	default:
-		return nil, fmt.Errorf("non-client error: %q, HTTP body: %q", resp.Status,
+		return fmt.Errorf("non-client error: %q, HTTP body: %q", resp.Status,
 			string(lo.Must1(io.ReadAll(resp.Body))))
 	}
 
-	var out Output
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+		return fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return &out, nil
+	return nil
 }
 
 // signedJWT creates a signed JWT for the request.
