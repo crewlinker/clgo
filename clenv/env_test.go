@@ -18,7 +18,7 @@ func TestClenv(t *testing.T) {
 
 var _ = Describe("loading", Serial, func() {
 	It("should load from git root", func(ctx context.Context) {
-		Expect(clenv.LoadFromGitRoot(ctx, "clenv/testdata/foo.env")).To(Succeed())
+		Expect(clenv.LoadFromGitRoot(ctx, "clenv/testdata/foo.txt")).To(Succeed())
 
 		Expect(os.Getenv("FOO")).To(Equal("bar"))
 	})
