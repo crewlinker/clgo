@@ -2,6 +2,7 @@
 package clent
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -45,7 +46,7 @@ var Validator = struct {
 		return func(s string) error {
 			before, after, found := strings.Cut(s, clid.Separator)
 			if !found {
-				return fmt.Errorf("clent: invalid clid, no separator")
+				return errors.New("clent: invalid clid, no separator")
 			}
 
 			if _, err := ulid.ParseStrict(after); err != nil {

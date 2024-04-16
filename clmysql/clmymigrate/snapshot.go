@@ -101,8 +101,8 @@ func SnapshotMigrated(sqlFile string) fx.Option {
 		fx.Provide(fx.Annotate(
 			NewSnaphotMigrater,
 			fx.As(new(clmysql.Migrater)),
-			fx.OnStart(func(ctx context.Context, m clmysql.Migrater) error { return m.Migrate(ctx) }), //nolint:wrapcheck
-			fx.OnStop(func(ctx context.Context, m clmysql.Migrater) error { return m.Reset(ctx) }),    //nolint:wrapcheck
+			fx.OnStart(func(ctx context.Context, m clmysql.Migrater) error { return m.Migrate(ctx) }),
+			fx.OnStop(func(ctx context.Context, m clmysql.Migrater) error { return m.Reset(ctx) }),
 			fx.ParamTags(``, ``, `name:"my_rw"`, `name:"my_ro"`)),
 		),
 

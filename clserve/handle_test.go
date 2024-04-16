@@ -40,6 +40,7 @@ func BenchmarkHandler(b *testing.B) {
 
 			b.ResetTimer()
 			b.ReportAllocs()
+
 			for n := 0; n < b.N; n++ {
 				r, w := httptest.NewRequest(http.MethodGet, "/", nil), httptest.NewRecorder()
 				hdlr.ServeHTTP(w, r)
@@ -48,8 +49,10 @@ func BenchmarkHandler(b *testing.B) {
 
 		b.Run("original-"+tblc.name, func(b *testing.B) {
 			h := http.HandlerFunc(tblc.hf)
+
 			b.ResetTimer()
 			b.ReportAllocs()
+
 			for n := 0; n < b.N; n++ {
 				r, w := httptest.NewRequest(http.MethodGet, "/", nil), httptest.NewRecorder()
 				h.ServeHTTP(w, r)

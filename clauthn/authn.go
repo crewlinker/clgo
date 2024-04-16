@@ -4,6 +4,7 @@ package clauthn
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -88,7 +89,7 @@ func (a *Authn) AuthenticateJWT(ctx context.Context, inp []byte) (openid.Token, 
 
 	oidt, ok := tok.(openid.Token)
 	if !ok {
-		return nil, fmt.Errorf("parsed token coun't be cast to openid.Token")
+		return nil, errors.New("parsed token coun't be cast to openid.Token")
 	}
 
 	return oidt, nil

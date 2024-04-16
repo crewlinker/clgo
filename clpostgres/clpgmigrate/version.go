@@ -54,8 +54,8 @@ func VersionMigrated(noChecksumValidate bool) fx.Option {
 		fx.Provide(fx.Annotate(
 			NewVersionMigrater,
 			fx.As(new(clpostgres.Migrater)),
-			fx.OnStart(func(ctx context.Context, m clpostgres.Migrater) error { return m.Migrate(ctx) }), //nolint:wrapcheck
-			fx.OnStop(func(ctx context.Context, m clpostgres.Migrater) error { return m.Reset(ctx) }),    //nolint:wrapcheck
+			fx.OnStart(func(ctx context.Context, m clpostgres.Migrater) error { return m.Migrate(ctx) }),
+			fx.OnStop(func(ctx context.Context, m clpostgres.Migrater) error { return m.Reset(ctx) }),
 			fx.ParamTags(``, ``, `name:"rw"`, `name:"ro"`)),
 		),
 

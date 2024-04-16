@@ -52,7 +52,7 @@ type Input struct {
 // Output from authorization.
 type Output struct {
 	Decision      string   `json:"decision"`
-	PolicyIds     []string `json:"policy_ids"`
+	PolicyIDs     []string `json:"policy_ids"`
 	ErrorMessages []string `json:"error_messages"`
 }
 
@@ -107,6 +107,7 @@ func (c *Client) BatchAuthorize(ctx context.Context, in *BatchInput) (out *Batch
 	//nolint: wrapcheck
 	return out, backoff.Retry(func() error {
 		out = new(BatchOutput)
+
 		err := c.doRequest(ctx, "/authorize_batch", in, out)
 		if err != nil {
 			clzap.Log(ctx, c.logs).Info("authorize batch failed", zap.Error(err))
@@ -124,6 +125,7 @@ func (c *Client) Authorize(ctx context.Context, in *Input) (out *Output, err err
 	//nolint: wrapcheck
 	return out, backoff.Retry(func() error {
 		out = new(Output)
+
 		err := c.doRequest(ctx, "/authorize", in, out)
 		if err != nil {
 			clzap.Log(ctx, c.logs).Info("authorize failed", zap.Error(err))

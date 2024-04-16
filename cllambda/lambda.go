@@ -21,6 +21,7 @@ type Handler[I, O any] interface {
 func InvokeHandler() fx.Option {
 	return fx.Invoke(fx.Annotate(func(fxlc fx.Lifecycle, logs *zap.Logger, hdlr lambda.Handler) {
 		logs = logs.Named("lambda")
+
 		if os.Getenv("AWS_LAMBDA_RUNTIME_API") == "" {
 			return // only add the lambda stat when we're actually executing inside the lambda, for testing
 		}
@@ -43,6 +44,7 @@ func InvokeHandler() fx.Option {
 func Invoke[I, O any]() fx.Option {
 	return fx.Invoke(fx.Annotate(func(fxlc fx.Lifecycle, logs *zap.Logger, hdlr Handler[I, O]) {
 		logs = logs.Named("lambda")
+
 		if os.Getenv("AWS_LAMBDA_RUNTIME_API") == "" {
 			return // only add the lambda stat when we're actually executing inside the lambda, for testing
 		}

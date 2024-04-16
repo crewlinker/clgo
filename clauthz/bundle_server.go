@@ -73,7 +73,7 @@ func NewFSBundles(bfs BundleFS) (*FSBundles, error) {
 
 // URL returns the url at which the bundles are served.
 func (bs FSBundles) URL() string {
-	return fmt.Sprintf("http://%s", bs.ln.Addr().String())
+	return "http://" + bs.ln.Addr().String()
 }
 
 // Star the bundle server.
