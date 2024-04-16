@@ -28,6 +28,7 @@ func BenchmarkResponseBuffer(b *testing.B) {
 		b.Run("buffered-"+strconv.Itoa(len(dat)), func(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
+
 			for n := 0; n < b.N; n++ {
 				resp = httptest.NewRecorder()
 				resp = clserve.NewBufferResponse(resp, -1)
@@ -41,6 +42,7 @@ func BenchmarkResponseBuffer(b *testing.B) {
 		b.Run("original-"+strconv.Itoa(len(dat)), func(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
+
 			for n := 0; n < b.N; n++ {
 				resp = httptest.NewRecorder()
 				Expect(resp.Write(dat)).ToNot(BeZero())
@@ -230,10 +232,12 @@ var _ = Describe("buffered writes", func() {
 		It("should flush correctly", func() {
 			rec := httptest.NewRecorder()
 			fwr = clserve.NewBufferResponse(rec, 2)
-			for i := 0; i < 3; i++ {
+
+			for range 3 {
 				Expect(fwr.Write([]byte{0x01, 0x02})).To(Equal(2))
 				Expect(fwr.FlushError()).To(Succeed())
 			}
+
 			Expect(rec.Body.Bytes()).To(Equal([]byte{0x01, 0x02, 0x01, 0x02, 0x01, 0x02}))
 		})
 	})
@@ -308,7 +312,7 @@ var _ = Describe("buffered writes", func() {
 		It("should reset limit after reset", func() {
 			rec := httptest.NewRecorder()
 			resp = clserve.NewBufferResponse(rec, 2)
-			for i := 0; i < 3; i++ {
+			for range 3 {
 				Expect(resp.Reset()).To(Succeed())
 				Expect(resp.Write([]byte("fo"))).To(Equal(2))
 

@@ -43,6 +43,7 @@ func Build(pat *Pattern, vals ...string) (string, error) {
 					// if there is another value we add it since a trailingn '/' acts as a
 					// wildcard.
 					res.WriteString(vals[vidx])
+
 					vused++
 				}
 
@@ -55,6 +56,7 @@ func Build(pat *Pattern, vals ...string) (string, error) {
 			}
 
 			res.WriteString(vals[vidx])
+
 			vidx++
 			vused++
 

@@ -47,7 +47,7 @@ var _ = Describe("version migrater", func() {
 		Expect(obs.FilterMessage("statement").All()[0].ContextMap()["sql"]).To(ContainSubstring(`CREATE TABLE`))
 	})
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		It("should run in a isolated database", func(ctx context.Context) {
 			_, err := sqldb.ExecContext(ctx, "insert into profiles (id) values (1);")
 			Expect(err).To(Succeed()) // fails when not isolated because id is unique

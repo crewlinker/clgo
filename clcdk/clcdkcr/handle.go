@@ -125,7 +125,7 @@ func handle[
 type UnsupportedResourceTypeError struct{ rt string }
 
 func (e UnsupportedResourceTypeError) Error() string {
-	return fmt.Sprintf("unsupported resource type: %s", e.rt)
+	return "unsupported resource type: " + e.rt
 }
 
 // UnsupportedRequestTypeError is returned when the request is not supported.

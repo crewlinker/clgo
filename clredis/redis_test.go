@@ -60,7 +60,7 @@ var _ = Describe("redis observed", func() {
 	})
 
 	It("should trace and measure redis client interactions", func(ctx context.Context) {
-		ctx, _ = trp.Tracer("tests").Start(ctx, "my-test")
+		ctx, _ = trp.Tracer("tests").Start(ctx, "my-test") //nolint:spancheck
 
 		_, err := red.Set(ctx, "foo", "bar", time.Second).Result()
 		Expect(err).To(Succeed())

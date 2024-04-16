@@ -146,7 +146,7 @@ func Provide[RO, RW any](name string) fx.Option {
 		fx.Provide(protovalidate.New, NewRecoverer, NewLogger),
 		// provide the validator interceptor
 		fx.Provide(func(val *protovalidate.Validator) (*validate.Interceptor, error) {
-			return validate.NewInterceptor(validate.WithValidator(val)) //nolint:wrapcheck
+			return validate.NewInterceptor(validate.WithValidator(val))
 		}),
 	)
 }
