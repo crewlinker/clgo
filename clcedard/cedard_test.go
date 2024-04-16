@@ -50,10 +50,10 @@ func serve(w http.ResponseWriter, r *http.Request) {
 
 var _ = Describe("clcedard", func() {
 	var ccl *clcedard.Client
-	var srv httptest.Server
+	var srv *httptest.Server
 
 	BeforeEach(func(ctx context.Context) {
-		srv = *httptest.NewServer(http.HandlerFunc(serve))
+		srv = httptest.NewServer(http.HandlerFunc(serve))
 
 		app := fx.New(
 			fx.Populate(&ccl),
