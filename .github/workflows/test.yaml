@@ -25,6 +25,8 @@ jobs:
           CLPOSTGRES_PORT: 5435
           CLPOSTGRES_USERNAME: postgres
           CLPOSTGRES_PASSWORD: postgres
+          CLMYSQL_READ_WRITE_DATA_SOURCE_NAME: root:mysql@tcp(127.0.0.1:43306)/mysql
+          CLMYSQL_READ_ONLY_DATA_SOURCE_NAME: root:mysql@tcp(127.0.0.1:43306)/mysql
           CLCEDARD_JWT_SIGNING_SECRET: "${{ secrets.CLCEDARD_JWT_SIGNING_SECRET }}"
         run: |
           mage -v test
