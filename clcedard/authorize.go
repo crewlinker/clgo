@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/crewlinker/clgo/clzap"
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 	"github.com/samber/lo"
@@ -106,9 +107,12 @@ func (c *Client) BatchAuthorize(ctx context.Context, in *BatchInput) (out *Batch
 	//nolint: wrapcheck
 	return out, backoff.Retry(func() error {
 		out = new(BatchOutput)
-		c.logs.Info("authorize failed, retrying", zap.Error(err))
+		err := c.doRequest(ctx, "/authorize_batch", in, out)
+		if err != nil {
+			clzap.Log(ctx, c.logs).Info("authorize batch failed", zap.Error(err))
+		}
 
-		return c.doRequest(ctx, "/authorize_batch", in, out)
+		return err
 	}, backoff.WithContext(bof, ctx))
 }
 
@@ -120,9 +124,12 @@ func (c *Client) Authorize(ctx context.Context, in *Input) (out *Output, err err
 	//nolint: wrapcheck
 	return out, backoff.Retry(func() error {
 		out = new(Output)
-		c.logs.Info("authorize failed, retrying", zap.Error(err))
+		err := c.doRequest(ctx, "/authorize", in, out)
+		if err != nil {
+			clzap.Log(ctx, c.logs).Info("authorize failed", zap.Error(err))
+		}
 
-		return c.doRequest(ctx, "/authorize", in, out)
+		return err
 	}, backoff.WithContext(bof, ctx))
 }
 
