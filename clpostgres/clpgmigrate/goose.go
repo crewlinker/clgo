@@ -68,10 +68,6 @@ func (m GooseMigrater) Migrate(ctx context.Context) error {
 		return fmt.Errorf("failed to run goose: %w", err)
 	}
 
-	// if err := goose.RunContext(ctx, "up", sqldb, m.dir); err != nil {
-	// 	return fmt.Errorf("failed to run goose: %w", err)
-	// }
-
 	return nil
 }
 
@@ -81,7 +77,7 @@ func (m GooseMigrater) Reset(ctx context.Context) error {
 }
 
 // GooseMigrated configures the di for using snapshot migrations.
-func GooseMigrated(migrateDir fs.FS) fx.Option {
+func GooseMigrated(migrateDir fs.FS, cnff ...func(*Config)) fx.Option {
 	return fx.Options(
 		clconfig.Provide[Config](strings.ToUpper(moduleName)+"_"),
 
@@ -100,6 +96,11 @@ func GooseMigrated(migrateDir fs.FS) fx.Option {
 		fx.Decorate(func(c Config) Config {
 			c.TemporaryDatabase = true
 			c.AutoMigration = true
+
+			// allow config to be overwritten
+			if len(cnff) > 0 {
+				cnff[0](&c)
+			}
 
 			return c
 		}),
