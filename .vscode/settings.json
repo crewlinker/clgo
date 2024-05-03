@@ -5,4 +5,5 @@
     "gopls": {
         "formatting.gofumpt": true,
     },
+    "circleci.persistedProjectSelection": [],
 }
