@@ -16,6 +16,7 @@ var RegionAcronyms = map[string]string{
 	"eu-central-1":   "Fra",
 	"eu-west-1":      "Ire",
 	"ap-southeast-1": "Sin",
+	"us-east-1":      "Vir",
 }
 
 // FormatDockerImageTag standardizes how docker images in the repositories are called given the project
