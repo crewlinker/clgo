@@ -1,13 +1,12 @@
 with-expecter: true
-filename: "mock_{{.InterfaceNameLower}}_test.go"
-dir: "{{.InterfaceDir}}"
+filename: "mock_{{.InterfaceNameLower}}.go"
+dir: "{{.InterfaceDir}}/{{.PackageName}}mock"
 mockname: "Mock{{.InterfaceName}}"
-outpkg: "{{.PackageName}}_test"
+outpkg: "{{.PackageName}}mock"
 packages:
   github.com/crewlinker/clgo/clory:
     interfaces:
       FrontendAPI: 
-      PermissionAPI: 
   github.com/crewlinker/clgo/clconnect:
     interfaces:
       Ory:
