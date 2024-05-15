@@ -127,7 +127,7 @@ func (e Engine) HandleSignInCallback(ctx context.Context, w http.ResponseWriter,
 func (e Engine) ContinueSession(ctx context.Context, w http.ResponseWriter, r *http.Request) (idn Identity, err error) {
 	atCookie, err := r.Cookie(e.cfg.AccessTokenCookieName)
 	if err != nil {
-		return idn, fmt.Errorf("failed to get access token cookie: %w", err)
+		return idn, InputErrorf("failed to get access token cookie: %w", err)
 	}
 
 	idn, err = e.identityFromAccessToken(ctx, atCookie.Value)
@@ -169,7 +169,7 @@ func (e Engine) ContinueSession(ctx context.Context, w http.ResponseWriter, r *h
 func (e Engine) StartSignOutFlow(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	atCookie, err := r.Cookie(e.cfg.AccessTokenCookieName)
 	if err != nil {
-		return fmt.Errorf("failed to get access token cookie: %w", err)
+		return InputErrorf("failed to get access token cookie: %w", err)
 	}
 
 	idn, err := e.identityFromAccessToken(ctx, atCookie.Value)

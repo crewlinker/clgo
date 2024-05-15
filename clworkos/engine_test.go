@@ -35,12 +35,26 @@ var _ = Describe("engine", func() {
 	Describe("start sign-in flow", func() {
 		It("should return error when redirect_to is missing", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
-			Expect(engine.StartSignInFlow(ctx, rec, req)).To(MatchError(clworkos.ErrRedirectToNotProvided))
+
+			err := engine.StartSignInFlow(ctx, rec, req)
+			Expect(err).To(MatchError(clworkos.ErrRedirectToNotProvided))
+			Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
+		})
+
+		It("should return error when redirect_to is invalid url", func(ctx context.Context) {
+			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?redirect_to=:", nil)
+
+			err := engine.StartSignInFlow(ctx, rec, req)
+			Expect(err).To(MatchError(MatchRegexp(`failed to parse`)))
+			Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
 		})
 
 		It("should return error when redirect_to is not allowed", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?redirect_to=http://example.com", nil)
-			Expect(engine.StartSignInFlow(ctx, rec, req)).To(MatchError(MatchRegexp(`redirect URL is not allowed`)))
+
+			err := engine.StartSignInFlow(ctx, rec, req)
+			Expect(err).To(MatchError(MatchRegexp(`redirect URL is not allowed`)))
+			Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
 		})
 
 		It("should add state cookie, and redirect to provider", func(ctx context.Context) {
@@ -63,7 +77,9 @@ var _ = Describe("engine", func() {
 	Describe("handle sign-in callback", func() {
 		It("should return error when code is missing", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
-			Expect(engine.HandleSignInCallback(ctx, rec, req)).To(MatchError(clworkos.ErrCallbackCodeNotProvided))
+			err := engine.HandleSignInCallback(ctx, rec, req)
+			Expect(err).To(MatchError(clworkos.ErrCallbackCodeNotProvided))
+			Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
 		})
 
 		It("should return error when error is present", func(ctx context.Context) {
@@ -108,7 +124,9 @@ var _ = Describe("engine", func() {
 
 			It("without state cookie", func(ctx context.Context) {
 				rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?code=foo", nil)
-				Expect(engine.HandleSignInCallback(ctx, rec, req)).To(MatchError(clworkos.ErrStateCookieNotPresentOrInvalid))
+				err := engine.HandleSignInCallback(ctx, rec, req)
+				Expect(err).To(MatchError(clworkos.ErrStateCookieNotPresentOrInvalid))
+				Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
 			})
 
 			It("with invalid state cookie", func(ctx context.Context) {
@@ -122,9 +140,9 @@ var _ = Describe("engine", func() {
 			It("with invalid nonce", func(ctx context.Context) {
 				rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?code=foo", nil)
 				req.AddCookie(&http.Cookie{Name: "cl_auth_state", Value: stateToken})
-
-				Expect(engine.HandleSignInCallback(ctx, rec, req)).To(
-					MatchError(clworkos.ErrStateNonceMismatch))
+				err := engine.HandleSignInCallback(ctx, rec, req)
+				Expect(err).To(MatchError(clworkos.ErrStateNonceMismatch))
+				Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
 			})
 
 			It("with valid state cookie", func(ctx context.Context) {
@@ -152,6 +170,7 @@ var _ = Describe("engine", func() {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
 			_, err := engine.ContinueSession(ctx, rec, req)
 			Expect(err).To(MatchError(MatchRegexp(`failed to get access token cookie`)))
+			Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
 		})
 
 		It("should return zero identity when invalid access token", func(ctx context.Context) {
@@ -190,6 +209,7 @@ var _ = Describe("engine", func() {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
 			err := engine.StartSignOutFlow(ctx, rec, req)
 			Expect(err).To(MatchError(MatchRegexp(`failed to get access token cookie`)))
+			Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
 		})
 
 		It("should error when invalid access token", func(ctx context.Context) {

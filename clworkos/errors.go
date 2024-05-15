@@ -21,12 +21,23 @@ var ErrStateCookieNotPresentOrInvalid = errors.New("state cookie not present or 
 // ErrStateNonceMismatch is returned when the nonce from the query does not match the nonce from the state cookie.
 var ErrStateNonceMismatch = errors.New("state nonce mismatch")
 
+// InvalidInputError can wrap any error to mark it as being invalid input.
+type InvalidInputError struct{ error }
+
+func (e InvalidInputError) isInvalidInput() {}
+
+// InputErrorf is a helper function to create a new InvalidInputError.
+func InputErrorf(format string, args ...interface{}) InvalidInputError {
+	return InvalidInputError{fmt.Errorf(format, args...)} //nolint:goerr113
+}
+
 // RedirectToNotAllowedError is returned when the redirect URL is not allowed.
 type RedirectToNotAllowedError struct {
 	actual  string
 	allowed []string
 }
 
+func (e RedirectToNotAllowedError) isInvalidInput() {}
 func (e RedirectToNotAllowedError) Error() string {
 	return fmt.Sprintf("redirect URL is not allowed: %q, allowed hosts: %v", e.actual, e.allowed)
 }
@@ -44,14 +55,20 @@ func (e KeyNotFoundError) Error() string {
 func (h Handler) handleError(w http.ResponseWriter, r *http.Request, err error) {
 	clzap.Log(r.Context(), h.logs).Error("error while serving request", zap.Error(err))
 
+	// try to be smart about the status code
+	status := http.StatusInternalServerError
+	if IsBadRequestError(err) {
+		status = http.StatusBadRequest
+	}
+
 	// only show server errors in environment where it is safe. Errors from our outh
 	// provider might leak too much information.
-	message := http.StatusText(http.StatusInternalServerError)
-	if h.cfg.ShowServerErrors {
+	message := http.StatusText(status)
+	if h.cfg.ShowErrorMessagesToClient {
 		message = err.Error()
 	}
 
-	http.Error(w, message, http.StatusInternalServerError)
+	http.Error(w, message, status)
 }
 
 // WorkOSCallbackError is an error returned from the WorkOS callback logic.
@@ -62,4 +79,24 @@ type WorkOSCallbackError struct {
 
 func (e WorkOSCallbackError) Error() string {
 	return fmt.Sprintf("callback with error from WorkOS: %s: %s", e.code, e.description)
+}
+
+// IsBadRequestError will return true if the error is an error that describes bad input from the user. this is useful
+// to provide the client with more information about what went wrong.
+func IsBadRequestError(err error) bool {
+	var isInvalidInput interface{ isInvalidInput() }
+	if errors.As(err, &isInvalidInput) {
+		return true
+	}
+
+	switch {
+	case errors.Is(err, ErrRedirectToNotProvided),
+		errors.Is(err, ErrCallbackCodeNotProvided),
+		errors.Is(err, ErrStateCookieNotPresentOrInvalid),
+		errors.Is(err, ErrStateNonceMismatch):
+		return true
+
+	default:
+		return false
+	}
 }

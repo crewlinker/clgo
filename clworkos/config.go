@@ -26,8 +26,8 @@ type Config struct {
 	AllCookieSecure bool `env:"ALL_COOKIE_SECURE" envDefault:"true"`
 	// AllCookieDomain configures the domain for all cookies
 	AllCookieDomain string `env:"ALL_COOKIE_DOMAIN" envDefault:"localhost"`
-	// ShowServerErrors will show server errors to the client, should only be visible in development.
-	ShowServerErrors bool `env:"SHOW_SERVER_ERRORS" envDefault:"false"`
+	// ShowErrorMessagesToClient will show server errors to the client, should only be visible in development.
+	ShowErrorMessagesToClient bool `env:"SHOW_ERROR_MESSAGES_TO_CLIENT" envDefault:"false"`
 	// RedirectToAllowedHosts is a list of hosts that are allowed to be redirected to.
 	RedirectToAllowedHosts []string `env:"REDIRECT_TO_ALLOWED_HOSTS" envDefault:"localhost"`
 	// JWKEndpoint is the endpoint for fetching the public key set for verifying the access key.
