@@ -74,7 +74,7 @@ func (h *Handler) handleSignOut() clserve.HandlerFunc[context.Context] {
 }
 
 // moduleName for naming conventions.
-const moduleName = "clwebwos"
+const moduleName = "clworkos"
 
 // Provide configures the DI for providng rpc.
 func Provide() fx.Option {
