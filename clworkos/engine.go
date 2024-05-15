@@ -166,7 +166,29 @@ func (e Engine) ContinueSession(ctx context.Context, w http.ResponseWriter, r *h
 }
 
 // StartSignOutFlow starts the sign-out flow as the user is redirected to WorkOS.
-func (e Engine) StartSignOutFlow(context.Context) error {
+func (e Engine) StartSignOutFlow(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	atCookie, err := r.Cookie(e.cfg.AccessTokenCookieName)
+	if err != nil {
+		return fmt.Errorf("failed to get access token cookie: %w", err)
+	}
+
+	idn, err := e.identityFromAccessToken(ctx, atCookie.Value)
+	if err != nil {
+		return fmt.Errorf("failed to get identity from acces token: %w", err)
+	}
+
+	logoutURL, err := e.um.GetLogoutURL(usermanagement.GetLogoutURLOpts{SessionID: idn.SessionID})
+	if err != nil {
+		return fmt.Errorf("failed to get logout URL: %w", err)
+	}
+
+	// clear refresh and access token cookies
+	http.SetCookie(w, &http.Cookie{MaxAge: -1, Name: e.cfg.AccessTokenCookieName})
+	http.SetCookie(w, &http.Cookie{MaxAge: -1, Name: e.cfg.SessionCookieName})
+
+	// redirect to WorkOS to finalize the logout
+	http.Redirect(w, r, logoutURL.String(), http.StatusFound)
+
 	return nil
 }
 
