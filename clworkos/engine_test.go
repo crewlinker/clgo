@@ -184,6 +184,43 @@ var _ = Describe("engine", func() {
 			Expect(rec.Result().Cookies()).To(BeEmpty())
 		})
 	})
+
+	Describe("logout", func() {
+		It("should return error when access token cookie is missing", func(ctx context.Context) {
+			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
+			err := engine.StartSignOutFlow(ctx, rec, req)
+			Expect(err).To(MatchError(MatchRegexp(`failed to get access token cookie`)))
+		})
+
+		It("should error when invalid access token", func(ctx context.Context) {
+			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
+			req.AddCookie(&http.Cookie{Name: "cl_access_token", Value: "invalid.access.token"})
+
+			err := engine.StartSignOutFlow(ctx, rec, req)
+			Expect(err).To(MatchError(MatchRegexp(`failed to parse access token`)))
+		})
+
+		It("start logout flow successfully", func(ctx context.Context) {
+			umm.EXPECT().GetLogoutURL(mock.Anything).Return(lo.Must(url.Parse("http://localhost:8080/logout")), nil).Once()
+
+			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
+			req.AddCookie(&http.Cookie{Name: "cl_access_token", Value: "eyJhbGciOiJSUzI1NiIsImtpZCI6InNzb19vaWRjX2tleV9wYWlyXzAxSEpUOFFENVdCOVdFTlZYMEE4QTM2UUFNIn0.eyJhY3QiOnsic3ViIjoiYWRtaW5AY3Jld2xpbmtlci5jb20ifSwiaXNzIjoiaHR0cHM6Ly9hcGkud29ya29zLmNvbSIsInN1YiI6InVzZXJfMDFISlRENFZTOFQ2REtBSzVCM0FaVlFGQ1YiLCJzaWQiOiJzZXNzaW9uXzAxSFhYOFZROFNORDVUQ05aQ042TkE3VkZRIiwianRpIjoiMDFIWFg4VlFRSEZOSFI5Q04xQzZOTVRZOEIiLCJvcmdfaWQiOiJvcmdfMDFISlRCUEszWVFNWlk5S0gzMEVYVjlHSE4iLCJyb2xlIjoibWVtYmVyIiwiZXhwIjoxNzE1NzQ4MzY5LCJpYXQiOjE3MTU3NDgwNjl9.DDwEWaHIabk7Uzg9VYce3eX1Kh-x99eKDGH_qbE1QOoy68U3nM9PxDEIIAxdUaT3v91nJtIn-lGa2Woq-wFZGrsd58tfWBmH5kv2SXxaojo1FL-JmDox8eu5Aw1SguVuXPU3r6PawwGScUeDqZ9pAT3qGqS7LyT-jtw_-8nns4D6QttDOF-CzAS4vi9JKujCtBPYLOR_m5axkXp4PEiWMMz5qAoKOpEWFTtfm-X7bD-Yk00hllp7sjk8m5ebpVlDDcT0uL-8Rzp-W64eyvvDfxmp6ZuEaSzvA20AvYPjTKAOGcBJ2V84Ql-5vvWLhEl2-J4IgvxUzfn9dFsUWGwh2Q"})
+
+			err := engine.StartSignOutFlow(ctx, rec, req)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("checkign redirect")
+			Expect(rec.Result().StatusCode).To(Equal(http.StatusFound))
+			Expect(rec.Result().Header.Get("Location")).To(Equal("http://localhost:8080/logout"))
+
+			By("checking the cookies being re-set")
+			Expect(rec.Result().Cookies()).To(HaveLen(2))
+			Expect(rec.Result().Cookies()[0].Name).To(Equal("cl_access_token"))
+			Expect(rec.Result().Cookies()[0].MaxAge).To(Equal(-1))
+			Expect(rec.Result().Cookies()[1].Name).To(Equal("cl_session"))
+			Expect(rec.Result().Cookies()[1].MaxAge).To(Equal(-1))
+		})
+	})
 })
 
 var _ = Describe("engine in present", func() {
