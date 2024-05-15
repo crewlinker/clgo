@@ -6,55 +6,18 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/crewlinker/clgo/clconfig"
 	"github.com/crewlinker/clgo/clserve"
 	"github.com/crewlinker/clgo/clworkos/clworkosmock"
-	"github.com/lestrrat-go/jwx/v2/jwk"
+	"github.com/lestrrat-go/jwx/v2/jwt"
 	"github.com/workos/workos-go/v4/pkg/usermanagement"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 )
-
-// Config configures the package components.
-type Config struct {
-	// WorkOS API key.
-	APIKey string `env:"API_KEY"`
-	// WorkOS main client ID.
-	MainClientID string `env:"MAIN_CLIENT_ID"`
-	// Full url to where the user will be send after WorkOS has done the authorization.
-	CallbackURL *url.URL `env:"CALLBACK_URL" envDefault:"http://localhost:8080/auth/callback"`
-	// AllCookieSecure will set the secure flag on all cookies.
-	AllCookieSecure bool `env:"ALL_COOKIE_SECURE" envDefault:"true"`
-	// AllCookieDomain configures the domain for all cookies
-	AllCookieDomain string `env:"ALL_COOKIE_DOMAIN" envDefault:"localhost"`
-	// ShowServerErrors will show server errors to the client, should only be visible in development.
-	ShowServerErrors bool `env:"SHOW_SERVER_ERRORS" envDefault:"false"`
-	// RedirectToAllowedHosts is a list of hosts that are allowed to be redirected to.
-	RedirectToAllowedHosts []string `env:"REDIRECT_TO_ALLOWED_HOSTS" envDefault:"localhost"`
-	// JWKEndpoint is the endpoint for fetching the public key set for verifying the access key.
-	JWKEndpoint string `env:"JWK_ENDPOINT" envDefault:"https://api.workos.com/sso/jwks/"`
-	// PubPrivSigningKeySetB64JSON will hold private keys for JWE encryption
-	PubPrivEncryptKeySetB64JSON string `env:"PUB_PRIV_ENCRYPT_KEY_SET_B64_JSON" envDefault:"eyJrZXlzIjpbXX0="`
-	// PrivateSigningKeys will hold private keys for signing JWTs
-	PubPrivSigningKeySetB64JSON string `env:"PUB_PRIV_SIGNING_KEY_SET_B64_JSON" envDefault:"eyJrZXlzIjpbXX0="`
-	// DefaultSignKeyID defines the default key id used for signing
-	DefaultSignKeyID string `env:"DEFAULT_SIGN_KEY_ID" envDefault:"key1"`
-	// DefaultEncryptKeyID defines the default encryption id used for encryption
-	DefaultEncryptKeyID string `env:"DEFAULT_ENCRYPT_KEY_ID" envDefault:"key1"`
-	// RedirectToIfImpersonated is the URL to redirect to if the user is impersonated
-	RedirectToIfImpersonated *url.URL `env:"REDIRECT_TO_IF_IMPERSONATED" envDefault:"http://localhost:8080/healthz"`
-
-	// SessionCookiePath is the name he access token cookie will get.
-	SessionCookieName string `env:"SESSION_COOKIE_NAME" envDefault:"cl_session"`
-	// StateCookieName is the Name for the state nonce cookie will be set
-	StateCookieName string `env:"AUTH_NONCE_COOKIE_NAME" envDefault:"cl_auth_state"`
-	// AccessTokenCookiePath is the name he access token cookie will get.
-	AccessTokenCookieName string `env:"ACCESS_TOKEN_COOKIE_NAME" envDefault:"cl_access_token"`
-}
 
 // Handler provides WorkOS auth-flow functionality.
 type Handler struct {
@@ -88,20 +51,9 @@ func New(cfg Config, logs *zap.Logger, keys *Keys, engine *Engine) *Handler {
 	}
 
 	_ = serveOpts
+	// @TODO implement endpoints
 
 	return hdlr
-}
-
-// start initializes the handler for async setup work.
-func (h *Handler) start(ctx context.Context) (err error) {
-	h.keys.workos.public, err = jwk.Fetch(ctx, h.cfg.JWKEndpoint+h.cfg.MainClientID)
-	if err != nil {
-		return fmt.Errorf("failed to fetch public keys: %w", err)
-	}
-
-	h.logs.Info("fetched WorkOS JWKS", zap.Int("num_of_keys", h.keys.workos.public.Len()))
-
-	return nil
 }
 
 // moduleName for naming conventions.
@@ -111,14 +63,15 @@ const moduleName = "clwebwos"
 func Provide() fx.Option {
 	return fx.Module(moduleName,
 		// provide the rpc implementations
-		fx.Provide(fx.Annotate(New,
-			fx.OnStart(func(ctx context.Context, h *Handler) error { return h.start(ctx) }),
-		)),
+		fx.Provide(fx.Annotate(New)),
 		// provide the real user management client
 		fx.Provide(fx.Annotate(NewUserManagement, fx.As(new(UserManagement)))),
 		// provide the engine
-		fx.Provide(NewEngine, NewKeys),
-
+		fx.Provide(NewEngine),
+		// provide the keys
+		fx.Provide(fx.Annotate(NewKeys, fx.OnStart(func(ctx context.Context, k *Keys) error { return k.start(ctx) }))),
+		// provide time.Now as the wall-clock time
+		fx.Supply(fx.Annotate(jwt.ClockFunc(time.Now), fx.As(new(Clock)))),
 		// provide the environment configuration
 		clconfig.Provide[Config](strings.ToUpper(moduleName)+"_"),
 		// the incoming logger will be named after the module
@@ -127,7 +80,7 @@ func Provide() fx.Option {
 }
 
 // TestProvide provides the WorkOS handler with well-known (public) testing keys.
-func TestProvide(tb testing.TB) fx.Option {
+func TestProvide(tb testing.TB, clockAt int64) fx.Option {
 	tb.Helper()
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -137,12 +90,18 @@ func TestProvide(tb testing.TB) fx.Option {
 
 	umMock := clworkosmock.NewMockUserManagement(tb)
 
+	if clockAt == 0 {
+		clockAt = time.Now().Unix()
+	}
+
 	return fx.Options(
 		Provide(),
 		// supply our mock implementation
 		fx.Supply(umMock),
 		// replace the real user management client with the mock
 		fx.Decorate(func(UserManagement) UserManagement { return umMock }),
+		// fix the wall-clock at the given time
+		fx.Decorate(func(Clock) Clock { return jwt.ClockFunc(func() time.Time { return time.Unix(clockAt, 0) }) }),
 		// setup config that allows for testing
 		fx.Decorate(func(c Config) Config {
 			//nolint:lll

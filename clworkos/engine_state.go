@@ -92,7 +92,9 @@ func (e Engine) checkAndConsumeStateCookie(
 	}
 
 	// check validity of the state cookie
-	stateToken, err := jwt.ParseString(cookie.Value, jwt.WithKeySet(e.keys.signing.public))
+	stateToken, err := jwt.ParseString(cookie.Value,
+		jwt.WithClock(e.clock),
+		jwt.WithKeySet(e.keys.signing.public))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse, verify and validate the state cookie: %w", err)
 	}
