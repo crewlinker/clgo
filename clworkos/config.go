@@ -26,6 +26,8 @@ type Config struct {
 	AllCookieSecure bool `env:"ALL_COOKIE_SECURE" envDefault:"true"`
 	// AllCookieDomain configures the domain for all cookies
 	AllCookieDomain string `env:"ALL_COOKIE_DOMAIN" envDefault:"localhost"`
+	// SessionCookiesPath configures the path attribute for session cookies
+	SessionCookiesPath string `env:"ALL_COOKIE_PATH" envDefault:"/"`
 	// ShowErrorMessagesToClient will show server errors to the client, should only be visible in development.
 	ShowErrorMessagesToClient bool `env:"SHOW_ERROR_MESSAGES_TO_CLIENT" envDefault:"false"`
 	// RedirectToAllowedHosts is a list of hosts that are allowed to be redirected to.

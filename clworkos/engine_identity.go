@@ -141,6 +141,7 @@ func (e Engine) addAuthenticatedCookies(
 
 	// store the encrypted session token so other requests can use it.
 	http.SetCookie(w, &http.Cookie{
+		Path:     e.cfg.SessionCookiesPath,
 		Domain:   e.cfg.AllCookieDomain,
 		SameSite: http.SameSiteLaxMode,
 		Name:     e.cfg.SessionCookieName,
@@ -151,6 +152,7 @@ func (e Engine) addAuthenticatedCookies(
 
 	// set the access token cookie directly
 	http.SetCookie(w, &http.Cookie{
+		Path:     e.cfg.SessionCookiesPath,
 		Domain:   e.cfg.AllCookieDomain,
 		SameSite: http.SameSiteLaxMode,
 		Name:     e.cfg.AccessTokenCookieName,
