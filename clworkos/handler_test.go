@@ -34,7 +34,7 @@ var _ = Describe("handler", func() {
 
 func Provide() fx.Option {
 	return fx.Options(
-		clworkos.TestProvide(),
+		clworkos.TestProvide(GinkgoTB()),
 		clzap.TestProvide(),
 	)
 }
