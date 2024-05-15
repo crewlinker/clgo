@@ -2,6 +2,7 @@ package clworkos
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -30,21 +31,26 @@ func NewUserManagement(cfg Config) *usermanagement.Client {
 	return usermanagement.NewClient(cfg.APIKey)
 }
 
+// Clock is an interface for fetching the wall-clock time.
+type Clock interface{ jwt.Clock }
+
 // Engine implements the core business logic for WorkOS-powered authentication.
 type Engine struct {
-	cfg  Config
-	logs *zap.Logger
-	keys *Keys
-	um   UserManagement
+	cfg   Config
+	logs  *zap.Logger
+	keys  *Keys
+	clock jwt.Clock
+	um    UserManagement
 }
 
 // NewEngine creates a new Engine with the provided UserManagement implementation.
-func NewEngine(cfg Config, logs *zap.Logger, keys *Keys, um UserManagement) *Engine {
+func NewEngine(cfg Config, logs *zap.Logger, keys *Keys, clock Clock, um UserManagement) *Engine {
 	return &Engine{
-		cfg:  cfg,
-		logs: logs.Named("engine"),
-		keys: keys,
-		um:   um,
+		cfg:   cfg,
+		logs:  logs.Named("engine"),
+		keys:  keys,
+		um:    um,
+		clock: clock,
 	}
 }
 
@@ -118,8 +124,45 @@ func (e Engine) HandleSignInCallback(ctx context.Context, w http.ResponseWriter,
 
 // ContinueSession will continue the user's session, potentially by refreshing it. It is expected to be called
 // on every request as part of some middleware logic.
-func (e Engine) ContinueSession(context.Context) error {
-	return nil
+func (e Engine) ContinueSession(ctx context.Context, w http.ResponseWriter, r *http.Request) (idn Identity, err error) {
+	atCookie, err := r.Cookie(e.cfg.AccessTokenCookieName)
+	if err != nil {
+		return idn, fmt.Errorf("failed to get access token cookie: %w", err)
+	}
+
+	idn, err = e.identityFromAccessToken(ctx, atCookie.Value)
+
+	switch {
+	case err == nil:
+		// valid access token, return identity right away
+		return idn, nil
+	case !errors.Is(err, jwt.ErrTokenExpired()):
+		// some other error with the access token, return the error
+		return Identity{}, err
+	}
+
+	// read the refresh token from the encrypted session token
+	refreshToken, err := e.authenticatedSessionFromCookie(ctx, r)
+	if err != nil {
+		return idn, fmt.Errorf("failed to get authenticated session from cookie: %w", err)
+	}
+
+	// exchange the refresh token for new tokens.
+	resp, err := e.um.AuthenticateWithRefreshToken(ctx, usermanagement.AuthenticateWithRefreshTokenOpts{
+		ClientID:     e.cfg.MainClientID,
+		RefreshToken: refreshToken,
+	})
+	if err != nil {
+		return idn, fmt.Errorf("failed to authenticate with refresh token: %w", err)
+	}
+
+	// add the session cookie to the response, the user is now authenticated
+	if err := e.addAuthenticatedCookies(ctx, resp.AccessToken, resp.RefreshToken, w); err != nil {
+		return idn, fmt.Errorf("failed to add session cookie: %w", err)
+	}
+
+	// return the new identity immediately
+	return e.identityFromAccessToken(ctx, resp.AccessToken)
 }
 
 // StartSignOutFlow starts the sign-out flow as the user is redirected to WorkOS.

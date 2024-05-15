@@ -20,7 +20,7 @@ func TestClworkos(t *testing.T) {
 var _ = Describe("handler", func() {
 	var hdlr *clworkos.Handler
 	BeforeEach(func(ctx context.Context) {
-		app := fx.New(fx.Populate(&hdlr), Provide())
+		app := fx.New(fx.Populate(&hdlr), Provide(0))
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 	})
@@ -32,9 +32,9 @@ var _ = Describe("handler", func() {
 	// @TODO test error handler endpoint
 })
 
-func Provide() fx.Option {
+func Provide(clockAt int64) fx.Option {
 	return fx.Options(
-		clworkos.TestProvide(GinkgoTB()),
+		clworkos.TestProvide(GinkgoTB(), clockAt),
 		clzap.TestProvide(),
 	)
 }
