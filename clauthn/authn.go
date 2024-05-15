@@ -62,7 +62,7 @@ func NewAuthn(cfg Config, logs *zap.Logger, clock jwt.Clock) (*Authn, error) {
 func (a *Authn) SignJWT(ctx context.Context, tok openid.Token) ([]byte, error) {
 	sk, ok := a.keys.private.LookupKeyID(a.cfg.DefaultSignKeyID)
 	if !ok {
-		return nil, fmt.Errorf("no known secret key with key id '%s'", a.cfg.DefaultSignKeyID)
+		return nil, fmt.Errorf("no known secret key with key id '%s'", a.cfg.DefaultSignKeyID) //nolint:goerr113
 	}
 
 	b, err := jwt.Sign(tok, jwt.WithKey(sk.Algorithm(), sk))
@@ -89,7 +89,7 @@ func (a *Authn) AuthenticateJWT(ctx context.Context, inp []byte) (openid.Token, 
 
 	oidt, ok := tok.(openid.Token)
 	if !ok {
-		return nil, errors.New("parsed token coun't be cast to openid.Token")
+		return nil, errors.New("parsed token coun't be cast to openid.Token") //nolint:goerr113
 	}
 
 	return oidt, nil

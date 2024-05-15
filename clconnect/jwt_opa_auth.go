@@ -111,7 +111,7 @@ func (l JWTOPAAuth) intercept(next connect.UnaryFunc) connect.UnaryFunc {
 			l.logs.Info("failed to authorize", zap.Any("token", token))
 
 			return nil, connect.NewError(connect.CodePermissionDenied,
-				fmt.Errorf("unauthorized, subject: '%s'", token.Subject()))
+				fmt.Errorf("unauthorized, subject: '%s'", token.Subject())) //nolint:goerr113
 		}
 
 		ctx = WithIdentity(ctx, token)

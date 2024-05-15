@@ -21,7 +21,7 @@ func NewReverser() *Reverser {
 func (r Reverser) Reverse(name string, vals ...string) (string, error) {
 	pat, ok := r.pats[name]
 	if !ok {
-		return "", fmt.Errorf("no pattern named: %q, got: %v", name, lo.Keys(r.pats))
+		return "", fmt.Errorf("no pattern named: %q, got: %v", name, lo.Keys(r.pats)) //nolint:goerr113
 	}
 
 	res, err := httppattern.Build(pat, vals...)
@@ -45,7 +45,7 @@ func (r Reverser) Named(name, s string) string {
 // NamedPattern will parse 's' as a path pattern while returning it as well.
 func (r Reverser) NamedPattern(name, s string) (string, error) {
 	if _, exists := r.pats[name]; exists {
-		return s, fmt.Errorf("pattern with name %q already exists", name)
+		return s, fmt.Errorf("pattern with name %q already exists", name) //nolint:goerr113
 	}
 
 	pat, err := httppattern.ParsePattern(s)

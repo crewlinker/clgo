@@ -82,7 +82,7 @@ func outputRes(out Output) (bool, error) {
 	}
 
 	if len(out.ErrorMessages) > 0 {
-		return res, fmt.Errorf("authorization failed: %s", strings.Join(out.ErrorMessages, ", "))
+		return res, fmt.Errorf("authorization failed: %s", strings.Join(out.ErrorMessages, ", ")) //nolint:goerr113
 	}
 
 	return res, nil
@@ -166,10 +166,10 @@ func (c *Client) doRequest(ctx context.Context, path string, in, out any) error 
 	case resp.StatusCode == http.StatusOK:
 	case resp.StatusCode >= 400 && resp.StatusCode < 500:
 		//nolint: wrapcheck
-		return backoff.Permanent(fmt.Errorf("client error: %q, HTTP body: %q", resp.Status,
+		return backoff.Permanent(fmt.Errorf("client error: %q, HTTP body: %q", resp.Status, //nolint:goerr113
 			string(lo.Must1(io.ReadAll(resp.Body)))))
 	default:
-		return fmt.Errorf("non-client error: %q, HTTP body: %q", resp.Status,
+		return fmt.Errorf("non-client error: %q, HTTP body: %q", resp.Status, //nolint:goerr113
 			string(lo.Must1(io.ReadAll(resp.Body))))
 	}
 

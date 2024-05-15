@@ -46,7 +46,7 @@ var Validator = struct {
 		return func(s string) error {
 			before, after, found := strings.Cut(s, clid.Separator)
 			if !found {
-				return errors.New("clent: invalid clid, no separator")
+				return errors.New("clent: invalid clid, no separator") //nolint:goerr113
 			}
 
 			if _, err := ulid.ParseStrict(after); err != nil {
@@ -54,6 +54,7 @@ var Validator = struct {
 			}
 
 			if before != expPrefix {
+				//nolint:goerr113
 				return fmt.Errorf("clent: provided clid prefix '%s' is invalid, expected: '%s'", before, expPrefix)
 			}
 

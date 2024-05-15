@@ -26,7 +26,7 @@ func NewError(status int, err error) error {
 
 // Errorf formats an error with a http status code.
 func Errorf(status int, format string, vals ...any) error {
-	return NewError(status, fmt.Errorf(format, vals...))
+	return NewError(status, fmt.Errorf(format, vals...)) //nolint:goerr113
 }
 
 // StandardErrorHandler implements an error handler with common behaviour. It allow configuring if real

@@ -88,7 +88,7 @@ func (a *Authz) IsAuthorized(ctx context.Context, inp any) (bool, error) {
 
 	allow, ok := res.Result.(bool)
 	if !ok {
-		return false, fmt.Errorf("decision did not return bool, but: %T", res.Result)
+		return false, fmt.Errorf("decision did not return bool, but: %T", res.Result) //nolint:goerr113
 	}
 
 	return allow, nil
