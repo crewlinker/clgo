@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/crewlinker/clgo/clory"
+	"github.com/crewlinker/clgo/clory/clorymock"
 	"github.com/crewlinker/clgo/clzap"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -26,7 +27,7 @@ func TestOryauth(t *testing.T) {
 
 var _ = Describe("di", func() {
 	var ory *clory.Ory
-	var front *MockFrontendAPI
+	var front *clorymock.MockFrontendAPI
 	var obs *observer.ObservedLogs
 
 	BeforeEach(func(ctx context.Context) {
@@ -166,10 +167,10 @@ var _ = Describe("di", func() {
 })
 
 // WithMocked is a test helper that mocks handler dependencies.
-func WithMocked(front **MockFrontendAPI) fx.Option {
+func WithMocked(front **clorymock.MockFrontendAPI) fx.Option {
 	return fx.Options(
 		fx.Decorate(func(clory.FrontendAPI) clory.FrontendAPI {
-			mock := NewMockFrontendAPI(GinkgoT())
+			mock := clorymock.NewMockFrontendAPI(GinkgoT())
 			*front = mock
 
 			return mock

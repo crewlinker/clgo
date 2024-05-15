@@ -16,6 +16,8 @@ import (
 
 	clconnectv1 "github.com/crewlinker/clgo/clconnect/v1"
 	"github.com/crewlinker/clgo/clconnect/v1/clconnectv1connect"
+
+	clconnectmock "github.com/crewlinker/clgo/clconnect/clconnectmock"
 )
 
 var _ = Describe("ory auth", func() {
@@ -23,7 +25,7 @@ var _ = Describe("ory auth", func() {
 	var inj *clconnect.OryAuth
 	var rwc clconnectv1connect.ReadWriteServiceClient
 	var roc clconnectv1connect.ReadOnlyServiceClient
-	var mory *MockOry
+	var mory *clconnectmock.MockOry
 
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(
@@ -83,10 +85,10 @@ var _ = Describe("ory auth", func() {
 })
 
 // WithMockedOry is a test helper that mocks handler dependencies.
-func WithMockedOry(m1 **MockOry) fx.Option {
+func WithMockedOry(m1 **clconnectmock.MockOry) fx.Option {
 	return fx.Options(
 		fx.Decorate(func(clconnect.Ory) clconnect.Ory {
-			mock := NewMockOry(GinkgoT())
+			mock := clconnectmock.NewMockOry(GinkgoT())
 			*m1 = mock
 
 			return mock
