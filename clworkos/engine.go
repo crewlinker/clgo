@@ -183,8 +183,8 @@ func (e Engine) StartSignOutFlow(ctx context.Context, w http.ResponseWriter, r *
 	}
 
 	// clear refresh and access token cookies
-	http.SetCookie(w, &http.Cookie{MaxAge: -1, Name: e.cfg.AccessTokenCookieName})
-	http.SetCookie(w, &http.Cookie{MaxAge: -1, Name: e.cfg.SessionCookieName})
+	http.SetCookie(w, &http.Cookie{MaxAge: -1, Name: e.cfg.AccessTokenCookieName, Path: e.cfg.SessionCookiesPath})
+	http.SetCookie(w, &http.Cookie{MaxAge: -1, Name: e.cfg.SessionCookieName, Path: e.cfg.SessionCookiesPath})
 
 	// redirect to WorkOS to finalize the logout
 	http.Redirect(w, r, logoutURL.String(), http.StatusFound)
