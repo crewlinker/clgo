@@ -14,7 +14,6 @@ import (
 	"github.com/crewlinker/clgo/clserve"
 	"github.com/crewlinker/clgo/clworkos/clworkosmock"
 	"github.com/lestrrat-go/jwx/v2/jwt"
-	"github.com/workos/workos-go/v4/pkg/usermanagement"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 )
@@ -23,9 +22,7 @@ import (
 type Handler struct {
 	cfg    Config
 	logs   *zap.Logger
-	users  *usermanagement.Client
 	engine *Engine
-	keys   *Keys
 
 	http.Handler
 }
@@ -34,15 +31,13 @@ type Handler struct {
 const bufferLimit = 2 * 1024 * 1024
 
 // New creates a new Handler with the provided configuration and logger.
-func New(cfg Config, logs *zap.Logger, keys *Keys, engine *Engine) *Handler {
+func New(cfg Config, logs *zap.Logger, engine *Engine) *Handler {
 	mux := http.NewServeMux()
 	hdlr := &Handler{
 		cfg:     cfg,
 		logs:    logs,
 		Handler: mux,
-		users:   usermanagement.NewClient(cfg.APIKey),
 		engine:  engine,
-		keys:    keys,
 	}
 
 	serveOpts := []clserve.Option[context.Context]{
@@ -50,10 +45,32 @@ func New(cfg Config, logs *zap.Logger, keys *Keys, engine *Engine) *Handler {
 		clserve.WithErrorHandling[context.Context](hdlr.handleError),
 	}
 
-	_ = serveOpts
-	// @TODO implement endpoints
+	mux.Handle("/sign-in", clserve.Handle(hdlr.handleSignIn(), serveOpts...))
+	mux.Handle("/callback", clserve.Handle(hdlr.handleCallback(), serveOpts...))
+	mux.Handle("/sign-out", clserve.Handle(hdlr.handleSignOut(), serveOpts...))
 
 	return hdlr
+}
+
+// handleSignIn handles the sign-in flow.
+func (h *Handler) handleSignIn() clserve.HandlerFunc[context.Context] {
+	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+		return h.engine.StartSignInFlow(ctx, w, r)
+	}
+}
+
+// handleCallback handles the callback from WorkOS.
+func (h *Handler) handleCallback() clserve.HandlerFunc[context.Context] {
+	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+		return h.engine.HandleSignInCallback(ctx, w, r)
+	}
+}
+
+// handleSignOut handles the sign-in flow.
+func (h *Handler) handleSignOut() clserve.HandlerFunc[context.Context] {
+	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+		return h.engine.StartSignOutFlow(ctx, w, r)
+	}
 }
 
 // moduleName for naming conventions.
@@ -79,7 +96,8 @@ func Provide() fx.Option {
 	)
 }
 
-// TestProvide provides the WorkOS handler with well-known (public) testing keys.
+// TestProvide provides the WorkOS handler with well-known (public) testing keys. It will also Mock
+// the WorkOS API client and put the wall-clock on a fixed point in time.
 func TestProvide(tb testing.TB, clockAt int64) fx.Option {
 	tb.Helper()
 
@@ -109,6 +127,7 @@ func TestProvide(tb testing.TB, clockAt int64) fx.Option {
 			//nolint:lll
 			c.PubPrivEncryptKeySetB64JSON = "ewogICAgImtleXMiOiBbCiAgICAgICAgewogICAgICAgICAgICAia3R5IjogIkVDIiwKICAgICAgICAgICAgImQiOiAiNERXcURtaWZkcXN1M0FKWF9rY1pZdER3QTF5cERfWFkyNHN2REFxdlY0ayIsCiAgICAgICAgICAgICJ1c2UiOiAiZW5jIiwKICAgICAgICAgICAgImNydiI6ICJQLTI1NiIsCiAgICAgICAgICAgICJraWQiOiAia2V5MSIsCiAgICAgICAgICAgICJ4IjogIkxhUUZfTmxkWXRNTVJUWjl0QmM5SFB3SkRJQTUxVkNNREdiUXlVeFRMLTgiLAogICAgICAgICAgICAieSI6ICI3M1BLMVk2VktCS185X1ltMVdZUHlvZmYwSnM1dDdUaUxJU1ZEV0NFanJvIiwKICAgICAgICAgICAgImFsZyI6ICJFQ0RILUVTK0ExMjhLVyIKICAgICAgICB9CiAgICBdCn0K"
 			c.JWKEndpoint = srv.URL
+			c.ShowErrorMessagesToClient = true
 
 			return c
 		}),

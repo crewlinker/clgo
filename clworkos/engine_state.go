@@ -46,7 +46,7 @@ func (e Engine) addStateCookie(
 ) (nonce string, err error) {
 	redirectURL, err := url.Parse(redirectTo)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse redirect URL: %w", err)
+		return "", InputErrorf("failed to parse redirect URL: %w", err)
 	}
 
 	if !lo.Contains(e.cfg.RedirectToAllowedHosts, redirectURL.Hostname()) {
