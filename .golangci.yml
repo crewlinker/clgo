@@ -69,6 +69,7 @@ issues:
         - musttag
         - wrapcheck
         - goconst
+        - goerr113
     - path: infra/infrastack
       linters:
         - gomnd

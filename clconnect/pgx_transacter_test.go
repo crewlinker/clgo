@@ -96,7 +96,7 @@ func (rw pgxReadOnly) Foo(
 ) (*connect.Response[clconnectv1.FooResponse], error) {
 	tx := cltx.Pgx(ctx)
 	if _, err := tx.Exec(ctx, `UPDATE pg_catalog.pg_class SET relname = relname WHERE oid = -1;`); err == nil {
-		return nil, errors.New("should fail because read-only") //nolint:goerr113
+		return nil, errors.New("should fail because read-only")
 	}
 
 	return &connect.Response[clconnectv1.FooResponse]{}, nil
