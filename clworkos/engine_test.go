@@ -17,6 +17,13 @@ import (
 	"go.uber.org/fx"
 )
 
+var (
+	// AccessToken for testing, valid at 06:46:08 (CET).
+	AccessToken1ValidFor06_46_08 = "eyJhbGciOiJSUzI1NiIsImtpZCI6InNzb19vaWRjX2tleV9wYWlyXzAxSEpUOFFENVdCOVdFTlZYMEE4QTM2UUFNIn0.eyJhY3QiOnsic3ViIjoiYWRtaW5AY3Jld2xpbmtlci5jb20ifSwiaXNzIjoiaHR0cHM6Ly9hcGkud29ya29zLmNvbSIsInN1YiI6InVzZXJfMDFISlRENFZTOFQ2REtBSzVCM0FaVlFGQ1YiLCJzaWQiOiJzZXNzaW9uXzAxSFhYOFZROFNORDVUQ05aQ042TkE3VkZRIiwianRpIjoiMDFIWFg4VlFRSEZOSFI5Q04xQzZOTVRZOEIiLCJvcmdfaWQiOiJvcmdfMDFISlRCUEszWVFNWlk5S0gzMEVYVjlHSE4iLCJyb2xlIjoibWVtYmVyIiwiZXhwIjoxNzE1NzQ4MzY5LCJpYXQiOjE3MTU3NDgwNjl9.DDwEWaHIabk7Uzg9VYce3eX1Kh-x99eKDGH_qbE1QOoy68U3nM9PxDEIIAxdUaT3v91nJtIn-lGa2Woq-wFZGrsd58tfWBmH5kv2SXxaojo1FL-JmDox8eu5Aw1SguVuXPU3r6PawwGScUeDqZ9pAT3qGqS7LyT-jtw_-8nns4D6QttDOF-CzAS4vi9JKujCtBPYLOR_m5axkXp4PEiWMMz5qAoKOpEWFTtfm-X7bD-Yk00hllp7sjk8m5ebpVlDDcT0uL-8Rzp-W64eyvvDfxmp6ZuEaSzvA20AvYPjTKAOGcBJ2V84Ql-5vvWLhEl2-J4IgvxUzfn9dFsUWGwh2Q"
+	// AccessToken for testing, valid at 13:31:48 (CET).
+	AccessToken2ValidFor13_31_48 = "eyJhbGciOiJSUzI1NiIsImtpZCI6InNzb19vaWRjX2tleV9wYWlyXzAxSEpUOFFENVdCOVdFTlZYMEE4QTM2UUFNIn0.eyJpc3MiOiJodHRwczovL2FwaS53b3Jrb3MuY29tIiwic3ViIjoidXNlcl8wMUhKVEQ0VlM4VDZES0FLNUIzQVpWUUZDViIsInNpZCI6InNlc3Npb25fMDFIWFkwQVJKMEJIVDZFQ0hBQ1NLRTZLSDciLCJqdGkiOiIwMUhYWTBBUllXNE5ONFk5UzhIOU1UTUJUWCIsIm9yZ19pZCI6Im9yZ18wMUhKVEJQSzNZUU1aWTlLSDMwRVhWOUdITiIsInJvbGUiOiJtZW1iZXIiLCJleHAiOjE3MTU3NzI5NzksImlhdCI6MTcxNTc3MjY3OX0.iNot86Q5gUmbVqgIqiTuqbHSOCmgbY3XyRCnFXbe6S9kvDvYeBtf5yX9CcG7-6bi8xXmHU0Qv6yCKAcnteNCQNhSlYAZGcbh-yPhoPu_xu6t0tfPEcKRL9OE9HPu3WNt15DLKimjf9Ag0c8tX4HDocLPxn7kkBsWq_BArktM6OQgiQd1dC4jyVYnvGii_fbtiKyiPb9TaRaksKu3saWIML5KA6g4wcLdA91kre4etPWFzRoEEs4RdvSSmeZ23a6ILPHpwvE8PBtlAIXONmgrBqWduT-5Um7OAULF90by8fwZcGE7YevmpEiKcJ8l30IKJs9ymdFWZ0DenXvNGoyMFg"
+)
+
 var _ = Describe("engine", func() {
 	var engine *clworkos.Engine
 	var umm *clworkosmock.MockUserManagement
@@ -36,7 +43,7 @@ var _ = Describe("engine", func() {
 		It("should return error when redirect_to is missing", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
 
-			err := engine.StartSignInFlow(ctx, rec, req)
+			_, err := engine.StartSignInFlow(ctx, rec, req)
 			Expect(err).To(MatchError(clworkos.ErrRedirectToNotProvided))
 			Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
 		})
@@ -44,7 +51,7 @@ var _ = Describe("engine", func() {
 		It("should return error when redirect_to is invalid url", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?redirect_to=:", nil)
 
-			err := engine.StartSignInFlow(ctx, rec, req)
+			_, err := engine.StartSignInFlow(ctx, rec, req)
 			Expect(err).To(MatchError(MatchRegexp(`failed to parse`)))
 			Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
 		})
@@ -52,7 +59,7 @@ var _ = Describe("engine", func() {
 		It("should return error when redirect_to is not allowed", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?redirect_to=http://example.com", nil)
 
-			err := engine.StartSignInFlow(ctx, rec, req)
+			_, err := engine.StartSignInFlow(ctx, rec, req)
 			Expect(err).To(MatchError(MatchRegexp(`redirect URL is not allowed`)))
 			Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
 		})
@@ -63,10 +70,9 @@ var _ = Describe("engine", func() {
 			), nil).Once()
 
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?redirect_to=http://localhost", nil)
-			Expect(engine.StartSignInFlow(ctx, rec, req)).To(Succeed())
-
-			Expect(rec.Result().StatusCode).To(Equal(http.StatusFound))
-			Expect(rec.Result().Header.Get("Location")).To(Equal("http://localhost:5354/some/redirect/url"))
+			loc, err := engine.StartSignInFlow(ctx, rec, req)
+			Expect(err).To(Succeed())
+			Expect(loc).To(Equal(lo.Must(url.Parse("http://localhost:5354/some/redirect/url"))))
 
 			Expect(rec.Result().Cookies()).To(HaveLen(1))
 			Expect(rec.Result().Cookies()[0].Name).To(Equal("cl_auth_state"))
@@ -186,7 +192,7 @@ var _ = Describe("engine", func() {
 
 		It("should not refresh and use valid access token", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
-			req.AddCookie(&http.Cookie{Name: "cl_access_token", Value: "eyJhbGciOiJSUzI1NiIsImtpZCI6InNzb19vaWRjX2tleV9wYWlyXzAxSEpUOFFENVdCOVdFTlZYMEE4QTM2UUFNIn0.eyJhY3QiOnsic3ViIjoiYWRtaW5AY3Jld2xpbmtlci5jb20ifSwiaXNzIjoiaHR0cHM6Ly9hcGkud29ya29zLmNvbSIsInN1YiI6InVzZXJfMDFISlRENFZTOFQ2REtBSzVCM0FaVlFGQ1YiLCJzaWQiOiJzZXNzaW9uXzAxSFhYOFZROFNORDVUQ05aQ042TkE3VkZRIiwianRpIjoiMDFIWFg4VlFRSEZOSFI5Q04xQzZOTVRZOEIiLCJvcmdfaWQiOiJvcmdfMDFISlRCUEszWVFNWlk5S0gzMEVYVjlHSE4iLCJyb2xlIjoibWVtYmVyIiwiZXhwIjoxNzE1NzQ4MzY5LCJpYXQiOjE3MTU3NDgwNjl9.DDwEWaHIabk7Uzg9VYce3eX1Kh-x99eKDGH_qbE1QOoy68U3nM9PxDEIIAxdUaT3v91nJtIn-lGa2Woq-wFZGrsd58tfWBmH5kv2SXxaojo1FL-JmDox8eu5Aw1SguVuXPU3r6PawwGScUeDqZ9pAT3qGqS7LyT-jtw_-8nns4D6QttDOF-CzAS4vi9JKujCtBPYLOR_m5axkXp4PEiWMMz5qAoKOpEWFTtfm-X7bD-Yk00hllp7sjk8m5ebpVlDDcT0uL-8Rzp-W64eyvvDfxmp6ZuEaSzvA20AvYPjTKAOGcBJ2V84Ql-5vvWLhEl2-J4IgvxUzfn9dFsUWGwh2Q"})
+			req.AddCookie(&http.Cookie{Name: "cl_access_token", Value: AccessToken1ValidFor06_46_08})
 
 			idn, err := engine.ContinueSession(ctx, rec, req)
 			Expect(err).NotTo(HaveOccurred())
@@ -209,7 +215,7 @@ var _ = Describe("engine", func() {
 	Describe("logout", func() {
 		It("should return error when access token cookie is missing", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
-			err := engine.StartSignOutFlow(ctx, rec, req)
+			_, err := engine.StartSignOutFlow(ctx, rec, req)
 			Expect(err).To(MatchError(MatchRegexp(`failed to get access token cookie`)))
 			Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
 		})
@@ -218,7 +224,7 @@ var _ = Describe("engine", func() {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
 			req.AddCookie(&http.Cookie{Name: "cl_access_token", Value: "invalid.access.token"})
 
-			err := engine.StartSignOutFlow(ctx, rec, req)
+			_, err := engine.StartSignOutFlow(ctx, rec, req)
 			Expect(err).To(MatchError(MatchRegexp(`failed to parse access token`)))
 		})
 
@@ -226,14 +232,11 @@ var _ = Describe("engine", func() {
 			umm.EXPECT().GetLogoutURL(mock.Anything).Return(lo.Must(url.Parse("http://localhost:8080/logout")), nil).Once()
 
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
-			req.AddCookie(&http.Cookie{Name: "cl_access_token", Value: "eyJhbGciOiJSUzI1NiIsImtpZCI6InNzb19vaWRjX2tleV9wYWlyXzAxSEpUOFFENVdCOVdFTlZYMEE4QTM2UUFNIn0.eyJhY3QiOnsic3ViIjoiYWRtaW5AY3Jld2xpbmtlci5jb20ifSwiaXNzIjoiaHR0cHM6Ly9hcGkud29ya29zLmNvbSIsInN1YiI6InVzZXJfMDFISlRENFZTOFQ2REtBSzVCM0FaVlFGQ1YiLCJzaWQiOiJzZXNzaW9uXzAxSFhYOFZROFNORDVUQ05aQ042TkE3VkZRIiwianRpIjoiMDFIWFg4VlFRSEZOSFI5Q04xQzZOTVRZOEIiLCJvcmdfaWQiOiJvcmdfMDFISlRCUEszWVFNWlk5S0gzMEVYVjlHSE4iLCJyb2xlIjoibWVtYmVyIiwiZXhwIjoxNzE1NzQ4MzY5LCJpYXQiOjE3MTU3NDgwNjl9.DDwEWaHIabk7Uzg9VYce3eX1Kh-x99eKDGH_qbE1QOoy68U3nM9PxDEIIAxdUaT3v91nJtIn-lGa2Woq-wFZGrsd58tfWBmH5kv2SXxaojo1FL-JmDox8eu5Aw1SguVuXPU3r6PawwGScUeDqZ9pAT3qGqS7LyT-jtw_-8nns4D6QttDOF-CzAS4vi9JKujCtBPYLOR_m5axkXp4PEiWMMz5qAoKOpEWFTtfm-X7bD-Yk00hllp7sjk8m5ebpVlDDcT0uL-8Rzp-W64eyvvDfxmp6ZuEaSzvA20AvYPjTKAOGcBJ2V84Ql-5vvWLhEl2-J4IgvxUzfn9dFsUWGwh2Q"})
+			req.AddCookie(&http.Cookie{Name: "cl_access_token", Value: AccessToken1ValidFor06_46_08})
 
-			err := engine.StartSignOutFlow(ctx, rec, req)
+			loc, err := engine.StartSignOutFlow(ctx, rec, req)
 			Expect(err).ToNot(HaveOccurred())
-
-			By("checkign redirect")
-			Expect(rec.Result().StatusCode).To(Equal(http.StatusFound))
-			Expect(rec.Result().Header.Get("Location")).To(Equal("http://localhost:8080/logout"))
+			Expect(loc).To(Equal(lo.Must(url.Parse("http://localhost:8080/logout"))))
 
 			By("checking the cookies being re-set")
 			Expect(rec.Result().Cookies()).To(HaveLen(2))
@@ -261,7 +264,7 @@ var _ = Describe("engine in present", func() {
 	Describe("continue session", func() {
 		It("should complain about session cookie not present", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
-			WithExpiredAccessToken(req)
+			WithAccessToken(req, AccessToken1ValidFor06_46_08)
 
 			_, err := engine.ContinueSession(ctx, rec, req)
 			Expect(err).To(MatchError(MatchRegexp(`named cookie not present`)))
@@ -270,7 +273,7 @@ var _ = Describe("engine in present", func() {
 		It("should fail if refresh token is invalid", func(ctx context.Context) {
 			oldSessionToken := lo.Must(engine.BuildSessionToken("some.refresh.token"))
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
-			WithExpiredAccessToken(req)
+			WithAccessToken(req, AccessToken1ValidFor06_46_08)
 			req.AddCookie(&http.Cookie{
 				Name:  "cl_session",
 				Value: oldSessionToken[:8] + oldSessionToken[9:],
@@ -280,9 +283,9 @@ var _ = Describe("engine in present", func() {
 			Expect(err).To(MatchError(MatchRegexp(`failed to verify`)))
 		})
 
-		It("should parse the session token", func(ctx context.Context) {
+		It("should succeed with new access token", func(ctx context.Context) {
 			oldSessionToken := lo.Must(engine.BuildSessionToken("some.refresh.token"))
-			newAccessToken := "eyJhbGciOiJSUzI1NiIsImtpZCI6InNzb19vaWRjX2tleV9wYWlyXzAxSEpUOFFENVdCOVdFTlZYMEE4QTM2UUFNIn0.eyJpc3MiOiJodHRwczovL2FwaS53b3Jrb3MuY29tIiwic3ViIjoidXNlcl8wMUhKVEQ0VlM4VDZES0FLNUIzQVpWUUZDViIsInNpZCI6InNlc3Npb25fMDFIWFkwQVJKMEJIVDZFQ0hBQ1NLRTZLSDciLCJqdGkiOiIwMUhYWTBBUllXNE5ONFk5UzhIOU1UTUJUWCIsIm9yZ19pZCI6Im9yZ18wMUhKVEJQSzNZUU1aWTlLSDMwRVhWOUdITiIsInJvbGUiOiJtZW1iZXIiLCJleHAiOjE3MTU3NzI5NzksImlhdCI6MTcxNTc3MjY3OX0.iNot86Q5gUmbVqgIqiTuqbHSOCmgbY3XyRCnFXbe6S9kvDvYeBtf5yX9CcG7-6bi8xXmHU0Qv6yCKAcnteNCQNhSlYAZGcbh-yPhoPu_xu6t0tfPEcKRL9OE9HPu3WNt15DLKimjf9Ag0c8tX4HDocLPxn7kkBsWq_BArktM6OQgiQd1dC4jyVYnvGii_fbtiKyiPb9TaRaksKu3saWIML5KA6g4wcLdA91kre4etPWFzRoEEs4RdvSSmeZ23a6ILPHpwvE8PBtlAIXONmgrBqWduT-5Um7OAULF90by8fwZcGE7YevmpEiKcJ8l30IKJs9ymdFWZ0DenXvNGoyMFg"
+			newAccessToken := AccessToken2ValidFor13_31_48
 
 			umm.EXPECT().AuthenticateWithRefreshToken(mock.Anything,
 				usermanagement.AuthenticateWithRefreshTokenOpts{
@@ -295,7 +298,7 @@ var _ = Describe("engine in present", func() {
 				Once()
 
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
-			WithExpiredAccessToken(req)
+			WithAccessToken(req, AccessToken1ValidFor06_46_08)
 			req.AddCookie(&http.Cookie{
 				Name:  "cl_session",
 				Value: oldSessionToken,
@@ -328,9 +331,9 @@ var _ = Describe("engine in present", func() {
 	})
 })
 
-func WithExpiredAccessToken(req *http.Request) {
+func WithAccessToken(req *http.Request, token string) {
 	req.AddCookie(&http.Cookie{
 		Name:  "cl_access_token",
-		Value: "eyJhbGciOiJSUzI1NiIsImtpZCI6InNzb19vaWRjX2tleV9wYWlyXzAxSEpUOFFENVdCOVdFTlZYMEE4QTM2UUFNIn0.eyJhY3QiOnsic3ViIjoiYWRtaW5AY3Jld2xpbmtlci5jb20ifSwiaXNzIjoiaHR0cHM6Ly9hcGkud29ya29zLmNvbSIsInN1YiI6InVzZXJfMDFISlRENFZTOFQ2REtBSzVCM0FaVlFGQ1YiLCJzaWQiOiJzZXNzaW9uXzAxSFhYOFZROFNORDVUQ05aQ042TkE3VkZRIiwianRpIjoiMDFIWFg4VlFRSEZOSFI5Q04xQzZOTVRZOEIiLCJvcmdfaWQiOiJvcmdfMDFISlRCUEszWVFNWlk5S0gzMEVYVjlHSE4iLCJyb2xlIjoibWVtYmVyIiwiZXhwIjoxNzE1NzQ4MzY5LCJpYXQiOjE3MTU3NDgwNjl9.DDwEWaHIabk7Uzg9VYce3eX1Kh-x99eKDGH_qbE1QOoy68U3nM9PxDEIIAxdUaT3v91nJtIn-lGa2Woq-wFZGrsd58tfWBmH5kv2SXxaojo1FL-JmDox8eu5Aw1SguVuXPU3r6PawwGScUeDqZ9pAT3qGqS7LyT-jtw_-8nns4D6QttDOF-CzAS4vi9JKujCtBPYLOR_m5axkXp4PEiWMMz5qAoKOpEWFTtfm-X7bD-Yk00hllp7sjk8m5ebpVlDDcT0uL-8Rzp-W64eyvvDfxmp6ZuEaSzvA20AvYPjTKAOGcBJ2V84Ql-5vvWLhEl2-J4IgvxUzfn9dFsUWGwh2Q",
+		Value: token,
 	})
 }

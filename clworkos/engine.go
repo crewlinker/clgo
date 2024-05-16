@@ -55,16 +55,16 @@ func NewEngine(cfg Config, logs *zap.Logger, keys *Keys, clock Clock, um UserMan
 }
 
 // StartSignInFlow starts the sign-in flow as the user is redirected to WorkOS.
-func (e Engine) StartSignInFlow(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (e Engine) StartSignInFlow(ctx context.Context, w http.ResponseWriter, r *http.Request) (*url.URL, error) {
 	redirectTo := r.URL.Query().Get("redirect_to")
 	if redirectTo == "" {
-		return ErrRedirectToNotProvided
+		return nil, ErrRedirectToNotProvided
 	}
 
 	// make sure the response has a state cookie with a nonce
 	nonce, err := e.addStateCookie(ctx, w, redirectTo)
 	if err != nil {
-		return fmt.Errorf("failed to set up state cookie: %w", err)
+		return nil, fmt.Errorf("failed to set up state cookie: %w", err)
 	}
 
 	// get the authorization URL from WorkOS
@@ -75,13 +75,10 @@ func (e Engine) StartSignInFlow(ctx context.Context, w http.ResponseWriter, r *h
 		State:       nonce,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to get authorization URL: %w", err)
+		return nil, fmt.Errorf("failed to get authorization URL: %w", err)
 	}
 
-	// redirect the user to the auth provider
-	http.Redirect(w, r, loc.String(), http.StatusFound)
-
-	return nil
+	return loc, nil
 }
 
 // HandleSignInCallback handles the sign-in callback as the user returns from WorkOS.
@@ -166,29 +163,26 @@ func (e Engine) ContinueSession(ctx context.Context, w http.ResponseWriter, r *h
 }
 
 // StartSignOutFlow starts the sign-out flow as the user is redirected to WorkOS.
-func (e Engine) StartSignOutFlow(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (e Engine) StartSignOutFlow(ctx context.Context, w http.ResponseWriter, r *http.Request) (*url.URL, error) {
 	atCookie, _, err := readCookie(r, e.cfg.AccessTokenCookieName)
 	if err != nil {
-		return InputErrorf("failed to get access token cookie: %w", err)
+		return nil, InputErrorf("failed to get access token cookie: %w", err)
 	}
 
 	idn, err := e.identityFromAccessToken(ctx, atCookie.Value)
 	if err != nil {
-		return fmt.Errorf("failed to get identity from acces token: %w", err)
+		return nil, fmt.Errorf("failed to get identity from acces token: %w", err)
 	}
 
 	logoutURL, err := e.um.GetLogoutURL(usermanagement.GetLogoutURLOpts{SessionID: idn.SessionID})
 	if err != nil {
-		return fmt.Errorf("failed to get logout URL: %w", err)
+		return nil, fmt.Errorf("failed to get logout URL: %w", err)
 	}
 
 	// clear refresh and access token cookies
 	e.clearSessionTokens(ctx, w)
 
-	// redirect to WorkOS to finalize the logout
-	http.Redirect(w, r, logoutURL.String(), http.StatusFound)
-
-	return nil
+	return logoutURL, nil
 }
 
 // readCookie allows for reading a cookie and easily asserting if it existed.
