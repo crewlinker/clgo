@@ -339,6 +339,7 @@ func ExpectSessionClear(rec *httptest.ResponseRecorder) {
 		Expect(c.Path).To(Equal("/"))
 		Expect(c.Value).To(BeEmpty())
 		Expect(c.Domain).To(Equal("localhost"))
+		Expect(c.SameSite).To(Equal(http.SameSiteNoneMode))
 	}
 }
 
@@ -349,8 +350,10 @@ func ExpectRefreshedSession(
 ) {
 	By("checking the cookies being re-set")
 	Expect(rec.Result().Cookies()).To(HaveLen(2))
+	Expect(rec.Result().Cookies()[0].SameSite).To(Equal(http.SameSiteNoneMode))
 	Expect(rec.Result().Cookies()[0].Name).To(Equal("cl_session"))
 	Expect(rec.Result().Cookies()[0].Value).To(MatchRegexp(`^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$`))
+	Expect(rec.Result().Cookies()[1].SameSite).To(Equal(http.SameSiteNoneMode))
 	Expect(rec.Result().Cookies()[1].Name).To(Equal("cl_access_token"))
 	Expect(rec.Result().Cookies()[1].Value).To(Equal(newAccessToken))
 

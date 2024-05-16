@@ -62,7 +62,7 @@ func (e Engine) addStateCookie(
 
 	http.SetCookie(w, &http.Cookie{
 		Domain:   e.cfg.AllCookieDomain,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: e.cfg.AllCookieSameSite,
 		Name:     e.cfg.StateCookieName,
 		Value:    signed,
 		HttpOnly: true,
@@ -121,10 +121,11 @@ func (e Engine) checkAndConsumeStateCookie(
 
 	// clear the state (nonce) cookie, only useful until the callback
 	http.SetCookie(w, &http.Cookie{
-		MaxAge: -1,
-		Name:   e.cfg.StateCookieName,
-		Path:   e.cfg.AllCookiePath,
-		Domain: e.cfg.AllCookieDomain,
+		MaxAge:   -1,
+		Name:     e.cfg.StateCookieName,
+		Path:     e.cfg.AllCookiePath,
+		Domain:   e.cfg.AllCookieDomain,
+		SameSite: e.cfg.AllCookieSameSite,
 	})
 
 	return redirectTo, nil

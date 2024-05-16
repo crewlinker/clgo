@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"net/http"
 	"net/url"
 	"time"
 
@@ -28,6 +29,8 @@ type Config struct {
 	AllCookieDomain string `env:"ALL_COOKIE_DOMAIN" envDefault:"localhost"`
 	// AllCookiePath configures the path attribute for session cookies
 	AllCookiePath string `env:"ALL_COOKIE_PATH" envDefault:"/"`
+	// AllCookieSameSite configures the same-site attribute for all cookies
+	AllCookieSameSite http.SameSite `env:"ALL_COOKIE_SAME_SITE" envDefault:"4"`
 	// ShowErrorMessagesToClient will show server errors to the client, should only be visible in development.
 	ShowErrorMessagesToClient bool `env:"SHOW_ERROR_MESSAGES_TO_CLIENT" envDefault:"false"`
 	// RedirectToAllowedHosts is a list of hosts that are allowed to be redirected to.

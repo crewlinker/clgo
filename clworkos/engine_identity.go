@@ -94,16 +94,18 @@ func (e Engine) authenticatedSessionFromCookie(_ context.Context, cookie *http.C
 // clearSessionTokens removes the session cookies for the user.
 func (e Engine) clearSessionTokens(_ context.Context, w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
-		MaxAge: -1,
-		Name:   e.cfg.AccessTokenCookieName,
-		Path:   e.cfg.AllCookiePath,
-		Domain: e.cfg.AllCookieDomain,
+		MaxAge:   -1,
+		Name:     e.cfg.AccessTokenCookieName,
+		Path:     e.cfg.AllCookiePath,
+		Domain:   e.cfg.AllCookieDomain,
+		SameSite: e.cfg.AllCookieSameSite,
 	})
 	http.SetCookie(w, &http.Cookie{
-		MaxAge: -1,
-		Name:   e.cfg.SessionCookieName,
-		Path:   e.cfg.AllCookiePath,
-		Domain: e.cfg.AllCookieDomain,
+		MaxAge:   -1,
+		Name:     e.cfg.SessionCookieName,
+		Path:     e.cfg.AllCookiePath,
+		Domain:   e.cfg.AllCookieDomain,
+		SameSite: e.cfg.AllCookieSameSite,
 	})
 }
 
@@ -154,7 +156,7 @@ func (e Engine) addAuthenticatedCookies(
 	http.SetCookie(w, &http.Cookie{
 		Path:     e.cfg.AllCookiePath,
 		Domain:   e.cfg.AllCookieDomain,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: e.cfg.AllCookieSameSite,
 		Name:     e.cfg.SessionCookieName,
 		Value:    serialized,
 		HttpOnly: true,
@@ -165,7 +167,7 @@ func (e Engine) addAuthenticatedCookies(
 	http.SetCookie(w, &http.Cookie{
 		Path:     e.cfg.AllCookiePath,
 		Domain:   e.cfg.AllCookieDomain,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: e.cfg.AllCookieSameSite,
 		Name:     e.cfg.AccessTokenCookieName,
 		Value:    accessToken,
 		HttpOnly: true,
