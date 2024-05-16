@@ -55,7 +55,14 @@ func New(cfg Config, logs *zap.Logger, engine *Engine) *Handler {
 // handleSignIn handles the sign-in flow.
 func (h *Handler) handleSignIn() clserve.HandlerFunc[context.Context] {
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-		return h.engine.StartSignInFlow(ctx, w, r)
+		loc, err := h.engine.StartSignInFlow(ctx, w, r)
+		if err != nil {
+			return fmt.Errorf("failed to start sign-in flow: %w", err)
+		}
+
+		http.Redirect(w, r, loc.String(), http.StatusFound)
+
+		return nil
 	}
 }
 
@@ -69,7 +76,14 @@ func (h *Handler) handleCallback() clserve.HandlerFunc[context.Context] {
 // handleSignOut handles the sign-in flow.
 func (h *Handler) handleSignOut() clserve.HandlerFunc[context.Context] {
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-		return h.engine.StartSignOutFlow(ctx, w, r)
+		loc, err := h.engine.StartSignOutFlow(ctx, w, r)
+		if err != nil {
+			return fmt.Errorf("failed to start sign-out flow: %w", err)
+		}
+
+		http.Redirect(w, r, loc.String(), http.StatusFound)
+
+		return nil
 	}
 }
 

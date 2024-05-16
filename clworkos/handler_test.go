@@ -4,14 +4,17 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
 	"github.com/crewlinker/clgo/clworkos"
+	"github.com/crewlinker/clgo/clworkos/clworkosmock"
 	"github.com/crewlinker/clgo/clzap"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/samber/lo"
+	"github.com/stretchr/testify/mock"
 	"go.uber.org/fx"
 )
 
@@ -23,8 +26,10 @@ func TestClworkos(t *testing.T) {
 
 var _ = Describe("handler", func() {
 	var hdlr *clworkos.Handler
+	var mmu *clworkosmock.MockUserManagement
+
 	BeforeEach(func(ctx context.Context) {
-		app := fx.New(fx.Populate(&hdlr), Provide(1715748368))
+		app := fx.New(fx.Populate(&hdlr, &mmu), Provide(1715748368))
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 	})
@@ -33,12 +38,24 @@ var _ = Describe("handler", func() {
 		Expect(hdlr).NotTo(BeNil())
 	})
 
-	It("should serve sign-in", func() {
-		rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/sign-in", nil)
-		hdlr.ServeHTTP(rec, req)
+	Describe("sign in", func() {
+		It("should serve bad request error", func() {
+			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/sign-in", nil)
+			hdlr.ServeHTTP(rec, req)
 
-		Expect(rec.Code).To(Equal(http.StatusBadRequest))
-		Expect(rec.Body.String()).To(ContainSubstring("missing redirect_to query parameter"))
+			Expect(rec.Code).To(Equal(http.StatusBadRequest))
+			Expect(rec.Body.String()).To(ContainSubstring("missing redirect_to query parameter"))
+		})
+
+		It("should serve redirect", func() {
+			mmu.EXPECT().GetAuthorizationURL(mock.Anything).Return(&url.URL{Scheme: "https", Host: "workos.com"}, nil)
+
+			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/sign-in?redirect_to=http://localhost:8080", nil)
+			hdlr.ServeHTTP(rec, req)
+
+			Expect(rec.Code).To(Equal(http.StatusFound))
+			Expect(rec.Header().Get("Location")).To(ContainSubstring("https://workos.com"))
+		})
 	})
 
 	It("should serve callback", func() {
@@ -49,12 +66,25 @@ var _ = Describe("handler", func() {
 		Expect(rec.Body.String()).To(ContainSubstring("missing code query parameter"))
 	})
 
-	It("should serve sign-out", func() {
-		rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/sign-out", nil)
-		hdlr.ServeHTTP(rec, req)
+	Describe("sign out", func() {
+		It("should serve bad request", func() {
+			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/sign-out", nil)
+			hdlr.ServeHTTP(rec, req)
 
-		Expect(rec.Code).To(Equal(http.StatusBadRequest))
-		Expect(rec.Body.String()).To(ContainSubstring("named cookie not present"))
+			Expect(rec.Code).To(Equal(http.StatusBadRequest))
+			Expect(rec.Body.String()).To(ContainSubstring("named cookie not present"))
+		})
+
+		It("should serve redirect", func() {
+			mmu.EXPECT().GetLogoutURL(mock.Anything).Return(&url.URL{Scheme: "https", Host: "workos.com"}, nil)
+
+			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/sign-out", nil)
+			req.AddCookie(&http.Cookie{Name: "cl_access_token", Value: AccessToken1ValidFor06_46_08})
+			hdlr.ServeHTTP(rec, req)
+
+			Expect(rec.Code).To(Equal(http.StatusFound))
+			Expect(rec.Header().Get("Location")).To(ContainSubstring("https://workos.com"))
+		})
 	})
 
 	Describe("middleware", func() {
