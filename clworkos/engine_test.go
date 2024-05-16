@@ -83,14 +83,15 @@ var _ = Describe("engine", func() {
 	Describe("handle sign-in callback", func() {
 		It("should return error when code is missing", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
-			err := engine.HandleSignInCallback(ctx, rec, req)
+			_, err := engine.HandleSignInCallback(ctx, rec, req)
 			Expect(err).To(MatchError(clworkos.ErrCallbackCodeNotProvided))
 			Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
 		})
 
 		It("should return error when error is present", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?code=foo&error=error&error_description=description", nil)
-			Expect(engine.HandleSignInCallback(ctx, rec, req)).To(MatchError(MatchRegexp(`callback with error from WorkOS`)))
+			_, err := engine.HandleSignInCallback(ctx, rec, req)
+			Expect(err).To(MatchError(MatchRegexp(`callback with error from WorkOS`)))
 		})
 
 		It("should authenticate when impersonated", func(ctx context.Context) {
@@ -103,7 +104,8 @@ var _ = Describe("engine", func() {
 				Once()
 
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?code=foo", nil)
-			Expect(engine.HandleSignInCallback(ctx, rec, req)).To(Succeed())
+			loc, err := engine.HandleSignInCallback(ctx, rec, req)
+			Expect(err).To(Succeed())
 
 			Expect(rec.Result().Cookies()).To(HaveLen(2))
 			Expect(rec.Result().Cookies()[0].Name).To(Equal("cl_session"))
@@ -111,8 +113,7 @@ var _ = Describe("engine", func() {
 			Expect(rec.Result().Cookies()[1].Name).To(Equal("cl_access_token"))
 			Expect(rec.Result().Cookies()[1].Value).To(Equal(`some.access.token`))
 
-			Expect(rec.Result().StatusCode).To(Equal(http.StatusFound))
-			Expect(rec.Result().Header.Get("Location")).To(Equal("http://localhost:8080/healthz"))
+			Expect(loc.String()).To(Equal("http://localhost:8080/healthz"))
 		})
 
 		Describe("non-impersonated", func() {
@@ -130,7 +131,7 @@ var _ = Describe("engine", func() {
 
 			It("without state cookie", func(ctx context.Context) {
 				rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?code=foo", nil)
-				err := engine.HandleSignInCallback(ctx, rec, req)
+				_, err := engine.HandleSignInCallback(ctx, rec, req)
 				Expect(err).To(MatchError(clworkos.ErrStateCookieNotPresentOrInvalid))
 				Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
 			})
@@ -138,15 +139,14 @@ var _ = Describe("engine", func() {
 			It("with invalid state cookie", func(ctx context.Context) {
 				rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?code=foo", nil)
 				req.AddCookie(&http.Cookie{Name: "cl_auth_state", Value: "invalid.state.token"})
-
-				Expect(engine.HandleSignInCallback(ctx, rec, req)).To(
-					MatchError(MatchRegexp(`failed to parse, verify and validate the state cookie`)))
+				_, err := engine.HandleSignInCallback(ctx, rec, req)
+				Expect(err).To(MatchError(MatchRegexp(`failed to parse, verify and validate the state cookie`)))
 			})
 
 			It("with invalid nonce", func(ctx context.Context) {
 				rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?code=foo", nil)
 				req.AddCookie(&http.Cookie{Name: "cl_auth_state", Value: stateToken})
-				err := engine.HandleSignInCallback(ctx, rec, req)
+				_, err := engine.HandleSignInCallback(ctx, rec, req)
 				Expect(err).To(MatchError(clworkos.ErrStateNonceMismatch))
 				Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
 			})
@@ -155,10 +155,9 @@ var _ = Describe("engine", func() {
 				rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?code=foo&state=some.nonce", nil)
 				req.AddCookie(&http.Cookie{Name: "cl_auth_state", Value: stateToken})
 
-				Expect(engine.HandleSignInCallback(ctx, rec, req)).To(Succeed())
-
-				Expect(rec.Result().StatusCode).To(Equal(http.StatusFound))
-				Expect(rec.Result().Header.Get("Location")).To(Equal("http://localhost:3834/some/dst"))
+				loc, err := engine.HandleSignInCallback(ctx, rec, req)
+				Expect(err).To(Succeed())
+				Expect(loc.String()).To(Equal("http://localhost:3834/some/dst"))
 
 				Expect(rec.Result().Cookies()).To(HaveLen(3))
 				Expect(rec.Result().Cookies()[0].Name).To(Equal("cl_auth_state"))

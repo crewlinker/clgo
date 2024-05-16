@@ -69,7 +69,14 @@ func (h *Handler) handleSignIn() clserve.HandlerFunc[context.Context] {
 // handleCallback handles the callback from WorkOS.
 func (h *Handler) handleCallback() clserve.HandlerFunc[context.Context] {
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-		return h.engine.HandleSignInCallback(ctx, w, r)
+		loc, err := h.engine.HandleSignInCallback(ctx, w, r)
+		if err != nil {
+			return fmt.Errorf("failed to handle sign-in callback: %w", err)
+		}
+
+		http.Redirect(w, r, loc.String(), http.StatusFound)
+
+		return nil
 	}
 }
 

@@ -82,15 +82,15 @@ func (e Engine) StartSignInFlow(ctx context.Context, w http.ResponseWriter, r *h
 }
 
 // HandleSignInCallback handles the sign-in callback as the user returns from WorkOS.
-func (e Engine) HandleSignInCallback(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (e Engine) HandleSignInCallback(ctx context.Context, w http.ResponseWriter, r *http.Request) (*url.URL, error) {
 	errorCode, errorDescription := r.URL.Query().Get("error"), r.URL.Query().Get("error_description")
 	if errorCode != "" {
-		return WorkOSCallbackError{code: errorCode, description: errorDescription}
+		return nil, WorkOSCallbackError{code: errorCode, description: errorDescription}
 	}
 
 	code := r.URL.Query().Get("code")
 	if code == "" {
-		return ErrCallbackCodeNotProvided
+		return nil, ErrCallbackCodeNotProvided
 	}
 
 	// exchange grant (code) for access token and refresh token
@@ -99,24 +99,21 @@ func (e Engine) HandleSignInCallback(ctx context.Context, w http.ResponseWriter,
 		Code:     code,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to authenticate with code: %w", err)
+		return nil, fmt.Errorf("failed to authenticate with code: %w", err)
 	}
 
 	// check that the state cookie is valid, and remove it
 	redirectTo, err := e.checkAndConsumeStateCookie(ctx, r.URL.Query().Get("state"), resp.Impersonator != nil, w, r)
 	if err != nil {
-		return fmt.Errorf("failed to verify and consume state cookie: %w", err)
+		return nil, fmt.Errorf("failed to verify and consume state cookie: %w", err)
 	}
 
 	// add the session cookie to the response, the user is now authenticated
 	if err := e.addAuthenticatedCookies(ctx, resp.AccessToken, resp.RefreshToken, w); err != nil {
-		return fmt.Errorf("failed to add session cookie: %w", err)
+		return nil, fmt.Errorf("failed to add session cookie: %w", err)
 	}
 
-	// redirect the user to the original location (possibly from the state cookie)
-	http.Redirect(w, r, redirectTo.String(), http.StatusFound)
-
-	return nil
+	return redirectTo, nil
 }
 
 // ContinueSession will continue the user's session, potentially by refreshing it. It is expected to be called
