@@ -46,16 +46,31 @@ func New(cfg Config, logs *zap.Logger, engine *Engine) *Handler {
 	}
 
 	mux.Handle("/sign-in", clserve.Handle(hdlr.handleSignIn(), serveOpts...))
-	mux.Handle("/callback", clserve.Handle(hdlr.handleCallback(), serveOpts...))
+	mux.Handle("/sign-up", clserve.Handle(hdlr.handleSignUp(), serveOpts...))
 	mux.Handle("/sign-out", clserve.Handle(hdlr.handleSignOut(), serveOpts...))
+	mux.Handle("/callback", clserve.Handle(hdlr.handleCallback(), serveOpts...))
 
 	return hdlr
+}
+
+// handleSignUp handles the sign-up flow.
+func (h *Handler) handleSignUp() clserve.HandlerFunc[context.Context] {
+	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+		loc, err := h.engine.StartAuthenticationFlow(ctx, w, r, "sign-up")
+		if err != nil {
+			return fmt.Errorf("failed to start sign-up flow: %w", err)
+		}
+
+		http.Redirect(w, r, loc.String(), http.StatusFound)
+
+		return nil
+	}
 }
 
 // handleSignIn handles the sign-in flow.
 func (h *Handler) handleSignIn() clserve.HandlerFunc[context.Context] {
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-		loc, err := h.engine.StartSignInFlow(ctx, w, r)
+		loc, err := h.engine.StartAuthenticationFlow(ctx, w, r, "sign-in")
 		if err != nil {
 			return fmt.Errorf("failed to start sign-in flow: %w", err)
 		}
@@ -149,6 +164,7 @@ func TestProvide(tb testing.TB, clockAt int64) fx.Option {
 			c.PubPrivEncryptKeySetB64JSON = "ewogICAgImtleXMiOiBbCiAgICAgICAgewogICAgICAgICAgICAia3R5IjogIkVDIiwKICAgICAgICAgICAgImQiOiAiNERXcURtaWZkcXN1M0FKWF9rY1pZdER3QTF5cERfWFkyNHN2REFxdlY0ayIsCiAgICAgICAgICAgICJ1c2UiOiAiZW5jIiwKICAgICAgICAgICAgImNydiI6ICJQLTI1NiIsCiAgICAgICAgICAgICJraWQiOiAia2V5MSIsCiAgICAgICAgICAgICJ4IjogIkxhUUZfTmxkWXRNTVJUWjl0QmM5SFB3SkRJQTUxVkNNREdiUXlVeFRMLTgiLAogICAgICAgICAgICAieSI6ICI3M1BLMVk2VktCS185X1ltMVdZUHlvZmYwSnM1dDdUaUxJU1ZEV0NFanJvIiwKICAgICAgICAgICAgImFsZyI6ICJFQ0RILUVTK0ExMjhLVyIKICAgICAgICB9CiAgICBdCn0K"
 			c.JWKEndpoint = srv.URL
 			c.ShowErrorMessagesToClient = true
+			c.RedirectToAllowedHosts = []string{"localhost", "*.foo.com"}
 
 			return c
 		}),

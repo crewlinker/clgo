@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/gobwas/glob"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 	"github.com/samber/lo"
 )
@@ -49,7 +50,9 @@ func (e Engine) addStateCookie(
 		return "", InputErrorf("failed to parse redirect URL: %w", err)
 	}
 
-	if !lo.Contains(e.cfg.RedirectToAllowedHosts, redirectURL.Hostname()) {
+	if _, found := lo.Find(e.globs.allowedRedirectTo, func(pat glob.Glob) bool {
+		return pat.Match(redirectURL.Hostname())
+	}); !found {
 		return "", RedirectToNotAllowedError{actual: redirectURL.Hostname(), allowed: e.cfg.RedirectToAllowedHosts}
 	}
 

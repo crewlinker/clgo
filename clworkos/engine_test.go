@@ -43,7 +43,7 @@ var _ = Describe("engine", func() {
 		It("should return error when redirect_to is missing", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
 
-			_, err := engine.StartSignInFlow(ctx, rec, req)
+			_, err := engine.StartAuthenticationFlow(ctx, rec, req, "sign-in")
 			Expect(err).To(MatchError(clworkos.ErrRedirectToNotProvided))
 			Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
 		})
@@ -51,7 +51,7 @@ var _ = Describe("engine", func() {
 		It("should return error when redirect_to is invalid url", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?redirect_to=:", nil)
 
-			_, err := engine.StartSignInFlow(ctx, rec, req)
+			_, err := engine.StartAuthenticationFlow(ctx, rec, req, "sign-in")
 			Expect(err).To(MatchError(MatchRegexp(`failed to parse`)))
 			Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
 		})
@@ -59,27 +59,29 @@ var _ = Describe("engine", func() {
 		It("should return error when redirect_to is not allowed", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?redirect_to=http://example.com", nil)
 
-			_, err := engine.StartSignInFlow(ctx, rec, req)
+			_, err := engine.StartAuthenticationFlow(ctx, rec, req, "sign-in")
 			Expect(err).To(MatchError(MatchRegexp(`redirect URL is not allowed`)))
 			Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
 		})
 
-		It("should add state cookie, and redirect to provider", func(ctx context.Context) {
-			umm.EXPECT().GetAuthorizationURL(mock.Anything).Return(lo.Must(
-				url.Parse("http://localhost:5354/some/redirect/url"),
-			), nil).Once()
+		for _, redirectTo := range []string{"localhost", "localhost:8080", "x.y.z.foo.com"} {
+			It("should add state cookie, and redirect to provider", func(ctx context.Context) {
+				umm.EXPECT().GetAuthorizationURL(mock.Anything).Return(lo.Must(
+					url.Parse("http://localhost:5354/some/redirect/url"),
+				), nil).Once()
 
-			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?redirect_to=http://localhost", nil)
-			loc, err := engine.StartSignInFlow(ctx, rec, req)
-			Expect(err).To(Succeed())
-			Expect(loc).To(Equal(lo.Must(url.Parse("http://localhost:5354/some/redirect/url"))))
+				rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?redirect_to=http://"+redirectTo, nil)
+				loc, err := engine.StartAuthenticationFlow(ctx, rec, req, "sign-in")
+				Expect(err).To(Succeed())
+				Expect(loc).To(Equal(lo.Must(url.Parse("http://localhost:5354/some/redirect/url"))))
 
-			Expect(rec.Result().Cookies()).To(HaveLen(1))
-			Expect(rec.Result().Cookies()[0].Name).To(Equal("cl_auth_state"))
-			Expect(rec.Result().Cookies()[0].Value).NotTo(BeEmpty())
-			Expect(rec.Result().Cookies()[0].Domain).To(Equal("localhost"))
-			Expect(rec.Result().Cookies()[0].Path).To(Equal("/"))
-		})
+				Expect(rec.Result().Cookies()).To(HaveLen(1))
+				Expect(rec.Result().Cookies()[0].Name).To(Equal("cl_auth_state"))
+				Expect(rec.Result().Cookies()[0].Value).NotTo(BeEmpty())
+				Expect(rec.Result().Cookies()[0].Domain).To(Equal("localhost"))
+				Expect(rec.Result().Cookies()[0].Path).To(Equal("/"))
+			})
+		}
 	})
 
 	Describe("handle sign-in callback", func() {

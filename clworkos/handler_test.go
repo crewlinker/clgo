@@ -41,24 +41,26 @@ var _ = Describe("handler", func() {
 		Expect(hdlr).NotTo(BeNil())
 	})
 
-	Describe("sign in", func() {
-		It("should serve bad request error", func() {
-			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/sign-in", nil)
-			hdlr.ServeHTTP(rec, req)
+	Describe("sign in/sign up", func() {
+		for _, ep := range []string{"/sign-in", "/sign-up"} {
+			It("should serve bad request error", func() {
+				rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, ep, nil)
+				hdlr.ServeHTTP(rec, req)
 
-			Expect(rec.Code).To(Equal(http.StatusBadRequest))
-			Expect(rec.Body.String()).To(ContainSubstring("missing redirect_to query parameter"))
-		})
+				Expect(rec.Code).To(Equal(http.StatusBadRequest))
+				Expect(rec.Body.String()).To(ContainSubstring("missing redirect_to query parameter"))
+			})
 
-		It("should serve redirect", func() {
-			mmu.EXPECT().GetAuthorizationURL(mock.Anything).Return(&url.URL{Scheme: "https", Host: "workos.com"}, nil)
+			It("should serve redirect", func() {
+				mmu.EXPECT().GetAuthorizationURL(mock.Anything).Return(&url.URL{Scheme: "https", Host: "workos.com"}, nil)
 
-			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/sign-in?redirect_to=http://localhost:8080", nil)
-			hdlr.ServeHTTP(rec, req)
+				rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, ep+"?redirect_to=http://localhost:8080", nil)
+				hdlr.ServeHTTP(rec, req)
 
-			Expect(rec.Code).To(Equal(http.StatusFound))
-			Expect(rec.Header().Get("Location")).To(ContainSubstring("https://workos.com"))
-		})
+				Expect(rec.Code).To(Equal(http.StatusFound))
+				Expect(rec.Header().Get("Location")).To(ContainSubstring("https://workos.com"))
+			})
+		}
 	})
 
 	Describe("callback", func() {

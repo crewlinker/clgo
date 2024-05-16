@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/gobwas/glob"
 	"github.com/lestrrat-go/jwx/v2/jwt"
+	"github.com/sourcegraph/conc/iter"
 	"github.com/workos/workos-go/v4/pkg/usermanagement"
 	"go.uber.org/zap"
 )
@@ -41,6 +43,9 @@ type Engine struct {
 	keys  *Keys
 	clock jwt.Clock
 	um    UserManagement
+	globs struct {
+		allowedRedirectTo []glob.Glob
+	}
 }
 
 // NewEngine creates a new Engine with the provided UserManagement implementation.
@@ -50,18 +55,29 @@ func NewEngine(
 	keys *Keys,
 	clock Clock,
 	um UserManagement,
-) *Engine {
-	return &Engine{
+) (eng *Engine, err error) {
+	eng = &Engine{
 		cfg:   cfg,
 		logs:  logs.Named("engine"),
 		keys:  keys,
 		um:    um,
 		clock: clock,
 	}
+
+	eng.globs.allowedRedirectTo, err = iter.MapErr(cfg.RedirectToAllowedHosts, func(pat *string) (glob.Glob, error) {
+		return glob.Compile(*pat)
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile allowed redirect_to patterns: %w", err)
+	}
+
+	return eng, nil
 }
 
-// StartSignInFlow starts the sign-in flow as the user is redirected to WorkOS.
-func (e Engine) StartSignInFlow(ctx context.Context, w http.ResponseWriter, r *http.Request) (*url.URL, error) {
+// StartAuthenticationFlow starts the sign-in flow as the user is redirected to WorkOS.
+func (e Engine) StartAuthenticationFlow(
+	ctx context.Context, w http.ResponseWriter, r *http.Request, screenHint string,
+) (*url.URL, error) {
 	redirectTo := r.URL.Query().Get("redirect_to")
 	if redirectTo == "" {
 		return nil, ErrRedirectToNotProvided
@@ -79,6 +95,7 @@ func (e Engine) StartSignInFlow(ctx context.Context, w http.ResponseWriter, r *h
 		RedirectURI: e.cfg.CallbackURL.String(),
 		Provider:    "authkit",
 		State:       nonce,
+		ScreenHint:  usermanagement.ScreenHint(screenHint),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get authorization URL: %w", err)
