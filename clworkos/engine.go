@@ -119,6 +119,16 @@ func (e Engine) HandleSignInCallback(ctx context.Context, w http.ResponseWriter,
 // ContinueSession will continue the user's session, potentially by refreshing it. It is expected to be called
 // on every request as part of some middleware logic.
 func (e Engine) ContinueSession(ctx context.Context, w http.ResponseWriter, r *http.Request) (idn Identity, err error) {
+	// if there is any unexpected error while using the session we clear the tokens. This is to prevent
+	// every request from failing if we're in a bad state. It also forces the removal of cookies when
+	// the WorkOS backend has deemed the tokens invalid.
+	defer func() {
+		if err != nil && !errors.Is(err, ErrNoAuthentication) {
+			e.clearSessionTokens(ctx, w)
+		}
+	}()
+
+	// attempt to use the access token first.
 	atCookie, atCookieExists, err := readCookie(r, e.cfg.AccessTokenCookieName)
 	if err != nil && atCookieExists {
 		return idn, InputErrorf("failed to get access token cookie: %w", err)
@@ -176,6 +186,8 @@ func (e Engine) ContinueSession(ctx context.Context, w http.ResponseWriter, r *h
 
 // StartSignOutFlow starts the sign-out flow as the user is redirected to WorkOS.
 func (e Engine) StartSignOutFlow(ctx context.Context, w http.ResponseWriter, r *http.Request) (*url.URL, error) {
+	defer e.clearSessionTokens(ctx, w) // always clear the tokens
+
 	atCookie, _, err := readCookie(r, e.cfg.AccessTokenCookieName)
 	if err != nil {
 		return nil, InputErrorf("failed to get access token cookie: %w", err)
@@ -190,9 +202,6 @@ func (e Engine) StartSignOutFlow(ctx context.Context, w http.ResponseWriter, r *
 	if err != nil {
 		return nil, fmt.Errorf("failed to get logout URL: %w", err)
 	}
-
-	// clear refresh and access token cookies
-	e.clearSessionTokens(ctx, w)
 
 	return logoutURL, nil
 }

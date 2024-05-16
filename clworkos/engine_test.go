@@ -180,6 +180,7 @@ var _ = Describe("engine", func() {
 			_, err := engine.ContinueSession(ctx, rec, req)
 
 			Expect(err).To(MatchError(clworkos.ErrNoAuthentication))
+			Expect(rec.Result().Cookies()).To(BeEmpty()) // no reset cookies
 		})
 
 		It("should return zero identity when invalid access token", func(ctx context.Context) {
@@ -240,13 +241,7 @@ var _ = Describe("engine", func() {
 			Expect(loc).To(Equal(lo.Must(url.Parse("http://localhost:8080/logout"))))
 
 			By("checking the cookies being re-set")
-			Expect(rec.Result().Cookies()).To(HaveLen(2))
-			Expect(rec.Result().Cookies()[0].Name).To(Equal("cl_access_token"))
-			Expect(rec.Result().Cookies()[0].MaxAge).To(Equal(-1))
-			Expect(rec.Result().Cookies()[0].Path).To(Equal("/"))
-			Expect(rec.Result().Cookies()[1].Name).To(Equal("cl_session"))
-			Expect(rec.Result().Cookies()[1].MaxAge).To(Equal(-1))
-			Expect(rec.Result().Cookies()[1].Path).To(Equal("/"))
+			ExpectSessionClear(rec)
 		})
 	})
 })
@@ -279,6 +274,7 @@ var _ = Describe("engine in present", func() {
 
 			_, err := engine.ContinueSession(ctx, rec, req)
 			Expect(err).To(MatchError(MatchRegexp(`failed to verify`)))
+			ExpectSessionClear(rec) // clear session on any error
 		})
 
 		It("should succeed with new access token", func(ctx context.Context) {
@@ -327,6 +323,16 @@ var _ = Describe("engine in present", func() {
 		})
 	})
 })
+
+func ExpectSessionClear(rec *httptest.ResponseRecorder) {
+	Expect(rec.Result().Cookies()).To(HaveLen(2))
+	Expect(rec.Result().Cookies()[0].Name).To(Equal("cl_access_token"))
+	Expect(rec.Result().Cookies()[0].MaxAge).To(Equal(-1))
+	Expect(rec.Result().Cookies()[0].Path).To(Equal("/"))
+	Expect(rec.Result().Cookies()[1].Name).To(Equal("cl_session"))
+	Expect(rec.Result().Cookies()[1].MaxAge).To(Equal(-1))
+	Expect(rec.Result().Cookies()[1].Path).To(Equal("/"))
+}
 
 func ExpectRefreshedSession(
 	rec *httptest.ResponseRecorder,
