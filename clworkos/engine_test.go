@@ -74,9 +74,10 @@ var _ = Describe("engine", func() {
 			Expect(err).To(Succeed())
 			Expect(loc).To(Equal(lo.Must(url.Parse("http://localhost:5354/some/redirect/url"))))
 
-			Expect(rec.Result().Cookies()).To(HaveLen(1))
+			Expect(rec.Result().Cookies()).To(HaveLen(3))
 			Expect(rec.Result().Cookies()[0].Name).To(Equal("cl_auth_state"))
 			Expect(rec.Result().Cookies()[0].Value).NotTo(BeEmpty())
+			ExpectSessionClear(rec)
 		})
 	})
 
@@ -325,13 +326,15 @@ var _ = Describe("engine in present", func() {
 })
 
 func ExpectSessionClear(rec *httptest.ResponseRecorder) {
-	Expect(rec.Result().Cookies()).To(HaveLen(2))
-	Expect(rec.Result().Cookies()[0].Name).To(Equal("cl_access_token"))
-	Expect(rec.Result().Cookies()[0].MaxAge).To(Equal(-1))
-	Expect(rec.Result().Cookies()[0].Path).To(Equal("/"))
-	Expect(rec.Result().Cookies()[1].Name).To(Equal("cl_session"))
-	Expect(rec.Result().Cookies()[1].MaxAge).To(Equal(-1))
-	Expect(rec.Result().Cookies()[1].Path).To(Equal("/"))
+	at, ok := lo.Find(rec.Result().Cookies(), func(c *http.Cookie) bool { return c.Name == "cl_access_token" })
+	Expect(ok).To(BeTrue())
+	st, ok := lo.Find(rec.Result().Cookies(), func(c *http.Cookie) bool { return c.Name == "cl_session" })
+	Expect(ok).To(BeTrue())
+
+	for _, c := range []*http.Cookie{at, st} {
+		Expect(c.MaxAge).To(Equal(-1))
+		Expect(c.Path).To(Equal("/"))
+	}
 }
 
 func ExpectRefreshedSession(
