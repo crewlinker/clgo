@@ -13,8 +13,8 @@ import (
 // scope context values to this package.
 type ctxKey string
 
-// withIdentity stores the identity in the request context.
-func withIdentity(ctx context.Context, identity Identity) context.Context {
+// WithIdentity stores the identity in the request context.
+func WithIdentity(ctx context.Context, identity Identity) context.Context {
 	return context.WithValue(ctx, ctxKey("identity"), identity)
 }
 
@@ -45,7 +45,7 @@ func (h Handler) Authenticate() clserve.Middleware {
 					zap.String("user_id", idn.UserID))
 			}
 
-			next.ServeHTTP(w, r.WithContext(withIdentity(r.Context(), idn)))
+			next.ServeHTTP(w, r.WithContext(WithIdentity(r.Context(), idn)))
 		})
 	}
 }
