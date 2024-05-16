@@ -93,8 +93,18 @@ func (e Engine) authenticatedSessionFromCookie(_ context.Context, cookie *http.C
 
 // clearSessionTokens removes the session cookies for the user.
 func (e Engine) clearSessionTokens(_ context.Context, w http.ResponseWriter) {
-	http.SetCookie(w, &http.Cookie{MaxAge: -1, Name: e.cfg.AccessTokenCookieName, Path: e.cfg.SessionCookiesPath})
-	http.SetCookie(w, &http.Cookie{MaxAge: -1, Name: e.cfg.SessionCookieName, Path: e.cfg.SessionCookiesPath})
+	http.SetCookie(w, &http.Cookie{
+		MaxAge: -1,
+		Name:   e.cfg.AccessTokenCookieName,
+		Path:   e.cfg.SessionCookiesPath,
+		Domain: e.cfg.AllCookieDomain,
+	})
+	http.SetCookie(w, &http.Cookie{
+		MaxAge: -1,
+		Name:   e.cfg.SessionCookieName,
+		Path:   e.cfg.SessionCookiesPath,
+		Domain: e.cfg.AllCookieDomain,
+	})
 }
 
 // identityFromCookie returns the identity of the user based on something carrying cookies.

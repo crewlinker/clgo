@@ -333,6 +333,8 @@ func ExpectSessionClear(rec *httptest.ResponseRecorder) {
 	for _, c := range []*http.Cookie{at, st} {
 		Expect(c.MaxAge).To(Equal(-1))
 		Expect(c.Path).To(Equal("/"))
+		Expect(c.Value).To(BeEmpty())
+		Expect(c.Domain).To(Equal("localhost"))
 	}
 }
 
