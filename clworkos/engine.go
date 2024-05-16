@@ -44,7 +44,13 @@ type Engine struct {
 }
 
 // NewEngine creates a new Engine with the provided UserManagement implementation.
-func NewEngine(cfg Config, logs *zap.Logger, keys *Keys, clock Clock, um UserManagement) *Engine {
+func NewEngine(
+	cfg Config,
+	logs *zap.Logger,
+	keys *Keys,
+	clock Clock,
+	um UserManagement,
+) *Engine {
 	return &Engine{
 		cfg:   cfg,
 		logs:  logs.Named("engine"),

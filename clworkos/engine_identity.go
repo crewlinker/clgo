@@ -96,13 +96,13 @@ func (e Engine) clearSessionTokens(_ context.Context, w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
 		MaxAge: -1,
 		Name:   e.cfg.AccessTokenCookieName,
-		Path:   e.cfg.SessionCookiesPath,
+		Path:   e.cfg.AllCookiePath,
 		Domain: e.cfg.AllCookieDomain,
 	})
 	http.SetCookie(w, &http.Cookie{
 		MaxAge: -1,
 		Name:   e.cfg.SessionCookieName,
-		Path:   e.cfg.SessionCookiesPath,
+		Path:   e.cfg.AllCookiePath,
 		Domain: e.cfg.AllCookieDomain,
 	})
 }
@@ -152,7 +152,7 @@ func (e Engine) addAuthenticatedCookies(
 
 	// store the encrypted session token so other requests can use it.
 	http.SetCookie(w, &http.Cookie{
-		Path:     e.cfg.SessionCookiesPath,
+		Path:     e.cfg.AllCookiePath,
 		Domain:   e.cfg.AllCookieDomain,
 		SameSite: http.SameSiteLaxMode,
 		Name:     e.cfg.SessionCookieName,
@@ -163,7 +163,7 @@ func (e Engine) addAuthenticatedCookies(
 
 	// set the access token cookie directly
 	http.SetCookie(w, &http.Cookie{
-		Path:     e.cfg.SessionCookiesPath,
+		Path:     e.cfg.AllCookiePath,
 		Domain:   e.cfg.AllCookieDomain,
 		SameSite: http.SameSiteLaxMode,
 		Name:     e.cfg.AccessTokenCookieName,

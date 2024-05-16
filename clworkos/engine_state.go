@@ -68,6 +68,7 @@ func (e Engine) addStateCookie(
 		HttpOnly: true,
 		Secure:   e.cfg.AllCookieSecure,
 		MaxAge:   stateCookieMaxAge,
+		Path:     e.cfg.AllCookiePath,
 	})
 
 	return nonce, nil
@@ -119,8 +120,12 @@ func (e Engine) checkAndConsumeStateCookie(
 	}
 
 	// clear the state (nonce) cookie, only useful until the callback
-	cookie.MaxAge = -1
-	http.SetCookie(w, cookie)
+	http.SetCookie(w, &http.Cookie{
+		MaxAge: -1,
+		Name:   e.cfg.StateCookieName,
+		Path:   e.cfg.AllCookiePath,
+		Domain: e.cfg.AllCookieDomain,
+	})
 
 	return redirectTo, nil
 }

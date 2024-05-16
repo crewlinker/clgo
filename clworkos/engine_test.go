@@ -77,6 +77,8 @@ var _ = Describe("engine", func() {
 			Expect(rec.Result().Cookies()).To(HaveLen(1))
 			Expect(rec.Result().Cookies()[0].Name).To(Equal("cl_auth_state"))
 			Expect(rec.Result().Cookies()[0].Value).NotTo(BeEmpty())
+			Expect(rec.Result().Cookies()[0].Domain).To(Equal("localhost"))
+			Expect(rec.Result().Cookies()[0].Path).To(Equal("/"))
 		})
 	})
 
@@ -163,7 +165,9 @@ var _ = Describe("engine", func() {
 
 				Expect(rec.Result().Cookies()).To(HaveLen(3))
 				Expect(rec.Result().Cookies()[0].Name).To(Equal("cl_auth_state"))
-				Expect(rec.Result().Cookies()[0].MaxAge).To(Equal(-1)) // expire the state cookie
+				Expect(rec.Result().Cookies()[0].MaxAge).To(Equal(-1))
+				Expect(rec.Result().Cookies()[0].Domain).To(Equal("localhost"))
+				Expect(rec.Result().Cookies()[0].Path).To(Equal("/"))
 				Expect(rec.Result().Cookies()[1].Name).To(Equal("cl_session"))
 				Expect(rec.Result().Cookies()[1].Value).To(MatchRegexp(`^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$`))
 				Expect(rec.Result().Cookies()[1].Path).To(Equal("/"))
