@@ -66,7 +66,7 @@ func (e Engine) BuildSessionToken(refreshToken string) (string, error) {
 
 // authenticatedSessionFromCookie returns the session from the cookie.
 func (e Engine) authenticatedSessionFromCookie(_ context.Context, r *http.Request) (string, error) {
-	cookie, err := r.Cookie(e.cfg.SessionCookieName)
+	cookie, _, err := readCookie(r, e.cfg.SessionCookieName)
 	if err != nil {
 		return "", fmt.Errorf("failed to get session cookie: %w", err)
 	}
@@ -94,6 +94,12 @@ func (e Engine) authenticatedSessionFromCookie(_ context.Context, r *http.Reques
 	}
 
 	return refreshToken, nil
+}
+
+// clearSessionTokens removes the session cookies for the user.
+func (e Engine) clearSessionTokens(_ context.Context, w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{MaxAge: -1, Name: e.cfg.AccessTokenCookieName, Path: e.cfg.SessionCookiesPath})
+	http.SetCookie(w, &http.Cookie{MaxAge: -1, Name: e.cfg.SessionCookieName, Path: e.cfg.SessionCookiesPath})
 }
 
 // identityFromCookie returns the identity of the user based on something carrying cookies.

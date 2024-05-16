@@ -125,7 +125,7 @@ func (e Engine) HandleSignInCallback(ctx context.Context, w http.ResponseWriter,
 // ContinueSession will continue the user's session, potentially by refreshing it. It is expected to be called
 // on every request as part of some middleware logic.
 func (e Engine) ContinueSession(ctx context.Context, w http.ResponseWriter, r *http.Request) (idn Identity, err error) {
-	atCookie, err := r.Cookie(e.cfg.AccessTokenCookieName)
+	atCookie, _, err := readCookie(r, e.cfg.AccessTokenCookieName)
 	if err != nil {
 		return idn, InputErrorf("failed to get access token cookie: %w", err)
 	}
@@ -167,7 +167,7 @@ func (e Engine) ContinueSession(ctx context.Context, w http.ResponseWriter, r *h
 
 // StartSignOutFlow starts the sign-out flow as the user is redirected to WorkOS.
 func (e Engine) StartSignOutFlow(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	atCookie, err := r.Cookie(e.cfg.AccessTokenCookieName)
+	atCookie, _, err := readCookie(r, e.cfg.AccessTokenCookieName)
 	if err != nil {
 		return InputErrorf("failed to get access token cookie: %w", err)
 	}
@@ -183,13 +183,24 @@ func (e Engine) StartSignOutFlow(ctx context.Context, w http.ResponseWriter, r *
 	}
 
 	// clear refresh and access token cookies
-	http.SetCookie(w, &http.Cookie{MaxAge: -1, Name: e.cfg.AccessTokenCookieName, Path: e.cfg.SessionCookiesPath})
-	http.SetCookie(w, &http.Cookie{MaxAge: -1, Name: e.cfg.SessionCookieName, Path: e.cfg.SessionCookiesPath})
+	e.clearSessionTokens(ctx, w)
 
 	// redirect to WorkOS to finalize the logout
 	http.Redirect(w, r, logoutURL.String(), http.StatusFound)
 
 	return nil
+}
+
+// readCookie allows for reading a cookie and easily asserting if it existed.
+func readCookie(r *http.Request, name string) (*http.Cookie, bool, error) {
+	cookie, err := r.Cookie(name)
+	if err != nil && errors.Is(err, http.ErrNoCookie) {
+		return nil, false, err //nolint:wrapcheck
+	} else if err != nil {
+		return nil, true, fmt.Errorf("failed to read cookie '%s': %w", name, err)
+	}
+
+	return cookie, true, nil
 }
 
 // fromToken will read 'key' from token and errors if it doesn't exist or is the wrong type.

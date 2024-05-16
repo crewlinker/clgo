@@ -86,7 +86,7 @@ func (e Engine) checkAndConsumeStateCookie(
 	}
 
 	// only complete the flow if the nonce in the users cookie matches the nonce in the callback
-	cookie, err := r.Cookie(e.cfg.StateCookieName)
+	cookie, _, err := readCookie(r, e.cfg.StateCookieName)
 	if err != nil || cookie == nil || cookie.Value == "" {
 		return nil, ErrStateCookieNotPresentOrInvalid
 	}
