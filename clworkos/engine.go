@@ -119,24 +119,39 @@ func (e Engine) HandleSignInCallback(ctx context.Context, w http.ResponseWriter,
 // ContinueSession will continue the user's session, potentially by refreshing it. It is expected to be called
 // on every request as part of some middleware logic.
 func (e Engine) ContinueSession(ctx context.Context, w http.ResponseWriter, r *http.Request) (idn Identity, err error) {
-	atCookie, _, err := readCookie(r, e.cfg.AccessTokenCookieName)
-	if err != nil {
+	atCookie, atCookieExists, err := readCookie(r, e.cfg.AccessTokenCookieName)
+	if err != nil && atCookieExists {
 		return idn, InputErrorf("failed to get access token cookie: %w", err)
 	}
 
-	idn, err = e.identityFromAccessToken(ctx, atCookie.Value)
+	// if there is an access token, try to use it to get the identity. It will fail explicitedly
+	// if the token is invalid, in the specific case of an expired token we don't return so we
+	// can try the refresh token.
+	if atCookieExists {
+		idn, err = e.identityFromAccessToken(ctx, atCookie.Value)
 
-	switch {
-	case err == nil:
-		// valid access token, return identity right away
-		return idn, nil
-	case !errors.Is(err, jwt.ErrTokenExpired()):
-		// some other error with the access token, return the error
-		return Identity{}, err
+		switch {
+		case err == nil:
+			// valid access token, return identity right away
+			return idn, nil
+		case !errors.Is(err, jwt.ErrTokenExpired()):
+			// some unexpected error with the access token, return the error
+			return idn, err
+		}
+	}
+
+	// to refresh we need our sesion cookie holding the refresh token
+	rtCookie, rtCookieExists, err := readCookie(r, e.cfg.SessionCookieName)
+	if err != nil && rtCookieExists {
+		return idn, fmt.Errorf("failed to get session cookie: %w", err)
+	} else if !rtCookieExists {
+		// no access token, AND no refresh token. Request is not authenticated in any
+		// way so we return an error.
+		return idn, ErrNoAuthentication
 	}
 
 	// read the refresh token from the encrypted session token
-	refreshToken, err := e.authenticatedSessionFromCookie(ctx, r)
+	refreshToken, err := e.authenticatedSessionFromCookie(ctx, rtCookie)
 	if err != nil {
 		return idn, fmt.Errorf("failed to get authenticated session from cookie: %w", err)
 	}
@@ -150,7 +165,7 @@ func (e Engine) ContinueSession(ctx context.Context, w http.ResponseWriter, r *h
 		return idn, fmt.Errorf("failed to authenticate with refresh token: %w", err)
 	}
 
-	// add the session cookie to the response, the user is now authenticated
+	// (re)add the session cookie to the response, the user is now authenticated
 	if err := e.addAuthenticatedCookies(ctx, resp.AccessToken, resp.RefreshToken, w); err != nil {
 		return idn, fmt.Errorf("failed to add session cookie: %w", err)
 	}

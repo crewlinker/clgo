@@ -2,6 +2,7 @@ package clworkos
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/crewlinker/clgo/clserve"
@@ -30,7 +31,7 @@ func (h Handler) Authenticate() clserve.Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			idn, err := h.engine.ContinueSession(r.Context(), w, r)
-			if err != nil {
+			if err != nil && !errors.Is(err, ErrNoAuthentication) {
 				clzap.Log(r.Context(), h.logs).Warn("middleware failed to continue session", zap.Error(err))
 			}
 

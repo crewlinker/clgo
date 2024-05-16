@@ -65,12 +65,7 @@ func (e Engine) BuildSessionToken(refreshToken string) (string, error) {
 }
 
 // authenticatedSessionFromCookie returns the session from the cookie.
-func (e Engine) authenticatedSessionFromCookie(_ context.Context, r *http.Request) (string, error) {
-	cookie, _, err := readCookie(r, e.cfg.SessionCookieName)
-	if err != nil {
-		return "", fmt.Errorf("failed to get session cookie: %w", err)
-	}
-
+func (e Engine) authenticatedSessionFromCookie(_ context.Context, cookie *http.Cookie) (string, error) {
 	verified, err := jws.Verify([]byte(cookie.Value), jws.WithKeySet(e.keys.signing.public))
 	if err != nil {
 		return "", fmt.Errorf("failed to verify session token: %w", err)

@@ -21,6 +21,9 @@ var ErrStateCookieNotPresentOrInvalid = errors.New("state cookie not present or 
 // ErrStateNonceMismatch is returned when the nonce from the query does not match the nonce from the state cookie.
 var ErrStateNonceMismatch = errors.New("state nonce mismatch")
 
+// ErrNoAuthentication is returned when no authentication is present in the request.
+var ErrNoAuthentication = errors.New("no authentication")
+
 // InvalidInputError can wrap any error to mark it as being invalid input.
 type InvalidInputError struct{ error }
 
