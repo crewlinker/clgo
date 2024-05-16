@@ -126,6 +126,7 @@ func (e Engine) checkAndConsumeStateCookie(
 		Path:     e.cfg.AllCookiePath,
 		Domain:   e.cfg.AllCookieDomain,
 		SameSite: e.cfg.AllCookieSameSite,
+		Secure:   e.cfg.AllCookieSecure,
 	})
 
 	return redirectTo, nil

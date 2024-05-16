@@ -99,6 +99,7 @@ func (e Engine) clearSessionTokens(_ context.Context, w http.ResponseWriter) {
 		Path:     e.cfg.AllCookiePath,
 		Domain:   e.cfg.AllCookieDomain,
 		SameSite: e.cfg.AllCookieSameSite,
+		Secure:   e.cfg.AllCookieSecure,
 	})
 	http.SetCookie(w, &http.Cookie{
 		MaxAge:   -1,
@@ -106,6 +107,7 @@ func (e Engine) clearSessionTokens(_ context.Context, w http.ResponseWriter) {
 		Path:     e.cfg.AllCookiePath,
 		Domain:   e.cfg.AllCookieDomain,
 		SameSite: e.cfg.AllCookieSameSite,
+		Secure:   e.cfg.AllCookieSecure,
 	})
 }
 
