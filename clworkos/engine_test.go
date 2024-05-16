@@ -218,11 +218,11 @@ var _ = Describe("engine", func() {
 		})
 	})
 
-	Describe("logout", func() {
+	Describe("sign out", func() {
 		It("should return error when access token cookie is missing", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
 			_, err := engine.StartSignOutFlow(ctx, rec, req)
-			Expect(err).To(MatchError(MatchRegexp(`failed to get access token cookie`)))
+			Expect(err).To(MatchError(clworkos.ErrNoAccessTokenForSignOut))
 			Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
 		})
 

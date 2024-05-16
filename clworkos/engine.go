@@ -194,9 +194,11 @@ func (e Engine) ContinueSession(ctx context.Context, w http.ResponseWriter, r *h
 func (e Engine) StartSignOutFlow(ctx context.Context, w http.ResponseWriter, r *http.Request) (*url.URL, error) {
 	defer e.clearSessionTokens(ctx, w) // always clear the tokens
 
-	atCookie, _, err := readCookie(r, e.cfg.AccessTokenCookieName)
-	if err != nil {
+	atCookie, atCookieExists, err := readCookie(r, e.cfg.AccessTokenCookieName)
+	if err != nil && atCookieExists {
 		return nil, InputErrorf("failed to get access token cookie: %w", err)
+	} else if !atCookieExists {
+		return nil, ErrNoAccessTokenForSignOut
 	}
 
 	idn, err := e.identityFromAccessToken(ctx, atCookie.Value)

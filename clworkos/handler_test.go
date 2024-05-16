@@ -89,7 +89,7 @@ var _ = Describe("handler", func() {
 			hdlr.ServeHTTP(rec, req)
 
 			Expect(rec.Code).To(Equal(http.StatusBadRequest))
-			Expect(rec.Body.String()).To(ContainSubstring("named cookie not present"))
+			Expect(rec.Body.String()).To(ContainSubstring("no credentials"))
 		})
 
 		It("should serve redirect", func() {

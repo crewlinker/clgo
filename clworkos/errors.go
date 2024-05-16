@@ -24,6 +24,9 @@ var ErrStateNonceMismatch = errors.New("state nonce mismatch")
 // ErrNoAuthentication is returned when no authentication is present in the request.
 var ErrNoAuthentication = errors.New("no authentication")
 
+// ErrNoAccessTokenForSignOut is returned when no access token is present for sign out.
+var ErrNoAccessTokenForSignOut = errors.New("no credentials to sign-out with")
+
 // InvalidInputError can wrap any error to mark it as being invalid input.
 type InvalidInputError struct{ error }
 
@@ -94,6 +97,7 @@ func IsBadRequestError(err error) bool {
 
 	switch {
 	case errors.Is(err, ErrRedirectToNotProvided),
+		errors.Is(err, ErrNoAccessTokenForSignOut),
 		errors.Is(err, ErrCallbackCodeNotProvided),
 		errors.Is(err, ErrStateCookieNotPresentOrInvalid),
 		errors.Is(err, ErrStateNonceMismatch):
