@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/workos/workos-go/v4/pkg/usermanagement"
 	"go.uber.org/fx"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestClworkos(t *testing.T) {
@@ -28,9 +29,10 @@ func TestClworkos(t *testing.T) {
 var _ = Describe("handler", func() {
 	var hdlr *clworkos.Handler
 	var mmu *clworkosmock.MockUserManagement
+	var obs *observer.ObservedLogs
 
 	BeforeEach(func(ctx context.Context) {
-		app := fx.New(fx.Populate(&hdlr, &mmu), Provide(1715748368))
+		app := fx.New(fx.Populate(&hdlr, &mmu, &obs), Provide(1715748368))
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 	})
@@ -103,15 +105,17 @@ var _ = Describe("handler", func() {
 	})
 
 	Describe("middleware", func() {
-		It("should zero-value identity on any unauthenticated request", func() {
+		It("should have zero-value identity unauthenticated requests, and no logs", func() {
 			var idn *clworkos.Identity
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/foo", nil)
+
 			hdlr.Authenticate()(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				v := clworkos.IdentityFromContext(r.Context())
 				idn = &v
 			})).ServeHTTP(rec, req)
 
 			Expect(idn).To(Equal(&clworkos.Identity{}))
+			Expect(obs.FilterMessage("middleware failed to continue session").Len()).To(Equal(0))
 		})
 
 		It("should set identity on authenticated request", func() {

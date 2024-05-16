@@ -7,6 +7,8 @@ linters-settings:
         - ["API"] 
   funlen:
     lines: 128
+  cyclop:
+    max-complexity: 20
   staticcheck:
     checks: ["all"]
   stylecheck:
@@ -70,6 +72,7 @@ issues:
         - wrapcheck
         - goconst
         - goerr113
+        - bodyclose
     - path: infra/infrastack
       linters:
         - gomnd

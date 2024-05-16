@@ -138,14 +138,16 @@ var _ = Describe("engine", func() {
 
 			It("with invalid state cookie", func(ctx context.Context) {
 				rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?code=foo", nil)
-				req.AddCookie(&http.Cookie{Name: "cl_auth_state", Value: "invalid.state.token"})
+				WithState(req, "invalid.state.token")
+
 				_, err := engine.HandleSignInCallback(ctx, rec, req)
 				Expect(err).To(MatchError(MatchRegexp(`failed to parse, verify and validate the state cookie`)))
 			})
 
 			It("with invalid nonce", func(ctx context.Context) {
 				rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?code=foo", nil)
-				req.AddCookie(&http.Cookie{Name: "cl_auth_state", Value: stateToken})
+				WithState(req, stateToken)
+
 				_, err := engine.HandleSignInCallback(ctx, rec, req)
 				Expect(err).To(MatchError(clworkos.ErrStateNonceMismatch))
 				Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
@@ -153,7 +155,7 @@ var _ = Describe("engine", func() {
 
 			It("with valid state cookie", func(ctx context.Context) {
 				rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?code=foo&state=some.nonce", nil)
-				req.AddCookie(&http.Cookie{Name: "cl_auth_state", Value: stateToken})
+				WithState(req, stateToken)
 
 				loc, err := engine.HandleSignInCallback(ctx, rec, req)
 				Expect(err).To(Succeed())
@@ -173,16 +175,16 @@ var _ = Describe("engine", func() {
 	})
 
 	Describe("continue session", func() {
-		It("should return error when access token cookie is missing", func(ctx context.Context) {
+		It("should error when neither tokens are present", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
 			_, err := engine.ContinueSession(ctx, rec, req)
-			Expect(err).To(MatchError(MatchRegexp(`failed to get access token cookie`)))
-			Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
+
+			Expect(err).To(MatchError(clworkos.ErrNoAuthentication))
 		})
 
 		It("should return zero identity when invalid access token", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
-			req.AddCookie(&http.Cookie{Name: "cl_access_token", Value: "invalid.access.token"})
+			WithAccessToken(req, "invalid.access.token")
 
 			idn, err := engine.ContinueSession(ctx, rec, req)
 			Expect(err).To(MatchError(MatchRegexp(`failed to parse access token`)))
@@ -191,7 +193,7 @@ var _ = Describe("engine", func() {
 
 		It("should not refresh and use valid access token", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
-			req.AddCookie(&http.Cookie{Name: "cl_access_token", Value: AccessToken1ValidFor06_46_08})
+			WithAccessToken(req, AccessToken1ValidFor06_46_08)
 
 			idn, err := engine.ContinueSession(ctx, rec, req)
 			Expect(err).NotTo(HaveOccurred())
@@ -221,7 +223,7 @@ var _ = Describe("engine", func() {
 
 		It("should error when invalid access token", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
-			req.AddCookie(&http.Cookie{Name: "cl_access_token", Value: "invalid.access.token"})
+			WithAccessToken(req, "invalid.access.token")
 
 			_, err := engine.StartSignOutFlow(ctx, rec, req)
 			Expect(err).To(MatchError(MatchRegexp(`failed to parse access token`)))
@@ -231,7 +233,7 @@ var _ = Describe("engine", func() {
 			umm.EXPECT().GetLogoutURL(mock.Anything).Return(lo.Must(url.Parse("http://localhost:8080/logout")), nil).Once()
 
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
-			req.AddCookie(&http.Cookie{Name: "cl_access_token", Value: AccessToken1ValidFor06_46_08})
+			WithAccessToken(req, AccessToken1ValidFor06_46_08)
 
 			loc, err := engine.StartSignOutFlow(ctx, rec, req)
 			Expect(err).ToNot(HaveOccurred())
@@ -261,22 +263,19 @@ var _ = Describe("engine in present", func() {
 	})
 
 	Describe("continue session", func() {
-		It("should complain about session cookie not present", func(ctx context.Context) {
+		It("should be unauthenticated with expired access token en missing refresh token", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
 			WithAccessToken(req, AccessToken1ValidFor06_46_08)
 
 			_, err := engine.ContinueSession(ctx, rec, req)
-			Expect(err).To(MatchError(MatchRegexp(`named cookie not present`)))
+			Expect(err).To(MatchError(clworkos.ErrNoAuthentication))
 		})
 
 		It("should fail if refresh token is invalid", func(ctx context.Context) {
 			oldSessionToken := lo.Must(engine.BuildSessionToken("some.refresh.token"))
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
 			WithAccessToken(req, AccessToken1ValidFor06_46_08)
-			req.AddCookie(&http.Cookie{
-				Name:  "cl_session",
-				Value: oldSessionToken[:8] + oldSessionToken[9:],
-			})
+			WithSession(engine, req, oldSessionToken[:8]+oldSessionToken[9:])
 
 			_, err := engine.ContinueSession(ctx, rec, req)
 			Expect(err).To(MatchError(MatchRegexp(`failed to verify`)))
@@ -298,41 +297,81 @@ var _ = Describe("engine in present", func() {
 
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
 			WithAccessToken(req, AccessToken1ValidFor06_46_08)
-			req.AddCookie(&http.Cookie{
-				Name:  "cl_session",
-				Value: oldSessionToken,
-			})
+			WithSession(engine, req, oldSessionToken)
 
 			idn, err := engine.ContinueSession(ctx, rec, req)
 			Expect(err).NotTo(HaveOccurred())
+			ExpectRefreshedSession(rec, newAccessToken, oldSessionToken, idn)
+		})
 
-			By("checking the cookies being re-set")
-			Expect(rec.Result().Cookies()).To(HaveLen(2))
-			Expect(rec.Result().Cookies()[0].Name).To(Equal("cl_session"))
-			Expect(rec.Result().Cookies()[0].Value).To(MatchRegexp(`^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$`))
-			Expect(rec.Result().Cookies()[1].Name).To(Equal("cl_access_token"))
-			Expect(rec.Result().Cookies()[1].Value).To(Equal(newAccessToken))
+		It("should refresh without access token if session token is present", func(ctx context.Context) {
+			oldSessionToken := lo.Must(engine.BuildSessionToken("some.refresh.token"))
+			newAccessToken := AccessToken2ValidFor13_31_48
 
-			By("making sure the session got replaced")
-			Expect(rec.Result().Cookies()[0].Value).ToNot(Equal(oldSessionToken))
+			umm.EXPECT().AuthenticateWithRefreshToken(mock.Anything,
+				usermanagement.AuthenticateWithRefreshTokenOpts{
+					RefreshToken: "some.refresh.token",
+				}).
+				Return(usermanagement.RefreshAuthenticationResponse{
+					AccessToken:  newAccessToken,
+					RefreshToken: "some.new.refresh_token",
+				}, nil).
+				Once()
 
-			By("checking the identity")
-			Expect(idn).To(Equal(clworkos.Identity{
-				IsValid:        true,
-				ExpiresAt:      lo.Must(time.Parse(time.RFC3339, "2024-05-15T11:36:19Z")),
-				UserID:         "user_01HJTD4VS8T6DKAK5B3AZVQFCV",
-				OrganizationID: "org_01HJTBPK3YQMZY9KH30EXV9GHN",
-				SessionID:      "session_01HXY0ARJ0BHT6ECHACSKE6KH7",
-				Role:           "member",
-				Impersonator:   clworkos.Impersonator{},
-			}))
+			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
+			WithSession(engine, req, oldSessionToken)
+
+			idn, err := engine.ContinueSession(ctx, rec, req)
+			Expect(err).NotTo(HaveOccurred())
+			ExpectRefreshedSession(rec, newAccessToken, oldSessionToken, idn)
 		})
 	})
 })
+
+func ExpectRefreshedSession(
+	rec *httptest.ResponseRecorder,
+	newAccessToken, oldSessionToken string,
+	idn clworkos.Identity,
+) {
+	By("checking the cookies being re-set")
+	Expect(rec.Result().Cookies()).To(HaveLen(2))
+	Expect(rec.Result().Cookies()[0].Name).To(Equal("cl_session"))
+	Expect(rec.Result().Cookies()[0].Value).To(MatchRegexp(`^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$`))
+	Expect(rec.Result().Cookies()[1].Name).To(Equal("cl_access_token"))
+	Expect(rec.Result().Cookies()[1].Value).To(Equal(newAccessToken))
+
+	By("making sure the session got replaced")
+	Expect(rec.Result().Cookies()[0].Value).ToNot(Equal(oldSessionToken))
+
+	By("checking the identity")
+	Expect(idn).To(Equal(clworkos.Identity{
+		IsValid:        true,
+		ExpiresAt:      lo.Must(time.Parse(time.RFC3339, "2024-05-15T11:36:19Z")),
+		UserID:         "user_01HJTD4VS8T6DKAK5B3AZVQFCV",
+		OrganizationID: "org_01HJTBPK3YQMZY9KH30EXV9GHN",
+		SessionID:      "session_01HXY0ARJ0BHT6ECHACSKE6KH7",
+		Role:           "member",
+		Impersonator:   clworkos.Impersonator{},
+	}))
+}
 
 func WithAccessToken(req *http.Request, token string) {
 	req.AddCookie(&http.Cookie{
 		Name:  "cl_access_token",
 		Value: token,
+	})
+}
+
+func WithState(req *http.Request, state string) {
+	req.AddCookie(&http.Cookie{
+		Name:  "cl_auth_state",
+		Value: state,
+	})
+}
+
+func WithSession(e *clworkos.Engine, req *http.Request, sessionToken string) {
+	req.AddCookie(&http.Cookie{
+		Name:  "cl_session",
+		Value: sessionToken,
 	})
 }
