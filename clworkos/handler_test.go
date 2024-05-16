@@ -15,6 +15,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/mock"
+	"github.com/workos/workos-go/v4/pkg/usermanagement"
 	"go.uber.org/fx"
 )
 
@@ -58,12 +59,26 @@ var _ = Describe("handler", func() {
 		})
 	})
 
-	It("should serve callback", func() {
-		rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/callback", nil)
-		hdlr.ServeHTTP(rec, req)
+	Describe("callback", func() {
+		It("should serve bad request error", func() {
+			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/callback", nil)
+			hdlr.ServeHTTP(rec, req)
 
-		Expect(rec.Code).To(Equal(http.StatusBadRequest))
-		Expect(rec.Body.String()).To(ContainSubstring("missing code query parameter"))
+			Expect(rec.Code).To(Equal(http.StatusBadRequest))
+			Expect(rec.Body.String()).To(ContainSubstring("missing code query parameter"))
+		})
+
+		It("should serve redirect", func() {
+			mmu.EXPECT().AuthenticateWithCode(mock.Anything, mock.Anything).Return(usermanagement.AuthenticateResponse{
+				Impersonator: &usermanagement.Impersonator{Email: "a@a.com"},
+			}, nil)
+
+			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/callback?code=123", nil)
+			hdlr.ServeHTTP(rec, req)
+
+			Expect(rec.Code).To(Equal(http.StatusFound))
+			Expect(rec.Header().Get("Location")).To(ContainSubstring("http://localhost:8080"))
+		})
 	})
 
 	Describe("sign out", func() {
