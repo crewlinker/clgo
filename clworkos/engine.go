@@ -78,9 +78,6 @@ func (e Engine) StartSignInFlow(ctx context.Context, w http.ResponseWriter, r *h
 		return nil, fmt.Errorf("failed to get authorization URL: %w", err)
 	}
 
-	// clear any existing session cookies
-	e.clearSessionTokens(ctx, w)
-
 	return loc, nil
 }
 

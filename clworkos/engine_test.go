@@ -74,10 +74,9 @@ var _ = Describe("engine", func() {
 			Expect(err).To(Succeed())
 			Expect(loc).To(Equal(lo.Must(url.Parse("http://localhost:5354/some/redirect/url"))))
 
-			Expect(rec.Result().Cookies()).To(HaveLen(3))
+			Expect(rec.Result().Cookies()).To(HaveLen(1))
 			Expect(rec.Result().Cookies()[0].Name).To(Equal("cl_auth_state"))
 			Expect(rec.Result().Cookies()[0].Value).NotTo(BeEmpty())
-			ExpectSessionClear(rec)
 		})
 	})
 
