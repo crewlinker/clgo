@@ -35,6 +35,16 @@ func (h Handler) Authenticate() clserve.Middleware {
 				clzap.Log(r.Context(), h.logs).Warn("middleware failed to continue session", zap.Error(err))
 			}
 
+			if idn.IsValid {
+				clzap.Log(r.Context(), h.logs).Info("authenticated identity",
+					zap.String("session_id", idn.SessionID),
+					zap.String("role", idn.Role),
+					zap.String("impersonator_email", idn.Impersonator.Email),
+					zap.Time("expires_at", idn.ExpiresAt),
+					zap.String("organization_id", idn.OrganizationID),
+					zap.String("user_id", idn.UserID))
+			}
+
 			next.ServeHTTP(w, r.WithContext(withIdentity(r.Context(), idn)))
 		})
 	}

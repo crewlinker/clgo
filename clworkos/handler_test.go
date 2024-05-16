@@ -126,6 +126,8 @@ var _ = Describe("handler", func() {
 				idn = clworkos.IdentityFromContext(r.Context())
 			})).ServeHTTP(rec, req)
 
+			Expect(obs.FilterMessage("authenticated identity").Len()).To(Equal(1))
+
 			Expect(idn).To(Equal(clworkos.Identity{
 				IsValid:        true,
 				ExpiresAt:      lo.Must(time.Parse(time.RFC3339, "2024-05-15T04:46:09Z")),
