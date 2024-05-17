@@ -81,18 +81,16 @@ func (e Engine) addStateCookie(
 func (e Engine) checkAndConsumeStateCookie(
 	_ context.Context,
 	nonceFromQuery string,
-	isImpersonated bool,
 	w http.ResponseWriter,
 	r *http.Request,
 ) (redirectTo *url.URL, err error) {
-	if isImpersonated {
-		return e.cfg.RedirectToIfImpersonated, nil
-	}
-
-	// only complete the flow if the nonce in the users cookie matches the nonce in the callback
-	cookie, _, err := readCookie(r, e.cfg.StateCookieName)
-	if err != nil || cookie == nil || cookie.Value == "" {
-		return nil, ErrStateCookieNotPresentOrInvalid
+	// in case the user is impersonated, or invited. The state cookie will not be present. In that case
+	// well have to redirect the user to a default URL.
+	cookie, cookieExists, err := readCookie(r, e.cfg.StateCookieName)
+	if !cookieExists {
+		return e.cfg.DefaultRedirectTo, nil
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to read state cookie: %w", err)
 	}
 
 	// check validity of the state cookie

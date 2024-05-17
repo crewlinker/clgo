@@ -45,8 +45,8 @@ type Config struct {
 	DefaultSignKeyID string `env:"DEFAULT_SIGN_KEY_ID" envDefault:"key1"`
 	// DefaultEncryptKeyID defines the default encryption id used for encryption
 	DefaultEncryptKeyID string `env:"DEFAULT_ENCRYPT_KEY_ID" envDefault:"key1"`
-	// RedirectToIfImpersonated is the URL to redirect to if the user is impersonated
-	RedirectToIfImpersonated *url.URL `env:"REDIRECT_TO_IF_IMPERSONATED" envDefault:"http://localhost:8080/healthz"`
+	// DefaultRedirectTo is the URL to redirect to if there is no state cookie
+	DefaultRedirectTo *url.URL `env:"DEFAULT_REDIRECT_TO" envDefault:"http://localhost:8080/healthz"`
 	// SessionCookiePath is the name he access token cookie will get.
 	SessionCookieName string `env:"SESSION_COOKIE_NAME" envDefault:"cl_session"`
 	// StateCookieName is the Name for the state nonce cookie will be set

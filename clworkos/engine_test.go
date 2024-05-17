@@ -84,7 +84,7 @@ var _ = Describe("engine", func() {
 		}
 	})
 
-	Describe("handle sign-in callback", func() {
+	Describe("handle callback", func() {
 		It("should return error when code is missing", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
 			_, err := engine.HandleSignInCallback(ctx, rec, req)
@@ -92,13 +92,13 @@ var _ = Describe("engine", func() {
 			Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
 		})
 
-		It("should return error when error is present", func(ctx context.Context) {
+		It("should return error when provider error is present", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?code=foo&error=error&error_description=description", nil)
 			_, err := engine.HandleSignInCallback(ctx, rec, req)
 			Expect(err).To(MatchError(MatchRegexp(`callback with error from WorkOS`)))
 		})
 
-		It("should authenticate when impersonated", func(ctx context.Context) {
+		It("should authenticate when without state cookie", func(ctx context.Context) {
 			umm.EXPECT().AuthenticateWithCode(mock.Anything, mock.Anything).
 				Return(usermanagement.AuthenticateResponse{
 					Impersonator: &usermanagement.Impersonator{Email: "admin@admin.com"},
@@ -120,7 +120,7 @@ var _ = Describe("engine", func() {
 			Expect(loc.String()).To(Equal("http://localhost:8080/healthz"))
 		})
 
-		Describe("non-impersonated", func() {
+		Describe("with state cookie", func() {
 			var stateToken string
 			BeforeEach(func(ctx context.Context) {
 				umm.EXPECT().AuthenticateWithCode(mock.Anything, mock.Anything).
@@ -131,13 +131,6 @@ var _ = Describe("engine", func() {
 					Once()
 
 				stateToken = lo.Must(engine.BuildSignedStateToken("some.nonce", "http://localhost:3834/some/dst"))
-			})
-
-			It("without state cookie", func(ctx context.Context) {
-				rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?code=foo", nil)
-				_, err := engine.HandleSignInCallback(ctx, rec, req)
-				Expect(err).To(MatchError(clworkos.ErrStateCookieNotPresentOrInvalid))
-				Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
 			})
 
 			It("with invalid state cookie", func(ctx context.Context) {
