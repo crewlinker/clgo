@@ -125,8 +125,8 @@ func (e Engine) HandleSignInCallback(ctx context.Context, w http.ResponseWriter,
 		return nil, fmt.Errorf("failed to authenticate with code: %w", err)
 	}
 
-	// check that the state cookie is valid, and remove it
-	redirectTo, err := e.checkAndConsumeStateCookie(ctx, r.URL.Query().Get("state"), resp.Impersonator != nil, w, r)
+	// determine the redirect based on the state cookie existence
+	redirectTo, err := e.checkAndConsumeStateCookie(ctx, r.URL.Query().Get("state"), w, r)
 	if err != nil {
 		return nil, fmt.Errorf("failed to verify and consume state cookie: %w", err)
 	}

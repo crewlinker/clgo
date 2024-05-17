@@ -15,9 +15,6 @@ var ErrRedirectToNotProvided = errors.New("missing redirect_to query parameter")
 // ErrCallbackCodeNotProvided is returned when the code query parameter is missing.
 var ErrCallbackCodeNotProvided = errors.New("missing code query parameter")
 
-// ErrStateCookieNotPresentOrInvalid is returned when the state cookie is not present or invalid.
-var ErrStateCookieNotPresentOrInvalid = errors.New("state cookie not present or invalid")
-
 // ErrStateNonceMismatch is returned when the nonce from the query does not match the nonce from the state cookie.
 var ErrStateNonceMismatch = errors.New("state nonce mismatch")
 
@@ -99,7 +96,6 @@ func IsBadRequestError(err error) bool {
 	case errors.Is(err, ErrRedirectToNotProvided),
 		errors.Is(err, ErrNoAccessTokenForSignOut),
 		errors.Is(err, ErrCallbackCodeNotProvided),
-		errors.Is(err, ErrStateCookieNotPresentOrInvalid),
 		errors.Is(err, ErrStateNonceMismatch):
 		return true
 
