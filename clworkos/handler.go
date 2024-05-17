@@ -120,7 +120,7 @@ func Provide() fx.Option {
 		// provide the real user management client
 		fx.Provide(fx.Annotate(NewUserManagement, fx.As(new(UserManagement)))),
 		// provide the engine
-		fx.Provide(NewEngine),
+		fx.Provide(fx.Annotate(NewEngine, fx.ParamTags(``, ``, `optional:"true"`))),
 		// provide the keys
 		fx.Provide(fx.Annotate(NewKeys, fx.OnStart(func(ctx context.Context, k *Keys) error { return k.start(ctx) }))),
 		// provide time.Now as the wall-clock time

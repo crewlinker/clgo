@@ -102,7 +102,7 @@ var _ = Describe("engine", func() {
 			umm.EXPECT().AuthenticateWithCode(mock.Anything, mock.Anything).
 				Return(usermanagement.AuthenticateResponse{
 					Impersonator: &usermanagement.Impersonator{Email: "admin@admin.com"},
-					AccessToken:  "some.access.token",
+					AccessToken:  AccessToken1ValidFor06_46_08,
 					RefreshToken: "some.refresh.token",
 				}, nil).
 				Once()
@@ -115,7 +115,7 @@ var _ = Describe("engine", func() {
 			Expect(rec.Result().Cookies()[0].Name).To(Equal("cl_session"))
 			Expect(rec.Result().Cookies()[0].Value).To(MatchRegexp(`^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$`))
 			Expect(rec.Result().Cookies()[1].Name).To(Equal("cl_access_token"))
-			Expect(rec.Result().Cookies()[1].Value).To(Equal(`some.access.token`))
+			Expect(rec.Result().Cookies()[1].Value).To(Equal(AccessToken1ValidFor06_46_08))
 
 			Expect(loc.String()).To(Equal("http://localhost:8080/healthz"))
 		})
@@ -125,7 +125,7 @@ var _ = Describe("engine", func() {
 			BeforeEach(func(ctx context.Context) {
 				umm.EXPECT().AuthenticateWithCode(mock.Anything, mock.Anything).
 					Return(usermanagement.AuthenticateResponse{
-						AccessToken:  "some.access.token",
+						AccessToken:  AccessToken1ValidFor06_46_08,
 						RefreshToken: "some.refresh.token",
 					}, nil).
 					Once()
@@ -167,7 +167,7 @@ var _ = Describe("engine", func() {
 				Expect(rec.Result().Cookies()[1].Value).To(MatchRegexp(`^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$`))
 				Expect(rec.Result().Cookies()[1].Path).To(Equal("/"))
 				Expect(rec.Result().Cookies()[2].Name).To(Equal("cl_access_token"))
-				Expect(rec.Result().Cookies()[2].Value).To(Equal(`some.access.token`))
+				Expect(rec.Result().Cookies()[2].Value).To(Equal(AccessToken1ValidFor06_46_08))
 				Expect(rec.Result().Cookies()[2].Path).To(Equal("/"))
 			})
 		})

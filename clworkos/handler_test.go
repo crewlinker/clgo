@@ -74,7 +74,10 @@ var _ = Describe("handler", func() {
 
 		It("should serve redirect", func() {
 			mmu.EXPECT().AuthenticateWithCode(mock.Anything, mock.Anything).Return(usermanagement.AuthenticateResponse{
-				Impersonator: &usermanagement.Impersonator{Email: "a@a.com"},
+				AccessToken: AccessToken1ValidFor06_46_08,
+				Impersonator: &usermanagement.Impersonator{
+					Email: "a@a.com",
+				},
 			}, nil)
 
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/callback?code=123", nil)

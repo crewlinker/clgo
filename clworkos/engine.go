@@ -43,6 +43,7 @@ type Engine struct {
 	keys  *Keys
 	clock jwt.Clock
 	um    UserManagement
+	hooks Hooks
 	globs struct {
 		allowedRedirectTo []glob.Glob
 	}
@@ -52,6 +53,7 @@ type Engine struct {
 func NewEngine(
 	cfg Config,
 	logs *zap.Logger,
+	hooks Hooks,
 	keys *Keys,
 	clock Clock,
 	um UserManagement,
@@ -62,6 +64,7 @@ func NewEngine(
 		keys:  keys,
 		um:    um,
 		clock: clock,
+		hooks: hooks,
 	}
 
 	eng.globs.allowedRedirectTo, err = iter.MapErr(cfg.RedirectToAllowedHosts, func(pat *string) (glob.Glob, error) {
@@ -69,6 +72,10 @@ func NewEngine(
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile allowed redirect_to patterns: %w", err)
+	}
+
+	if eng.hooks == nil {
+		eng.hooks = noOpHooks{}
 	}
 
 	return eng, nil
@@ -123,6 +130,15 @@ func (e Engine) HandleSignInCallback(ctx context.Context, w http.ResponseWriter,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to authenticate with code: %w", err)
+	}
+
+	idn, err := e.identityFromAccessToken(ctx, resp.AccessToken)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get identity from access token: %w", err)
+	}
+
+	if err := e.hooks.AuthenticateWithCodeDidSucceed(ctx, idn); err != nil {
+		return nil, fmt.Errorf("failed to run hook: %w", err)
 	}
 
 	// determine the redirect based on the state cookie existence
