@@ -64,7 +64,12 @@ var _ = Describe("engine", func() {
 			Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
 		})
 
-		for _, redirectTo := range []string{"localhost", "localhost:8080", "x.y.z.foo.com"} {
+		for _, redirectTo := range []string{
+			"localhost",
+			"localhost:8080",
+			"x.y.z.foo.com",
+			"deploy-preview-20--atsdash.netlify.app",
+		} {
 			It("should add state cookie, and redirect to provider", func(ctx context.Context) {
 				umm.EXPECT().GetAuthorizationURL(mock.Anything).Return(lo.Must(
 					url.Parse("http://localhost:5354/some/redirect/url"),
