@@ -164,7 +164,7 @@ func TestProvide(tb testing.TB, clockAt int64) fx.Option {
 			c.PubPrivEncryptKeySetB64JSON = "ewogICAgImtleXMiOiBbCiAgICAgICAgewogICAgICAgICAgICAia3R5IjogIkVDIiwKICAgICAgICAgICAgImQiOiAiNERXcURtaWZkcXN1M0FKWF9rY1pZdER3QTF5cERfWFkyNHN2REFxdlY0ayIsCiAgICAgICAgICAgICJ1c2UiOiAiZW5jIiwKICAgICAgICAgICAgImNydiI6ICJQLTI1NiIsCiAgICAgICAgICAgICJraWQiOiAia2V5MSIsCiAgICAgICAgICAgICJ4IjogIkxhUUZfTmxkWXRNTVJUWjl0QmM5SFB3SkRJQTUxVkNNREdiUXlVeFRMLTgiLAogICAgICAgICAgICAieSI6ICI3M1BLMVk2VktCS185X1ltMVdZUHlvZmYwSnM1dDdUaUxJU1ZEV0NFanJvIiwKICAgICAgICAgICAgImFsZyI6ICJFQ0RILUVTK0ExMjhLVyIKICAgICAgICB9CiAgICBdCn0K"
 			c.JWKEndpoint = srv.URL
 			c.ShowErrorMessagesToClient = true
-			c.RedirectToAllowedHosts = []string{"localhost", "*.foo.com", "*atsdash.netlify.app"}
+			c.RedirectToAllowedHosts = []string{"localhost", "*.foo.com", "*--atsdash.netlify.app"}
 
 			return c
 		}),
