@@ -8,9 +8,10 @@ type Hooks interface {
 	AuthenticateWithCodeDidSucceed(ctx context.Context, idn Identity) error
 }
 
-var _ Hooks = noOpHooks{}
+var _ Hooks = NoOpHooks{}
 
-// noOpHooks is a no-op implementation of Hooks that is the default value if not is provided.
-type noOpHooks struct{}
+// NoOpHooks is a no-op implementation of Hooks that is the default value if not is provided. This is exported so
+// implementations can embed it and only override the methods they care about.
+type NoOpHooks struct{}
 
-func (noOpHooks) AuthenticateWithCodeDidSucceed(ctx context.Context, idn Identity) error { return nil }
+func (NoOpHooks) AuthenticateWithCodeDidSucceed(ctx context.Context, idn Identity) error { return nil }

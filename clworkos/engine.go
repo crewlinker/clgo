@@ -75,7 +75,7 @@ func NewEngine(
 	}
 
 	if eng.hooks == nil {
-		eng.hooks = noOpHooks{}
+		eng.hooks = NoOpHooks{}
 	}
 
 	return eng, nil
