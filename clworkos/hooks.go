@@ -1,11 +1,15 @@
 package clworkos
 
-import "context"
+import (
+	"context"
+
+	"github.com/workos/workos-go/v4/pkg/usermanagement"
+)
 
 // Hooks can be optionally provided to the engine to allow custom
 // behavior at various points in the authentication flow.
 type Hooks interface {
-	AuthenticateWithCodeDidSucceed(ctx context.Context, idn Identity) error
+	AuthenticateWithCodeDidSucceed(ctx context.Context, idn Identity, usr usermanagement.User) error
 }
 
 var _ Hooks = NoOpHooks{}
@@ -14,4 +18,6 @@ var _ Hooks = NoOpHooks{}
 // implementations can embed it and only override the methods they care about.
 type NoOpHooks struct{}
 
-func (NoOpHooks) AuthenticateWithCodeDidSucceed(ctx context.Context, idn Identity) error { return nil }
+func (NoOpHooks) AuthenticateWithCodeDidSucceed(ctx context.Context, idn Identity, usr usermanagement.User) error {
+	return nil
+}

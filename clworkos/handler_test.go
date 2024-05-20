@@ -79,6 +79,10 @@ var _ = Describe("handler", func() {
 					Email: "a@a.com",
 				},
 			}, nil)
+			mmu.EXPECT().GetUser(mock.Anything, mock.Anything).Return(usermanagement.User{
+				FirstName: "bob",
+				LastName:  "smith",
+			}, nil).Once()
 
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/callback?code=123", nil)
 			hdlr.ServeHTTP(rec, req)

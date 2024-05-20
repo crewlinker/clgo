@@ -238,6 +238,59 @@ func (_c *MockUserManagement_GetLogoutURL_Call) RunAndReturn(run func(usermanage
 	return _c
 }
 
+// GetUser provides a mock function with given fields: ctx, opts
+func (_m *MockUserManagement) GetUser(ctx context.Context, opts usermanagement.GetUserOpts) (usermanagement.User, error) {
+	ret := _m.Called(ctx, opts)
+
+	var r0 usermanagement.User
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, usermanagement.GetUserOpts) (usermanagement.User, error)); ok {
+		return rf(ctx, opts)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, usermanagement.GetUserOpts) usermanagement.User); ok {
+		r0 = rf(ctx, opts)
+	} else {
+		r0 = ret.Get(0).(usermanagement.User)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, usermanagement.GetUserOpts) error); ok {
+		r1 = rf(ctx, opts)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockUserManagement_GetUser_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUser'
+type MockUserManagement_GetUser_Call struct {
+	*mock.Call
+}
+
+// GetUser is a helper method to define mock.On call
+//   - ctx context.Context
+//   - opts usermanagement.GetUserOpts
+func (_e *MockUserManagement_Expecter) GetUser(ctx interface{}, opts interface{}) *MockUserManagement_GetUser_Call {
+	return &MockUserManagement_GetUser_Call{Call: _e.mock.On("GetUser", ctx, opts)}
+}
+
+func (_c *MockUserManagement_GetUser_Call) Run(run func(ctx context.Context, opts usermanagement.GetUserOpts)) *MockUserManagement_GetUser_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(usermanagement.GetUserOpts))
+	})
+	return _c
+}
+
+func (_c *MockUserManagement_GetUser_Call) Return(_a0 usermanagement.User, _a1 error) *MockUserManagement_GetUser_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockUserManagement_GetUser_Call) RunAndReturn(run func(context.Context, usermanagement.GetUserOpts) (usermanagement.User, error)) *MockUserManagement_GetUser_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewMockUserManagement creates a new instance of MockUserManagement. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockUserManagement(t interface {

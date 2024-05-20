@@ -111,6 +111,10 @@ var _ = Describe("engine", func() {
 					RefreshToken: "some.refresh.token",
 				}, nil).
 				Once()
+			umm.EXPECT().GetUser(mock.Anything, mock.Anything).Return(usermanagement.User{
+				FirstName: "bob",
+				LastName:  "smith",
+			}, nil).Once()
 
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?code=foo", nil)
 			loc, err := engine.HandleSignInCallback(ctx, rec, req)
@@ -134,6 +138,10 @@ var _ = Describe("engine", func() {
 						RefreshToken: "some.refresh.token",
 					}, nil).
 					Once()
+				umm.EXPECT().GetUser(mock.Anything, mock.Anything).Return(usermanagement.User{
+					FirstName: "bob",
+					LastName:  "smith",
+				}, nil).Once()
 
 				stateToken = lo.Must(engine.BuildSignedStateToken("some.nonce", "http://localhost:3834/some/dst"))
 			})

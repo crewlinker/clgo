@@ -26,6 +26,7 @@ type UserManagement interface {
 	AuthenticateWithRefreshToken(
 		ctx context.Context,
 		opts usermanagement.AuthenticateWithRefreshTokenOpts) (usermanagement.RefreshAuthenticationResponse, error)
+	GetUser(ctx context.Context, opts usermanagement.GetUserOpts) (usermanagement.User, error)
 }
 
 // NewUserManagement creates a new UserManagement implementation with the provided configuration.
@@ -137,7 +138,12 @@ func (e Engine) HandleSignInCallback(ctx context.Context, w http.ResponseWriter,
 		return nil, fmt.Errorf("failed to get identity from access token: %w", err)
 	}
 
-	if err := e.hooks.AuthenticateWithCodeDidSucceed(ctx, idn); err != nil {
+	user, err := e.um.GetUser(ctx, usermanagement.GetUserOpts{User: idn.UserID})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
+
+	if err := e.hooks.AuthenticateWithCodeDidSucceed(ctx, idn, user); err != nil {
 		return nil, fmt.Errorf("failed to run hook: %w", err)
 	}
 
