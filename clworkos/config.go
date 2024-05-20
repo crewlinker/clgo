@@ -118,7 +118,7 @@ func NewKeys(cfg Config) (*Keys, error) {
 func (keys *Keys) start(ctx context.Context) (err error) {
 	keys.workos.public, err = jwk.Fetch(ctx, keys.cfg.JWKEndpoint+keys.cfg.MainClientID)
 	if err != nil {
-		return fmt.Errorf("failed to fetch public keys: %w", err)
+		return fmt.Errorf("failed to fetch WorkOS public keys: %w", err)
 	}
 
 	return nil
