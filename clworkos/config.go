@@ -53,6 +53,10 @@ type Config struct {
 	StateCookieName string `env:"AUTH_NONCE_COOKIE_NAME" envDefault:"cl_auth_state"`
 	// AccessTokenCookiePath is the name he access token cookie will get.
 	AccessTokenCookieName string `env:"ACCESS_TOKEN_COOKIE_NAME" envDefault:"cl_access_token"`
+	// instructs the browser on how long the session cookie should be stored.
+	SessionCookieMaxAgeSeconds int `env:"SESSION_COOKIE_MAX_AGE_SECONDS" envDefault:"34560000"`
+	// instructs the browser on how long the access token cookie should be stored.
+	AccessTokenCookieMaxAgeSeconds int `env:"ACCESS_TOKEN_COOKIE_MAX_AGE_SECONDS" envDefault:"34560000"`
 }
 
 // Keys hold our own private keys, and the WorkOS public keys.
