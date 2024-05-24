@@ -49,24 +49,45 @@ type Config struct {
 // NewReadOnlyConfig constructs a config for a read-only database connecion. The aws config is optional
 // and is only used when IamAuth option is set.
 func NewReadOnlyConfig(cfg Config, logs *zap.Logger, awsc aws.Config) (*pgxpool.Config, error) {
-	return newPoolConfig(cfg, logs.Named("ro"), cfg.ReadOnlyHostname, awsc)
+	return newPoolConfig(cfg, logs, cfg.ReadOnlyHostname, configKindReadOnly, awsc)
 }
 
 // NewReadWriteConfig constructs a config for a read-write database connecion. The aws config is optional
 // and only used when the IamAuth option is set.
 func NewReadWriteConfig(cfg Config, logs *zap.Logger, awsc aws.Config) (*pgxpool.Config, error) {
-	return newPoolConfig(cfg, logs.Named("rw"), cfg.ReadWriteHostname, awsc)
+	return newPoolConfig(cfg, logs, cfg.ReadWriteHostname, configKindReadWrite, awsc)
 }
 
 // error when invalid dep combo for config.
 var errIAMAuthWithoutAWSConfig = errors.New("IAM auth requested but optional AWS config dependency not provided")
 
+// configKind is the kind of pgxpool config we are providing.
+type configKind int
+
+const (
+	configKindUnknown configKind = iota
+	configKindReadOnly
+	configKindReadWrite
+)
+
 // newPoolConfig will turn environment configuration in a way that allows
 // database credentials to be provided.
-func newPoolConfig(cfg Config, logs *zap.Logger, host string, awsc aws.Config) (*pgxpool.Config, error) {
+func newPoolConfig(
+	cfg Config, logs *zap.Logger, host string, kind configKind, awsc aws.Config,
+) (*pgxpool.Config, error) {
+	applicationName := cfg.ApplicationName
+
+	if kind == configKindReadOnly {
+		logs = logs.Named("ro")
+		applicationName += ".ro"
+	} else if kind == configKindReadWrite {
+		logs = logs.Named("rw")
+		applicationName += ".rw"
+	}
+
 	connString := fmt.Sprintf(`postgres://%s:%s@%s/%s?application_name=%s&sslmode=%s`,
 		cfg.Username, url.QueryEscape(cfg.Password), net.JoinHostPort(host, strconv.Itoa(cfg.Port)),
-		cfg.DatabaseName, cfg.ApplicationName, cfg.SSLMode)
+		cfg.DatabaseName, applicationName, cfg.SSLMode)
 
 	pcfg, err := pgxpool.ParseConfig(connString)
 	if err != nil {
