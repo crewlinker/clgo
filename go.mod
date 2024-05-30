@@ -49,6 +49,7 @@ require (
 	github.com/aws/aws-cdk-go/awscdk/v2 v2.123.0
 	github.com/aws/constructs-go/constructs/v10 v10.3.0
 	github.com/aws/jsii-runtime-go v1.94.0
+	github.com/aws/smithy-go v1.19.0
 	github.com/bufbuild/protovalidate-go v0.4.3
 	github.com/caarlos0/env/v10 v10.0.0
 	github.com/cenkalti/backoff/v4 v4.2.1
@@ -98,7 +99,6 @@ require (
 	github.com/agnivade/levenshtein v1.1.1 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
-	github.com/aws/smithy-go v1.19.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/brunoscheufler/aws-ecs-metadata-go v0.0.0-20220812150832-b6b31c6eeeaf // indirect
 	github.com/bytecodealliance/wasmtime-go/v3 v3.0.2 // indirect
