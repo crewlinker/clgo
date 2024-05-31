@@ -10,6 +10,7 @@ import (
 	"github.com/gobwas/glob"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 	"github.com/sourcegraph/conc/iter"
+	"github.com/workos/workos-go/v4/pkg/organizations"
 	"github.com/workos/workos-go/v4/pkg/usermanagement"
 	"go.uber.org/zap"
 )
@@ -29,9 +30,21 @@ type UserManagement interface {
 	GetUser(ctx context.Context, opts usermanagement.GetUserOpts) (usermanagement.User, error)
 }
 
+// Organizations interface provides organization information from WorkOS.
+type Organizations interface {
+	GetOrganization(ctx context.Context, opts organizations.GetOrganizationOpts) (organizations.Organization, error)
+}
+
 // NewUserManagement creates a new UserManagement implementation with the provided configuration.
 func NewUserManagement(cfg Config) *usermanagement.Client {
 	return usermanagement.NewClient(cfg.APIKey)
+}
+
+// NewOrganizations creates a new UserManagement implementation with the provided configuration.
+func NewOrganizations(cfg Config) *organizations.Client {
+	return &organizations.Client{
+		APIKey: cfg.APIKey,
+	}
 }
 
 // Clock is an interface for fetching the wall-clock time.
@@ -44,6 +57,7 @@ type Engine struct {
 	keys  *Keys
 	clock jwt.Clock
 	um    UserManagement
+	orgs  Organizations
 	hooks Hooks
 	globs struct {
 		allowedRedirectTo []glob.Glob
@@ -58,12 +72,14 @@ func NewEngine(
 	keys *Keys,
 	clock Clock,
 	um UserManagement,
+	orgs Organizations,
 ) (eng *Engine, err error) {
 	eng = &Engine{
 		cfg:   cfg,
 		logs:  logs.Named("engine"),
 		keys:  keys,
 		um:    um,
+		orgs:  orgs,
 		clock: clock,
 		hooks: hooks,
 	}
@@ -143,7 +159,12 @@ func (e Engine) HandleSignInCallback(ctx context.Context, w http.ResponseWriter,
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
 
-	if err := e.hooks.AuthenticateWithCodeDidSucceed(ctx, idn, user); err != nil {
+	org, err := e.orgs.GetOrganization(ctx, organizations.GetOrganizationOpts{Organization: resp.OrganizationID})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get organization: %w", err)
+	}
+
+	if err := e.hooks.AuthenticateWithCodeDidSucceed(ctx, idn, user, org); err != nil {
 		return nil, fmt.Errorf("failed to run hook: %w", err)
 	}
 

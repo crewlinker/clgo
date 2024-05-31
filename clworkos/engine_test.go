@@ -13,6 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/mock"
+	"github.com/workos/workos-go/v4/pkg/organizations"
 	"github.com/workos/workos-go/v4/pkg/usermanagement"
 	"go.uber.org/fx"
 )
@@ -27,9 +28,10 @@ var (
 var _ = Describe("engine", func() {
 	var engine *clworkos.Engine
 	var umm *clworkosmock.MockUserManagement
+	var orgm *clworkosmock.MockOrganizations
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(
-			fx.Populate(&engine, &umm),
+			fx.Populate(&engine, &umm, &orgm),
 			Provide(1715748368)) // provide at a wall-clock where tokens have not expired
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
@@ -115,6 +117,9 @@ var _ = Describe("engine", func() {
 				FirstName: "bob",
 				LastName:  "smith",
 			}, nil).Once()
+			orgm.EXPECT().GetOrganization(mock.Anything, mock.Anything).Return(organizations.Organization{
+				Name: "ACME Corp",
+			}, nil).Once()
 
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?code=foo", nil)
 			loc, err := engine.HandleSignInCallback(ctx, rec, req)
@@ -141,6 +146,9 @@ var _ = Describe("engine", func() {
 				umm.EXPECT().GetUser(mock.Anything, mock.Anything).Return(usermanagement.User{
 					FirstName: "bob",
 					LastName:  "smith",
+				}, nil).Once()
+				orgm.EXPECT().GetOrganization(mock.Anything, mock.Anything).Return(organizations.Organization{
+					Name: "ACME Corp",
 				}, nil).Once()
 
 				stateToken = lo.Must(engine.BuildSignedStateToken("some.nonce", "http://localhost:3834/some/dst"))

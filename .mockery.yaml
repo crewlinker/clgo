@@ -13,3 +13,4 @@ packages:
   github.com/crewlinker/clgo/clworkos:
     interfaces:
       UserManagement:
+      Organizations:

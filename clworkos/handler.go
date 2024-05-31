@@ -119,6 +119,8 @@ func Provide() fx.Option {
 		fx.Provide(fx.Annotate(New)),
 		// provide the real user management client
 		fx.Provide(fx.Annotate(NewUserManagement, fx.As(new(UserManagement)))),
+		// provide the real user management client
+		fx.Provide(fx.Annotate(NewOrganizations, fx.As(new(Organizations)))),
 		// provide the engine
 		fx.Provide(fx.Annotate(NewEngine, fx.ParamTags(``, ``, `optional:"true"`))),
 		// provide the keys
@@ -143,6 +145,7 @@ func TestProvide(tb testing.TB, clockAt int64) fx.Option {
 	}))
 
 	umMock := clworkosmock.NewMockUserManagement(tb)
+	orgMock := clworkosmock.NewMockOrganizations(tb)
 
 	if clockAt == 0 {
 		clockAt = time.Now().Unix()
@@ -151,9 +154,11 @@ func TestProvide(tb testing.TB, clockAt int64) fx.Option {
 	return fx.Options(
 		Provide(),
 		// supply our mock implementation
-		fx.Supply(umMock),
+		fx.Supply(umMock, orgMock),
 		// replace the real user management client with the mock
 		fx.Decorate(func(UserManagement) UserManagement { return umMock }),
+		// replace the real orgs client with the mock
+		fx.Decorate(func(Organizations) Organizations { return orgMock }),
 		// fix the wall-clock at the given time
 		fx.Decorate(func(Clock) Clock { return jwt.ClockFunc(func() time.Time { return time.Unix(clockAt, 0) }) }),
 		// setup config that allows for testing

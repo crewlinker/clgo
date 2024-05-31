@@ -15,6 +15,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/mock"
+	"github.com/workos/workos-go/v4/pkg/organizations"
 	"github.com/workos/workos-go/v4/pkg/usermanagement"
 	"go.uber.org/fx"
 	"go.uber.org/zap/zaptest/observer"
@@ -28,11 +29,12 @@ func TestClworkos(t *testing.T) {
 
 var _ = Describe("handler", func() {
 	var hdlr *clworkos.Handler
-	var mmu *clworkosmock.MockUserManagement
+	var umm *clworkosmock.MockUserManagement
+	var orgm *clworkosmock.MockOrganizations
 	var obs *observer.ObservedLogs
 
 	BeforeEach(func(ctx context.Context) {
-		app := fx.New(fx.Populate(&hdlr, &mmu, &obs), Provide(1715748368))
+		app := fx.New(fx.Populate(&hdlr, &umm, &orgm, &obs), Provide(1715748368))
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 	})
@@ -52,7 +54,7 @@ var _ = Describe("handler", func() {
 			})
 
 			It("should serve redirect", func() {
-				mmu.EXPECT().GetAuthorizationURL(mock.Anything).Return(&url.URL{Scheme: "https", Host: "workos.com"}, nil)
+				umm.EXPECT().GetAuthorizationURL(mock.Anything).Return(&url.URL{Scheme: "https", Host: "workos.com"}, nil)
 
 				rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, ep+"?redirect_to=http://localhost:8080", nil)
 				hdlr.ServeHTTP(rec, req)
@@ -73,15 +75,18 @@ var _ = Describe("handler", func() {
 		})
 
 		It("should serve redirect", func() {
-			mmu.EXPECT().AuthenticateWithCode(mock.Anything, mock.Anything).Return(usermanagement.AuthenticateResponse{
+			umm.EXPECT().AuthenticateWithCode(mock.Anything, mock.Anything).Return(usermanagement.AuthenticateResponse{
 				AccessToken: AccessToken1ValidFor06_46_08,
 				Impersonator: &usermanagement.Impersonator{
 					Email: "a@a.com",
 				},
 			}, nil)
-			mmu.EXPECT().GetUser(mock.Anything, mock.Anything).Return(usermanagement.User{
+			umm.EXPECT().GetUser(mock.Anything, mock.Anything).Return(usermanagement.User{
 				FirstName: "bob",
 				LastName:  "smith",
+			}, nil).Once()
+			orgm.EXPECT().GetOrganization(mock.Anything, mock.Anything).Return(organizations.Organization{
+				Name: "ACME Corp",
 			}, nil).Once()
 
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/callback?code=123", nil)
@@ -102,7 +107,7 @@ var _ = Describe("handler", func() {
 		})
 
 		It("should serve redirect", func() {
-			mmu.EXPECT().GetLogoutURL(mock.Anything).Return(&url.URL{Scheme: "https", Host: "workos.com"}, nil)
+			umm.EXPECT().GetLogoutURL(mock.Anything).Return(&url.URL{Scheme: "https", Host: "workos.com"}, nil)
 
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/sign-out", nil)
 			req.AddCookie(&http.Cookie{Name: "cl_access_token", Value: AccessToken1ValidFor06_46_08})
