@@ -159,12 +159,18 @@ func (e Engine) HandleSignInCallback(ctx context.Context, w http.ResponseWriter,
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
 
-	org, err := e.orgs.GetOrganization(ctx, organizations.GetOrganizationOpts{Organization: resp.OrganizationID})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get organization: %w", err)
+	var orgp *organizations.Organization
+
+	if idn.OrganizationID != "" {
+		org, err := e.orgs.GetOrganization(ctx, organizations.GetOrganizationOpts{Organization: resp.OrganizationID})
+		if err != nil {
+			return nil, fmt.Errorf("failed to get organization: %w", err)
+		}
+
+		orgp = &org
 	}
 
-	if err := e.hooks.AuthenticateWithCodeDidSucceed(ctx, idn, user, org); err != nil {
+	if err := e.hooks.AuthenticateWithCodeDidSucceed(ctx, idn, user, orgp); err != nil {
 		return nil, fmt.Errorf("failed to run hook: %w", err)
 	}
 

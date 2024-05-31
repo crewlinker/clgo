@@ -11,7 +11,7 @@ import (
 // behavior at various points in the authentication flow.
 type Hooks interface {
 	AuthenticateWithCodeDidSucceed(
-		ctx context.Context, idn Identity, usr usermanagement.User, org organizations.Organization) error
+		ctx context.Context, idn Identity, usr usermanagement.User, org *organizations.Organization) error
 }
 
 var _ Hooks = NoOpHooks{}
@@ -21,7 +21,7 @@ var _ Hooks = NoOpHooks{}
 type NoOpHooks struct{}
 
 func (NoOpHooks) AuthenticateWithCodeDidSucceed(
-	ctx context.Context, idn Identity, usr usermanagement.User, org organizations.Organization,
+	ctx context.Context, idn Identity, usr usermanagement.User, org *organizations.Organization,
 ) error {
 	return nil
 }
