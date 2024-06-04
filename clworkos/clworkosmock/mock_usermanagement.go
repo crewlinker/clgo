@@ -291,6 +291,59 @@ func (_c *MockUserManagement_GetUser_Call) RunAndReturn(run func(context.Context
 	return _c
 }
 
+// ListUsers provides a mock function with given fields: ctx, opts
+func (_m *MockUserManagement) ListUsers(ctx context.Context, opts usermanagement.ListUsersOpts) (usermanagement.ListUsersResponse, error) {
+	ret := _m.Called(ctx, opts)
+
+	var r0 usermanagement.ListUsersResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, usermanagement.ListUsersOpts) (usermanagement.ListUsersResponse, error)); ok {
+		return rf(ctx, opts)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, usermanagement.ListUsersOpts) usermanagement.ListUsersResponse); ok {
+		r0 = rf(ctx, opts)
+	} else {
+		r0 = ret.Get(0).(usermanagement.ListUsersResponse)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, usermanagement.ListUsersOpts) error); ok {
+		r1 = rf(ctx, opts)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockUserManagement_ListUsers_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListUsers'
+type MockUserManagement_ListUsers_Call struct {
+	*mock.Call
+}
+
+// ListUsers is a helper method to define mock.On call
+//   - ctx context.Context
+//   - opts usermanagement.ListUsersOpts
+func (_e *MockUserManagement_Expecter) ListUsers(ctx interface{}, opts interface{}) *MockUserManagement_ListUsers_Call {
+	return &MockUserManagement_ListUsers_Call{Call: _e.mock.On("ListUsers", ctx, opts)}
+}
+
+func (_c *MockUserManagement_ListUsers_Call) Run(run func(ctx context.Context, opts usermanagement.ListUsersOpts)) *MockUserManagement_ListUsers_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(usermanagement.ListUsersOpts))
+	})
+	return _c
+}
+
+func (_c *MockUserManagement_ListUsers_Call) Return(_a0 usermanagement.ListUsersResponse, _a1 error) *MockUserManagement_ListUsers_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockUserManagement_ListUsers_Call) RunAndReturn(run func(context.Context, usermanagement.ListUsersOpts) (usermanagement.ListUsersResponse, error)) *MockUserManagement_ListUsers_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewMockUserManagement creates a new instance of MockUserManagement. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockUserManagement(t interface {

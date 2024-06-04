@@ -116,7 +116,7 @@ const moduleName = "clworkos"
 func Provide() fx.Option {
 	return fx.Module(moduleName,
 		// provide the rpc implementations
-		fx.Provide(fx.Annotate(New)),
+		fx.Provide(fx.Annotate(New), fx.Annotate(NewLister)),
 		// provide the real user management client
 		fx.Provide(fx.Annotate(NewUserManagement, fx.As(new(UserManagement)))),
 		// provide the real user management client

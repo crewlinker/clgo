@@ -28,11 +28,16 @@ type UserManagement interface {
 		ctx context.Context,
 		opts usermanagement.AuthenticateWithRefreshTokenOpts) (usermanagement.RefreshAuthenticationResponse, error)
 	GetUser(ctx context.Context, opts usermanagement.GetUserOpts) (usermanagement.User, error)
+	ListUsers(ctx context.Context, opts usermanagement.ListUsersOpts) (usermanagement.ListUsersResponse, error)
 }
 
 // Organizations interface provides organization information from WorkOS.
 type Organizations interface {
 	GetOrganization(ctx context.Context, opts organizations.GetOrganizationOpts) (organizations.Organization, error)
+	ListOrganizations(
+		ctx context.Context,
+		opts organizations.ListOrganizationsOpts,
+	) (organizations.ListOrganizationsResponse, error)
 }
 
 // NewUserManagement creates a new UserManagement implementation with the provided configuration.
