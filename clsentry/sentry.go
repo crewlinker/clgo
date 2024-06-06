@@ -36,6 +36,17 @@ type Config struct {
 	Environment string `env:"ENVIRONMENT" envDefault:"development"`
 }
 
+// StringFromEventID converts a sentry event ID to a string pointer.
+func StringFromEventID(id *sentry.EventID) *string {
+	if id == nil {
+		return nil
+	}
+
+	s := string(*id)
+
+	return &s
+}
+
 // BeforeSendFunc allows events to be modified before they are sent to Sentry.
 type BeforeSendFunc func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event
 

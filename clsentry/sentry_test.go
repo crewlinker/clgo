@@ -30,6 +30,12 @@ var _ = Describe("just sentry", func() {
 		DeferCleanup(app.Stop)
 	})
 
+	It("should convert event id", func() {
+		Expect(clsentry.StringFromEventID(nil)).To(BeNil())
+		id := sentry.EventID("some-id")
+		Expect(clsentry.StringFromEventID(&id)).To(HaveValue(Equal("some-id")))
+	})
+
 	for range 10 {
 		It("should receive the failed fx event", func() {
 			Expect(hub).NotTo(BeNil())
