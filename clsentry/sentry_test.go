@@ -6,12 +6,14 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/crewlinker/clgo/clbuildinfo"
 	"github.com/crewlinker/clgo/clsentry"
 	"github.com/crewlinker/clgo/clzap"
+	sentry "github.com/getsentry/sentry-go"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/samber/lo"
@@ -28,10 +30,17 @@ func TestModel(t *testing.T) {
 var _ = Describe("zap sentry", func() {
 	var logs *zap.Logger
 	var sent chan string
+	var count uint64
 
 	BeforeEach(func(ctx context.Context) {
+		beforeSend := clsentry.BeforeSendFunc(func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event {
+			atomic.AddUint64(&count, 1)
+
+			return event
+		})
+
 		sent = make(chan string, 1)
-		app := fx.New(fx.Populate(&logs), Provide(sent))
+		app := fx.New(fx.Populate(&logs), Provide(sent), fx.Supply(beforeSend))
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 	})
@@ -39,6 +48,7 @@ var _ = Describe("zap sentry", func() {
 	It("should log zap errors to sentry", func() {
 		logs.Error("some error for sentry")
 		Eventually(sent).Should(Receive(ContainSubstring(`"message":"some error for sentry"`)))
+		Expect(atomic.LoadUint64(&count)).To(BeNumerically(">", 0))
 	})
 })
 

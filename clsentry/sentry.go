@@ -31,9 +31,14 @@ type Config struct {
 	ZapSentryLevel zapcore.Level `env:"ZAP_SENTRY_LEVEL" envDefault:"warn"`
 	// ZapSentryBreadcrumbLevel is the level at which zap will send breadcrumbs to Sentry.
 	ZapSentryBreadcrumbLevel zapcore.Level `env:"ZAP_SENTRY_BREADCRUMB_LEVEL" envDefault:"info"`
+	// ZapSentryEnableBreadcrumb is whether to enable breadcrumbs collection for sentry through zap.
+	ZapSentryEnableBreadcrumb bool `env:"ZAP_SENTRY_ENABLE_BREADCRUMB" envDefault:"true"`
 	// If set, will add this environment to the Sentry scope.
 	Environment string `env:"ENVIRONMENT" envDefault:"development"`
 }
+
+// BeforeSendFunc allows events to be modified before they are sent to Sentry.
+type BeforeSendFunc func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event
 
 // NewZapSentry create a secondary zap core. The clzap package will automatically pick it up and make
 // sure all logs are sent to it as well.
@@ -41,7 +46,7 @@ func NewZapSentry(cfg Config, hub *sentry.Hub, client *sentry.Client) (*clzap.Se
 	zsCfg := zapsentry.Configuration{
 		Hub:               hub,
 		Level:             cfg.ZapSentryLevel,
-		EnableBreadcrumbs: true,
+		EnableBreadcrumbs: cfg.ZapSentryEnableBreadcrumb,
 		BreadcrumbLevel:   cfg.ZapSentryBreadcrumbLevel,
 	}
 
@@ -54,7 +59,7 @@ func NewZapSentry(cfg Config, hub *sentry.Hub, client *sentry.Client) (*clzap.Se
 }
 
 // newOptions creates a new sentry client options.
-func newOptions(cfg Config, binfo clbuildinfo.Info) sentry.ClientOptions {
+func newOptions(cfg Config, binfo clbuildinfo.Info, beforeSend BeforeSendFunc) sentry.ClientOptions {
 	return sentry.ClientOptions{
 		Dsn:              cfg.DSN,
 		TracesSampleRate: cfg.TracesSampleRate,
@@ -62,6 +67,8 @@ func newOptions(cfg Config, binfo clbuildinfo.Info) sentry.ClientOptions {
 
 		Release:     binfo.Version(),
 		Environment: cfg.Environment,
+
+		BeforeSend: beforeSend,
 	}
 }
 
@@ -93,10 +100,10 @@ func Provide() fx.Option {
 	var cfg Config
 
 	return fx.Module(moduleName,
-		fx.Provide(sentry.NewClient, sentry.NewScope, newOptions, NewZapSentry),
+		fx.Provide(sentry.NewClient, sentry.NewScope, NewZapSentry),
 		fx.Populate(&cfg),
-
 		fx.ErrorHook(delayOnFxError{}),
+		fx.Provide(fx.Annotate(newOptions, fx.ParamTags(``, ``, `optional:"true"`))),
 
 		// provide the sentry hub and flush on shutdown.
 		fx.Provide(fx.Annotate(newHub, fx.OnStop(func(ctx context.Context, hub *sentry.Hub) error {
