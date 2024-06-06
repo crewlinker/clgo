@@ -27,6 +27,20 @@ func TestModel(t *testing.T) {
 	RunSpecs(t, "clsentry")
 }
 
+var _ = Describe("just sentry", Serial, func() {
+	var hub *sentry.Hub
+
+	BeforeEach(func(ctx context.Context) {
+		app := fx.New(fx.Populate(&hub), Provide(make(chan string)))
+		Expect(app.Start(ctx)).To(Succeed())
+		DeferCleanup(app.Stop)
+	})
+
+	It("should receive the failed fx event", func() {
+		Expect(hub).NotTo(BeNil())
+	})
+})
+
 var _ = Describe("zap sentry", func() {
 	var logs *zap.Logger
 	var sent chan string
@@ -89,7 +103,7 @@ func Provide(sent chan string) fx.Option {
 			return c
 		}),
 		clbuildinfo.TestProvide(),
-		clsentry.Provide(),
+		clsentry.ProvideWithZapSentry(),
 		clzap.TestProvide(),
 	)
 }

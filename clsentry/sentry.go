@@ -100,9 +100,8 @@ func Provide() fx.Option {
 	var cfg Config
 
 	return fx.Module(moduleName,
-		fx.Provide(sentry.NewClient, sentry.NewScope, NewZapSentry),
+		fx.Provide(sentry.NewClient, sentry.NewScope),
 		fx.Populate(&cfg),
-		fx.ErrorHook(delayOnFxError{}),
 		fx.Provide(fx.Annotate(newOptions, fx.ParamTags(``, ``, `optional:"true"`))),
 
 		// provide the sentry hub and flush on shutdown.
@@ -121,5 +120,14 @@ func Provide() fx.Option {
 
 		// provide the environment configuration
 		clconfig.Provide[Config](strings.ToUpper(moduleName)+"_"),
+	)
+}
+
+// ProvideWithZapSentry configures the DI for providing sentry integration with Zap.
+func ProvideWithZapSentry() fx.Option {
+	return fx.Options(
+		Provide(),
+		fx.Provide(NewZapSentry),
+		fx.ErrorHook(delayOnFxError{}),
 	)
 }
