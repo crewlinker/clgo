@@ -2,15 +2,23 @@
 package clsentry
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/crewlinker/clgo/clbuildinfo"
 	"github.com/crewlinker/clgo/clconfig"
 	sentry "github.com/getsentry/sentry-go"
+	"github.com/samber/lo"
 	"go.uber.org/fx"
 )
 
@@ -24,7 +32,6 @@ type Config struct {
 	DefaultFlushTimeout time.Duration `env:"DEFAULT_FLUSH_TIMEOUT" envDefault:"2s"`
 	// AttachStacktrace is whether to attach stacktrace to pure capture message calls.
 	AttachStacktrace bool `env:"ATTACH_STACKTRACE" envDefault:"true"`
-
 	// If set, will add this environment to the Sentry scope.
 	Environment string `env:"ENVIRONMENT" envDefault:"development"`
 }
@@ -82,5 +89,55 @@ func Provide() fx.Option {
 
 		// provide the environment configuration
 		clconfig.Provide[Config](strings.ToUpper(moduleName)+"_"),
+	)
+}
+
+type testServer struct{ *httptest.Server }
+
+// ObservedEvents keeps observe logs.
+type ObservedEvents struct {
+	evs []sentry.Event
+	mu  sync.RWMutex
+}
+
+// Events returns a copy of all the ovserved events. It is safe to call from multiple goroutines.
+func (o *ObservedEvents) Events() (evs []sentry.Event) {
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+
+	evs = make([]sentry.Event, len(o.evs))
+	copy(evs, o.evs)
+
+	return evs
+}
+
+// TestProvide provides dependencies in a way that makes testing Sentry integration easier.
+func TestProvide() fx.Option {
+	return fx.Options(
+		fx.Provide(func() *ObservedEvents {
+			return &ObservedEvents{}
+		}),
+
+		fx.Provide(fx.Annotate(func(obs *ObservedEvents) *testServer {
+			return &testServer{httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				parts, event := bytes.SplitN(lo.Must1(io.ReadAll(r.Body)), []byte("\n"), 3), sentry.Event{} //nolint:gomnd
+
+				lo.Must0(json.Unmarshal(parts[2], &event))
+
+				obs.mu.Lock()
+				obs.evs = append(obs.evs, event)
+				obs.mu.Unlock()
+			}))}
+		}, fx.OnStop(func(ts *testServer) { ts.Close() }))),
+
+		fx.Decorate(func(c Config, ts *testServer) Config {
+			loc, _ := url.Parse(ts.URL)
+			loc.User = url.UserPassword("someuser", "")
+			c.DSN = loc.String() + "/someproject"
+
+			return c
+		}),
+
+		Provide(),
 	)
 }
