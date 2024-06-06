@@ -46,7 +46,6 @@ require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.31.0-20231115204500-e097f827e652.2
 	connectrpc.com/connect v1.14.0
 	connectrpc.com/validate v0.1.0
-	github.com/TheZeroSlave/zapsentry v1.23.0
 	github.com/aws/aws-cdk-go/awscdk/v2 v2.123.0
 	github.com/aws/constructs-go/constructs/v10 v10.3.0
 	github.com/aws/jsii-runtime-go v1.94.0

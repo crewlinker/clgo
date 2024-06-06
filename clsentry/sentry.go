@@ -8,13 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/TheZeroSlave/zapsentry"
 	"github.com/crewlinker/clgo/clbuildinfo"
 	"github.com/crewlinker/clgo/clconfig"
-	"github.com/crewlinker/clgo/clzap"
 	sentry "github.com/getsentry/sentry-go"
 	"go.uber.org/fx"
-	"go.uber.org/zap/zapcore"
 )
 
 // Config configures.
@@ -27,36 +24,13 @@ type Config struct {
 	DefaultFlushTimeout time.Duration `env:"DEFAULT_FLUSH_TIMEOUT" envDefault:"2s"`
 	// AttachStacktrace is whether to attach stacktrace to pure capture message calls.
 	AttachStacktrace bool `env:"ATTACH_STACKTRACE" envDefault:"true"`
-	// ZapSentryLevel is the level at which zap will send messages to Sentry.
-	ZapSentryLevel zapcore.Level `env:"ZAP_SENTRY_LEVEL" envDefault:"warn"`
-	// ZapSentryBreadcrumbLevel is the level at which zap will send breadcrumbs to Sentry.
-	ZapSentryBreadcrumbLevel zapcore.Level `env:"ZAP_SENTRY_BREADCRUMB_LEVEL" envDefault:"info"`
-	// ZapSentryEnableBreadcrumb is whether to enable breadcrumbs collection for sentry through zap.
-	ZapSentryEnableBreadcrumb bool `env:"ZAP_SENTRY_ENABLE_BREADCRUMB" envDefault:"true"`
+
 	// If set, will add this environment to the Sentry scope.
 	Environment string `env:"ENVIRONMENT" envDefault:"development"`
 }
 
 // BeforeSendFunc allows events to be modified before they are sent to Sentry.
 type BeforeSendFunc func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event
-
-// NewZapSentry create a secondary zap core. The clzap package will automatically pick it up and make
-// sure all logs are sent to it as well.
-func NewZapSentry(cfg Config, hub *sentry.Hub, client *sentry.Client) (*clzap.SecondaryCore, error) {
-	zsCfg := zapsentry.Configuration{
-		Hub:               hub,
-		Level:             cfg.ZapSentryLevel,
-		EnableBreadcrumbs: cfg.ZapSentryEnableBreadcrumb,
-		BreadcrumbLevel:   cfg.ZapSentryBreadcrumbLevel,
-	}
-
-	core, err := zapsentry.NewCore(zsCfg, zapsentry.NewSentryClientFromClient(client))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create zap-sentry core: %w", err)
-	}
-
-	return &clzap.SecondaryCore{core, "sentry"}, nil
-}
 
 // newOptions creates a new sentry client options.
 func newOptions(cfg Config, binfo clbuildinfo.Info, beforeSend BeforeSendFunc) sentry.ClientOptions {
@@ -75,18 +49,6 @@ func newOptions(cfg Config, binfo clbuildinfo.Info, beforeSend BeforeSendFunc) s
 // newHub inits a new sentry hub.
 func newHub(client *sentry.Client, scope *sentry.Scope) *sentry.Hub {
 	return sentry.NewHub(client, scope)
-}
-
-// delayOnFxError is a fx error handler hook that delays fx when an error occurs. This will allow the
-// sentry hub to flush the error before the application exits.
-type delayOnFxError struct{}
-
-// FxErrorShutdownDelay is the delay to wait before shutting down the application after an error. It allows flushing
-// of the sentry hub to complete.
-var FxErrorShutdownDelay = time.Second * 2
-
-func (h delayOnFxError) HandleError(_ error) {
-	time.Sleep(FxErrorShutdownDelay)
 }
 
 // ErrFlushFailed is returned when the flush fails during fx shutdown.
@@ -120,14 +82,5 @@ func Provide() fx.Option {
 
 		// provide the environment configuration
 		clconfig.Provide[Config](strings.ToUpper(moduleName)+"_"),
-	)
-}
-
-// ProvideWithZapSentry configures the DI for providing sentry integration with Zap.
-func ProvideWithZapSentry() fx.Option {
-	return fx.Options(
-		Provide(),
-		fx.Provide(NewZapSentry),
-		fx.ErrorHook(delayOnFxError{}),
 	)
 }

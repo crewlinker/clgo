@@ -6,9 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"sync/atomic"
 	"testing"
-	"time"
 
 	"github.com/crewlinker/clgo/clbuildinfo"
 	"github.com/crewlinker/clgo/clsentry"
@@ -18,7 +16,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/samber/lo"
 	"go.uber.org/fx"
-	"go.uber.org/zap"
 )
 
 func TestModel(t *testing.T) {
@@ -41,48 +38,48 @@ var _ = Describe("just sentry", Serial, func() {
 	})
 })
 
-var _ = Describe("zap sentry", func() {
-	var logs *zap.Logger
-	var sent chan string
-	var count uint64
+// var _ = Describe("zap sentry", func() {
+// 	var logs *zap.Logger
+// 	var sent chan string
+// 	var count uint64
 
-	BeforeEach(func(ctx context.Context) {
-		beforeSend := clsentry.BeforeSendFunc(func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event {
-			atomic.AddUint64(&count, 1)
+// 	BeforeEach(func(ctx context.Context) {
+// 		beforeSend := clsentry.BeforeSendFunc(func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event {
+// 			atomic.AddUint64(&count, 1)
 
-			return event
-		})
+// 			return event
+// 		})
 
-		sent = make(chan string, 1)
-		app := fx.New(fx.Populate(&logs), Provide(sent), fx.Supply(beforeSend))
-		Expect(app.Start(ctx)).To(Succeed())
-		DeferCleanup(app.Stop)
-	})
+// 		sent = make(chan string, 1)
+// 		app := fx.New(fx.Populate(&logs), Provide(sent), fx.Supply(beforeSend))
+// 		Expect(app.Start(ctx)).To(Succeed())
+// 		DeferCleanup(app.Stop)
+// 	})
 
-	It("should log zap errors to sentry", func() {
-		logs.Error("some error for sentry")
-		Eventually(sent).Should(Receive(ContainSubstring(`"message":"some error for sentry"`)))
-		Expect(atomic.LoadUint64(&count)).To(BeNumerically(">", 0))
-	})
-})
+// 	It("should log zap errors to sentry", func() {
+// 		logs.Error("some error for sentry")
+// 		Eventually(sent).Should(Receive(ContainSubstring(`"message":"some error for sentry"`)))
+// 		Expect(atomic.LoadUint64(&count)).To(BeNumerically(">", 0))
+// 	})
+// })
 
-var _ = Describe("fx zap sentry", Serial, func() {
-	var logs *zap.Logger
-	var hdl http.Handler
-	var sent chan string
+// var _ = Describe("fx zap sentry", Serial, func() {
+// 	var logs *zap.Logger
+// 	var hdl http.Handler
+// 	var sent chan string
 
-	BeforeEach(func(ctx context.Context) {
-		clsentry.FxErrorShutdownDelay = time.Millisecond * 100
+// 	BeforeEach(func(ctx context.Context) {
+// 		clsentry.FxErrorFlushTimeout = time.Millisecond * 100
 
-		sent = make(chan string, 1)
-		app := fx.New(fx.Populate(&logs, &hdl), Provide(sent))
-		app.Start(ctx)
-	})
+// 		sent = make(chan string, 1)
+// 		app := fx.New(fx.Populate(&logs, &hdl), Provide(sent), clsentry.Fx())
+// 		app.Start(ctx)
+// 	})
 
-	It("should receive the failed fx event", func() {
-		Eventually(sent).Should(Receive(ContainSubstring(`"error":"missing dependencies for function`)))
-	})
-})
+// 	It("should receive the failed fx event", func() {
+// 		Eventually(sent).Should(Receive(ContainSubstring(`"error":"missing dependencies for function`)))
+// 	})
+// })
 
 func Provide(sent chan string) fx.Option {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -103,7 +100,7 @@ func Provide(sent chan string) fx.Option {
 			return c
 		}),
 		clbuildinfo.TestProvide(),
-		clsentry.ProvideWithZapSentry(),
+		clsentry.Provide(),
 		clzap.TestProvide(),
 	)
 }
