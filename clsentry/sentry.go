@@ -19,8 +19,8 @@ import (
 
 // Config configures.
 type Config struct {
-	// Sentry DNS to send data to.
-	DNS string `env:"DNS"`
+	// Sentry DSN to send data to.
+	DSN string `env:"DSN"`
 	// TracesSampleRate is the rate at which traces are captures for Sentry.
 	TracesSampleRate float64 `env:"TRACES_SAMPLE_RATE" envDefault:"1.0"`
 	// DefaultFlushTimeout is the default timeout for flushing to Sentry.
@@ -54,7 +54,7 @@ func NewZapSentry(cfg Config, hub *sentry.Hub, client *sentry.Client) (*clzap.Se
 // newOptions creates a new sentry client options.
 func newOptions(cfg Config, binfo clbuildinfo.Info) sentry.ClientOptions {
 	return sentry.ClientOptions{
-		Dsn:              cfg.DNS,
+		Dsn:              cfg.DSN,
 		TracesSampleRate: cfg.TracesSampleRate,
 		AttachStacktrace: cfg.AttachStacktrace,
 

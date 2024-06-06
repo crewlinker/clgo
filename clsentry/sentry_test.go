@@ -74,9 +74,7 @@ func Provide(sent chan string) fx.Option {
 
 	return fx.Options(
 		fx.Decorate(func(c clsentry.Config) clsentry.Config {
-			c.DNS = loc.String() + "/someproject"
-
-			// c.DNS = "https://a6735ca7e5c57aad8ae5db4d4e3ae320@o4507380742422528.ingest.de.sentry.io/4507380746682448"
+			c.DSN = loc.String() + "/someproject"
 
 			return c
 		}),
