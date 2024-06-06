@@ -38,6 +38,20 @@ func Fx() fx.Option {
 	})
 }
 
+// SecondCore can be provided in the DI to make the logger write to a second core. This is useful
+// for writing logs to a observability system like Sentry.
+type SecondCore = struct{ zapcore.Core }
+
+// newLogger can be used to create a logger from a single core or from two cores: writing to both.
+func newLogger(zc zapcore.Core, sc *SecondCore) *zap.Logger {
+	l := zap.New(zc)
+	if sc == nil {
+		return l
+	} else {
+		return zap.New(zapcore.NewTee(zc, sc.Core))
+	}
+}
+
 // moduleName for naming conventions.
 const moduleName = "clzap"
 
@@ -50,11 +64,13 @@ func Provide() fx.Option {
 		// allow environmental config to configure the level at which to log
 		fx.Provide(func(cfg Config) zapcore.LevelEnabler { return cfg.Level }),
 		// provide the zapper, make sure everything is synced on shutdown
-		fx.Provide(fx.Annotate(zap.New, fx.OnStop(func(ctx context.Context, l *zap.Logger) error {
-			_ = l.Sync() // ignore to support TTY: https://github.com/uber-go/zap/issues/880
+		fx.Provide(fx.Annotate(newLogger,
+			fx.ParamTags(``, `optional:"true"`),
+			fx.OnStop(func(ctx context.Context, l *zap.Logger) error {
+				_ = l.Sync() // ignore to support TTY: https://github.com/uber-go/zap/issues/880
 
-			return nil
-		}))),
+				return nil
+			}))),
 		// provide dependencies to build the prod logger
 		fx.Provide(zapcore.NewCore, zapcore.NewJSONEncoder, zap.NewProductionEncoderConfig),
 		// customize the to fit AWS Lambda's application log format standard, as documented:
@@ -115,12 +131,14 @@ func Observed() fx.Option {
 		clconfig.Provide[Config](strings.ToUpper(moduleName)+"_"),
 		fx.Provide(func(cfg Config) zapcore.LevelEnabler { return cfg.Level }),
 		fx.Provide(newObservedAndConsole),
-		fx.Provide(fx.Annotate(zap.New, fx.OnStop(func(ctx context.Context, l *zap.Logger) error {
-			if err := l.Sync(); err != nil {
-				return fmt.Errorf("failed to sync: %w", err)
-			}
+		fx.Provide(fx.Annotate(newLogger,
+			fx.ParamTags(``, `optional:"true"`),
+			fx.OnStop(func(ctx context.Context, l *zap.Logger) error {
+				if err := l.Sync(); err != nil {
+					return fmt.Errorf("failed to sync: %w", err)
+				}
 
-			return nil
-		}))),
+				return nil
+			}))),
 	)
 }

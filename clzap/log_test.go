@@ -1,6 +1,7 @@
 package clzap_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -66,5 +67,28 @@ var _ = Describe("test logging", func() {
 
 	It("should not observe fx logging", func() {
 		Expect(obs.FilterMessageSnippet("provided").Len()).To(BeNumerically("==", 0))
+	})
+})
+
+var _ = Describe("second core", func() {
+	var logs *zap.Logger
+	var obs *observer.ObservedLogs
+	var buf *bytes.Buffer
+
+	BeforeEach(func(ctx context.Context) {
+		buf = bytes.NewBuffer(nil)
+		zc2 := zapcore.NewCore(zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()), zapcore.AddSync(buf), zapcore.DebugLevel)
+
+		app := fx.New(clzap.TestProvide(), fx.Populate(&logs, &obs), fx.Supply(&clzap.SecondCore{Core: zc2}))
+		Expect(app.Start(ctx)).To(Succeed())
+		DeferCleanup(app.Stop)
+
+		DeferCleanup(func() {
+			Expect(buf.String()).To(ContainSubstring("log something for second core"))
+		})
+	})
+
+	It("should not observe fx logging", func() {
+		logs.Info("log something for second core")
 	})
 })
