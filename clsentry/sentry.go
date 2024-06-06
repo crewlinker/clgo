@@ -31,6 +31,8 @@ type Config struct {
 	ZapSentryLevel zapcore.Level `env:"ZAP_SENTRY_LEVEL" envDefault:"warn"`
 	// ZapSentryBreadcrumbLevel is the level at which zap will send breadcrumbs to Sentry.
 	ZapSentryBreadcrumbLevel zapcore.Level `env:"ZAP_SENTRY_BREADCRUMB_LEVEL" envDefault:"info"`
+	// If set, will add this environment to the Sentry scope.
+	Environment string `env:"ENVIRONMENT" envDefault:"development"`
 }
 
 // NewZapSentry create a secondary zap core. The clzap package will automatically pick it up and make
@@ -58,7 +60,8 @@ func newOptions(cfg Config, binfo clbuildinfo.Info) sentry.ClientOptions {
 		TracesSampleRate: cfg.TracesSampleRate,
 		AttachStacktrace: cfg.AttachStacktrace,
 
-		Release: binfo.Version(),
+		Release:     binfo.Version(),
+		Environment: cfg.Environment,
 	}
 }
 
