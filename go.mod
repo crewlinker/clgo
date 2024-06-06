@@ -46,13 +46,14 @@ require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.31.0-20231115204500-e097f827e652.2
 	connectrpc.com/connect v1.14.0
 	connectrpc.com/validate v0.1.0
+	github.com/TheZeroSlave/zapsentry v1.23.0
 	github.com/aws/aws-cdk-go/awscdk/v2 v2.123.0
 	github.com/aws/constructs-go/constructs/v10 v10.3.0
 	github.com/aws/jsii-runtime-go v1.94.0
 	github.com/aws/smithy-go v1.19.0
 	github.com/bufbuild/protovalidate-go v0.4.3
 	github.com/caarlos0/env/v10 v10.0.0
-	github.com/cenkalti/backoff/v4 v4.2.1
+	github.com/getsentry/sentry-go v0.28.0
 	github.com/go-playground/validator/v10 v10.17.0
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/go-stack/stack v1.8.1
@@ -105,6 +106,7 @@ require (
 	github.com/cdklabs/awscdk-asset-awscli-go/awscliv1/v2 v2.2.202 // indirect
 	github.com/cdklabs/awscdk-asset-kubectl-go/kubectlv20/v2 v2.1.2 // indirect
 	github.com/cdklabs/awscdk-asset-node-proxy-agent-go/nodeproxyagentv6/v2 v2.0.1 // indirect
+	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chigopher/pathlib v0.15.0 // indirect
 	github.com/containerd/containerd v1.7.11 // indirect
@@ -129,7 +131,7 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/cel-go v0.18.2 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
-	github.com/google/go-querystring v1.0.0 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/pprof v0.0.0-20240424215950-a892ee059fd6 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
@@ -146,7 +148,7 @@ require (
 	github.com/jinzhu/copier v0.3.5 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
-	github.com/klauspost/compress v1.17.2 // indirect
+	github.com/klauspost/compress v1.17.7 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/lestrrat-go/blackmagic v1.0.2 // indirect
 	github.com/lestrrat-go/httpcc v1.0.1 // indirect
@@ -160,7 +162,7 @@ require (
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
-	github.com/mitchellh/go-wordwrap v0.0.0-20150314170334-ad45545899c7 // indirect
+	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/locker v1.0.1 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
