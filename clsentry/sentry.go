@@ -48,7 +48,7 @@ func NewZapSentry(cfg Config, hub *sentry.Hub, client *sentry.Client) (*clzap.Se
 		return nil, fmt.Errorf("failed to create zap-sentry core: %w", err)
 	}
 
-	return &clzap.SecondaryCore{core}, nil
+	return &clzap.SecondaryCore{core, "sentry"}, nil
 }
 
 // newOptions creates a new sentry client options.
