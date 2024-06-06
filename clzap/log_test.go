@@ -79,16 +79,20 @@ var _ = Describe("second core", func() {
 		buf = bytes.NewBuffer(nil)
 		zc2 := zapcore.NewCore(zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()), zapcore.AddSync(buf), zapcore.DebugLevel)
 
-		app := fx.New(clzap.TestProvide(), fx.Populate(&logs, &obs), fx.Supply(&clzap.SecondCore{Core: zc2}))
+		app := fx.New(clzap.TestProvide(), fx.Populate(&logs, &obs), fx.Supply(&clzap.SecondaryCore{
+			Core: zc2, Name: "some_core_name",
+		}))
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 
 		DeferCleanup(func() {
-			Expect(buf.String()).To(ContainSubstring("log something for second core"))
+			Expect(buf.String()).To(ContainSubstring("log something for secondary core"))
+			Expect(buf.String()).To(ContainSubstring("logger initialized with secondary core"))
+			Expect(buf.String()).To(ContainSubstring("some_core_name"))
 		})
 	})
 
 	It("should not observe fx logging", func() {
-		logs.Info("log something for second core")
+		logs.Info("log something for secondary core")
 	})
 })

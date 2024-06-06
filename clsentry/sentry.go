@@ -35,7 +35,7 @@ type Config struct {
 
 // NewZapSentry create a secondary zap core. The clzap package will automatically pick it up and make
 // sure all logs are sent to it as well.
-func NewZapSentry(cfg Config, hub *sentry.Hub, client *sentry.Client) (*clzap.SecondCore, error) {
+func NewZapSentry(cfg Config, hub *sentry.Hub, client *sentry.Client) (*clzap.SecondaryCore, error) {
 	zsCfg := zapsentry.Configuration{
 		Hub:               hub,
 		Level:             cfg.ZapSentryLevel,
@@ -48,7 +48,7 @@ func NewZapSentry(cfg Config, hub *sentry.Hub, client *sentry.Client) (*clzap.Se
 		return nil, fmt.Errorf("failed to create zap-sentry core: %w", err)
 	}
 
-	return &clzap.SecondCore{core}, nil
+	return &clzap.SecondaryCore{core}, nil
 }
 
 // newOptions creates a new sentry client options.

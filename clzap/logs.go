@@ -38,17 +38,23 @@ func Fx() fx.Option {
 	})
 }
 
-// SecondCore can be provided in the DI to make the logger write to a second core. This is useful
+// SecondaryCore can be provided in the DI to make the logger write to a second core. This is useful
 // for writing logs to a observability system like Sentry.
-type SecondCore = struct{ zapcore.Core }
+type SecondaryCore = struct {
+	zapcore.Core
+	Name string
+}
 
 // newLogger can be used to create a logger from a single core or from two cores: writing to both.
-func newLogger(zc zapcore.Core, sc *SecondCore) *zap.Logger {
+func newLogger(zc zapcore.Core, sc *SecondaryCore) *zap.Logger {
 	l := zap.New(zc)
 	if sc == nil {
 		return l
 	} else {
-		return zap.New(zapcore.NewTee(zc, sc.Core))
+		l := zap.New(zapcore.NewTee(zc, sc.Core))
+		l.Info("logger initialized with secondary core", zap.String("second_core_name", sc.Name))
+
+		return l
 	}
 }
 
