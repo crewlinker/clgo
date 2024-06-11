@@ -33,6 +33,7 @@ type UserManagement interface {
 
 // Organizations interface provides organization information from WorkOS.
 type Organizations interface {
+	CreateOrganization(ctx context.Context, opts organizations.CreateOrganizationOpts) (organizations.Organization, error)
 	GetOrganization(ctx context.Context, opts organizations.GetOrganizationOpts) (organizations.Organization, error)
 	ListOrganizations(
 		ctx context.Context,
