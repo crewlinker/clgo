@@ -130,6 +130,59 @@ func (_c *MockUserManagement_AuthenticateWithRefreshToken_Call) RunAndReturn(run
 	return _c
 }
 
+// CreateOrganizationMembership provides a mock function with given fields: ctx, opts
+func (_m *MockUserManagement) CreateOrganizationMembership(ctx context.Context, opts usermanagement.CreateOrganizationMembershipOpts) (usermanagement.OrganizationMembership, error) {
+	ret := _m.Called(ctx, opts)
+
+	var r0 usermanagement.OrganizationMembership
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, usermanagement.CreateOrganizationMembershipOpts) (usermanagement.OrganizationMembership, error)); ok {
+		return rf(ctx, opts)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, usermanagement.CreateOrganizationMembershipOpts) usermanagement.OrganizationMembership); ok {
+		r0 = rf(ctx, opts)
+	} else {
+		r0 = ret.Get(0).(usermanagement.OrganizationMembership)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, usermanagement.CreateOrganizationMembershipOpts) error); ok {
+		r1 = rf(ctx, opts)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockUserManagement_CreateOrganizationMembership_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateOrganizationMembership'
+type MockUserManagement_CreateOrganizationMembership_Call struct {
+	*mock.Call
+}
+
+// CreateOrganizationMembership is a helper method to define mock.On call
+//   - ctx context.Context
+//   - opts usermanagement.CreateOrganizationMembershipOpts
+func (_e *MockUserManagement_Expecter) CreateOrganizationMembership(ctx interface{}, opts interface{}) *MockUserManagement_CreateOrganizationMembership_Call {
+	return &MockUserManagement_CreateOrganizationMembership_Call{Call: _e.mock.On("CreateOrganizationMembership", ctx, opts)}
+}
+
+func (_c *MockUserManagement_CreateOrganizationMembership_Call) Run(run func(ctx context.Context, opts usermanagement.CreateOrganizationMembershipOpts)) *MockUserManagement_CreateOrganizationMembership_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(usermanagement.CreateOrganizationMembershipOpts))
+	})
+	return _c
+}
+
+func (_c *MockUserManagement_CreateOrganizationMembership_Call) Return(_a0 usermanagement.OrganizationMembership, _a1 error) *MockUserManagement_CreateOrganizationMembership_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockUserManagement_CreateOrganizationMembership_Call) RunAndReturn(run func(context.Context, usermanagement.CreateOrganizationMembershipOpts) (usermanagement.OrganizationMembership, error)) *MockUserManagement_CreateOrganizationMembership_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetAuthorizationURL provides a mock function with given fields: opts
 func (_m *MockUserManagement) GetAuthorizationURL(opts usermanagement.GetAuthorizationURLOpts) (*url.URL, error) {
 	ret := _m.Called(opts)
