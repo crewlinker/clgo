@@ -32,6 +32,7 @@ type UserManagement interface {
 	CreateOrganizationMembership(
 		ctx context.Context, opts usermanagement.CreateOrganizationMembershipOpts,
 	) (usermanagement.OrganizationMembership, error)
+	UpdateUser(ctx context.Context, opts usermanagement.UpdateUserOpts) (usermanagement.User, error)
 }
 
 // Organizations interface provides organization information from WorkOS.
@@ -42,6 +43,10 @@ type Organizations interface {
 		ctx context.Context,
 		opts organizations.ListOrganizationsOpts,
 	) (organizations.ListOrganizationsResponse, error)
+	UpdateOrganization(
+		ctx context.Context,
+		opts organizations.UpdateOrganizationOpts,
+	) (organizations.Organization, error)
 }
 
 // NewUserManagement creates a new UserManagement implementation with the provided configuration.

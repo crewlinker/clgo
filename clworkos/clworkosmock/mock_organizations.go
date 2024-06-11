@@ -181,6 +181,59 @@ func (_c *MockOrganizations_ListOrganizations_Call) RunAndReturn(run func(contex
 	return _c
 }
 
+// UpdateOrganization provides a mock function with given fields: ctx, opts
+func (_m *MockOrganizations) UpdateOrganization(ctx context.Context, opts organizations.UpdateOrganizationOpts) (organizations.Organization, error) {
+	ret := _m.Called(ctx, opts)
+
+	var r0 organizations.Organization
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, organizations.UpdateOrganizationOpts) (organizations.Organization, error)); ok {
+		return rf(ctx, opts)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, organizations.UpdateOrganizationOpts) organizations.Organization); ok {
+		r0 = rf(ctx, opts)
+	} else {
+		r0 = ret.Get(0).(organizations.Organization)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, organizations.UpdateOrganizationOpts) error); ok {
+		r1 = rf(ctx, opts)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockOrganizations_UpdateOrganization_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateOrganization'
+type MockOrganizations_UpdateOrganization_Call struct {
+	*mock.Call
+}
+
+// UpdateOrganization is a helper method to define mock.On call
+//   - ctx context.Context
+//   - opts organizations.UpdateOrganizationOpts
+func (_e *MockOrganizations_Expecter) UpdateOrganization(ctx interface{}, opts interface{}) *MockOrganizations_UpdateOrganization_Call {
+	return &MockOrganizations_UpdateOrganization_Call{Call: _e.mock.On("UpdateOrganization", ctx, opts)}
+}
+
+func (_c *MockOrganizations_UpdateOrganization_Call) Run(run func(ctx context.Context, opts organizations.UpdateOrganizationOpts)) *MockOrganizations_UpdateOrganization_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(organizations.UpdateOrganizationOpts))
+	})
+	return _c
+}
+
+func (_c *MockOrganizations_UpdateOrganization_Call) Return(_a0 organizations.Organization, _a1 error) *MockOrganizations_UpdateOrganization_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockOrganizations_UpdateOrganization_Call) RunAndReturn(run func(context.Context, organizations.UpdateOrganizationOpts) (organizations.Organization, error)) *MockOrganizations_UpdateOrganization_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewMockOrganizations creates a new instance of MockOrganizations. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockOrganizations(t interface {
