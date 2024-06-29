@@ -32,8 +32,6 @@ var _ = Describe("middleware", func() {
 
 		mw1 := func(n clservev2.Handler[MyContext]) clservev2.Handler[MyContext] {
 			return clservev2.HandlerFunc[MyContext](func(c MyContext, w clservev2.ResponseWriter, r *http.Request) error {
-				c.Foo = "some value"
-
 				res += "1("
 				err := n.ServeHTTP(c, w, r)
 				res += ")1"
@@ -56,6 +54,8 @@ var _ = Describe("middleware", func() {
 
 		mw3 := func(n clservev2.Handler[MyContext]) clservev2.Handler[MyContext] {
 			return clservev2.HandlerFunc[MyContext](func(c MyContext, w clservev2.ResponseWriter, r *http.Request) error {
+				c.Foo = "some value"
+
 				res += "3("
 				err := n.ServeHTTP(c, w, r)
 				res += ")3"
@@ -66,9 +66,9 @@ var _ = Describe("middleware", func() {
 
 		var c MyContext
 		err := clservev2.Use(hdlr1, mw1, mw2, mw3).ServeHTTP(c, nil, nil)
-		Expect(res).To(Equal("1(2(3(inner)3)2)1"))
+		Expect(res).To(Equal("3(2(1(inner)1)2)3"))
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal(`1(2(3(inner error)))`))
+		Expect(err.Error()).To(Equal(`3(2(1(inner error)))`))
 	})
 
 	It("should panic, recover, reset the response and return a new error response", func(ctx context.Context) {
@@ -80,8 +80,8 @@ var _ = Describe("middleware", func() {
 
 				panic("some panic")
 			}),
-			clservev2.Errorer[context.Context](),
 			clservev2.Recoverer[context.Context](),
+			clservev2.Errorer[context.Context](),
 		)
 
 		rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)

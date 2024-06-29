@@ -6,8 +6,12 @@ import (
 	"net/http"
 )
 
+// Middleware functions wrap each other to create unilateral functionality.
 type Middleware[C context.Context] func(Handler[C]) Handler[C]
 
+// Use takes the inner handler h and wraps it with middleware. The order of wrapping
+// follows the order in which the middlewares are provided here. The "most left" middleware
+// provided is the inner-most middleware.
 func Use[C context.Context](h Handler[C], m ...Middleware[C]) Handler[C] {
 	if len(m) < 1 {
 		return h
@@ -15,7 +19,7 @@ func Use[C context.Context](h Handler[C], m ...Middleware[C]) Handler[C] {
 
 	wrapped := h
 
-	for i := len(m) - 1; i >= 0; i-- {
+	for i := range m {
 		wrapped = m[i](wrapped)
 	}
 
