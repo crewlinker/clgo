@@ -29,17 +29,17 @@ var _ = Describe("serve mux", func() {
 		mux = clservev3.NewServeMux[TestValues]()
 		mux.Use(testStdMiddleware)
 		mux.BUse(example.Middleware[TestValues](slog.Default()))
-		mux.BHandleFunc("blog_post", "GET /blog/{slug}", func(ctx *clservev3.Context[TestValues], w clservev3.ResponseWriter, r *http.Request) error {
+		mux.BHandleFunc("GET /blog/{slug}", func(ctx *clservev3.Context[TestValues], w clservev3.ResponseWriter, r *http.Request) error {
 			Expect(ctx.V.Logger).ToNot(BeNil())
 
 			_, err := fmt.Fprintf(w, "%s: hello, %s (%v)", r.PathValue("slug"), r.RemoteAddr, r.Context().Value("ctxv1"))
 
 			return err
-		})
+		}, "blog_post")
 
-		mux.HandleFunc("blog_comment", "GET /blog/comment/{id}", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("GET /blog/comment/{id}", func(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "comment %s: hello std, %s (%v)", r.PathValue("id"), r.RemoteAddr, r.Context().Value("ctxv1"))
-		})
+		}, "blog_comment")
 	})
 
 	It("should reverse buffered", func() {
