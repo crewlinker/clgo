@@ -99,7 +99,7 @@ var _ = Describe("middleware", func() {
 		slog := slog.Default()
 
 		bctx := clservev3.NewContext[TestValues](ctx)
-		err := clservev3.Use(hdlr1, example.Middleware[TestValues](slog), mw1, mw2, mw3).ServeBHTTP(bctx, clservev3.NewBufferResponse(rec, -1), req)
+		err := clservev3.Use(hdlr1, example.Middleware[TestValues](slog), mw3, mw2, mw1).ServeBHTTP(bctx, clservev3.NewBufferResponse(rec, -1), req)
 		Expect(res).To(Equal("3(2(1(inner some value bar)1)2)3"))
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(Equal(`3(2(1(inner error)))`))
@@ -114,8 +114,8 @@ var _ = Describe("middleware", func() {
 
 				panic("some panic")
 			}),
-			Recoverer[struct{}](),
 			Errorer[struct{}](),
+			Recoverer[struct{}](),
 		)
 
 		rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
