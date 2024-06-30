@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/advdv/bhttp"
 	"github.com/crewlinker/clgo/clzap"
 	"go.uber.org/zap"
 )
@@ -52,6 +53,24 @@ type KeyNotFoundError struct {
 
 func (e KeyNotFoundError) Error() string {
 	return fmt.Sprintf("key with id %q not found", e.id)
+}
+
+// middleware that handles any error eturned from handlers or other middleware.
+func (h Handler) errorMiddleware() bhttp.Middleware[C] {
+	return func(next bhttp.Handler[C]) bhttp.Handler[C] {
+		return bhttp.HandlerFunc[C](func(c *bhttp.Context[C], w bhttp.ResponseWriter, r *http.Request) error {
+			err := next.ServeBHTTP(c, w, r)
+			if err != nil {
+				w.Reset()
+
+				h.handleError(w, r, err)
+
+				return nil
+			}
+
+			return nil
+		})
+	}
 }
 
 // handleErrors will make sure that any errors that are caught will be returned to the client.

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/crewlinker/clgo/clserve"
+	"github.com/advdv/bhttp"
 	"github.com/crewlinker/clgo/clzap"
 	"go.uber.org/zap"
 )
@@ -27,7 +27,7 @@ func IdentityFromContext(ctx context.Context) Identity {
 
 // Authenticate provides the authentication middleware. It will set an identity in the request context based on
 // the access token. If the access token is expired it will try to refresh the token ad-hoc.
-func (h Handler) Authenticate() clserve.Middleware {
+func (h Handler) Authenticate() bhttp.StdMiddleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			idn, err := h.engine.ContinueSession(r.Context(), w, r)

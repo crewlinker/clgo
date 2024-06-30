@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/advdv/bhttp"
 	"github.com/crewlinker/clgo/clconfig"
-	"github.com/crewlinker/clgo/clserve"
 	"github.com/crewlinker/clgo/clworkos/clworkosmock"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 	"go.uber.org/fx"
@@ -30,9 +30,12 @@ type Handler struct {
 // default http response buffer linit: 2MiB.
 const bufferLimit = 2 * 1024 * 1024
 
+// C describes typed context values.
+type C struct{}
+
 // New creates a new Handler with the provided configuration and logger.
 func New(cfg Config, logs *zap.Logger, engine *Engine) *Handler {
-	mux := http.NewServeMux()
+	mux := bhttp.NewServeMux[C](bhttp.WithBufferLimit(bufferLimit))
 	hdlr := &Handler{
 		cfg:     cfg,
 		logs:    logs,
@@ -40,22 +43,18 @@ func New(cfg Config, logs *zap.Logger, engine *Engine) *Handler {
 		engine:  engine,
 	}
 
-	serveOpts := []clserve.Option[context.Context]{
-		clserve.WithBufferLimit[context.Context](bufferLimit),
-		clserve.WithErrorHandling[context.Context](hdlr.handleError),
-	}
-
-	mux.Handle("/sign-in", clserve.Handle(hdlr.handleSignIn(), serveOpts...))
-	mux.Handle("/sign-up", clserve.Handle(hdlr.handleSignUp(), serveOpts...))
-	mux.Handle("/sign-out", clserve.Handle(hdlr.handleSignOut(), serveOpts...))
-	mux.Handle("/callback", clserve.Handle(hdlr.handleCallback(), serveOpts...))
+	mux.BUse(hdlr.errorMiddleware())
+	mux.BHandle("/sign-in", hdlr.handleSignIn())
+	mux.BHandle("/sign-up", hdlr.handleSignUp())
+	mux.BHandle("/sign-out", hdlr.handleSignOut())
+	mux.BHandle("/callback", hdlr.handleCallback())
 
 	return hdlr
 }
 
 // handleSignUp handles the sign-up flow.
-func (h *Handler) handleSignUp() clserve.HandlerFunc[context.Context] {
-	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Handler) handleSignUp() bhttp.HandlerFunc[C] {
+	return func(ctx *bhttp.Context[C], w bhttp.ResponseWriter, r *http.Request) error {
 		loc, err := h.engine.StartAuthenticationFlow(ctx, w, r, "sign-up")
 		if err != nil {
 			return fmt.Errorf("failed to start sign-up flow: %w", err)
@@ -68,8 +67,8 @@ func (h *Handler) handleSignUp() clserve.HandlerFunc[context.Context] {
 }
 
 // handleSignIn handles the sign-in flow.
-func (h *Handler) handleSignIn() clserve.HandlerFunc[context.Context] {
-	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Handler) handleSignIn() bhttp.HandlerFunc[C] {
+	return func(ctx *bhttp.Context[C], w bhttp.ResponseWriter, r *http.Request) error {
 		loc, err := h.engine.StartAuthenticationFlow(ctx, w, r, "sign-in")
 		if err != nil {
 			return fmt.Errorf("failed to start sign-in flow: %w", err)
@@ -82,8 +81,8 @@ func (h *Handler) handleSignIn() clserve.HandlerFunc[context.Context] {
 }
 
 // handleCallback handles the callback from WorkOS.
-func (h *Handler) handleCallback() clserve.HandlerFunc[context.Context] {
-	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Handler) handleCallback() bhttp.HandlerFunc[C] {
+	return func(ctx *bhttp.Context[C], w bhttp.ResponseWriter, r *http.Request) error {
 		loc, err := h.engine.HandleSignInCallback(ctx, w, r)
 		if err != nil {
 			return fmt.Errorf("failed to handle sign-in callback: %w", err)
@@ -96,8 +95,8 @@ func (h *Handler) handleCallback() clserve.HandlerFunc[context.Context] {
 }
 
 // handleSignOut handles the sign-in flow.
-func (h *Handler) handleSignOut() clserve.HandlerFunc[context.Context] {
-	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Handler) handleSignOut() bhttp.HandlerFunc[C] {
+	return func(ctx *bhttp.Context[C], w bhttp.ResponseWriter, r *http.Request) error {
 		loc, err := h.engine.StartSignOutFlow(ctx, w, r)
 		if err != nil {
 			return fmt.Errorf("failed to start sign-out flow: %w", err)
