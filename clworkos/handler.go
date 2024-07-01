@@ -170,6 +170,8 @@ func TestProvide(tb testing.TB, clockAt int64) fx.Option {
 			c.ShowErrorMessagesToClient = true
 			c.RedirectToAllowedHosts = []string{"localhost", "*.foo.com", "*--atsdash.netlify.app"}
 
+			c.BasicAuthWhitelist = []string{"admin+system1@crewlinker.com"}
+
 			return c
 		}),
 	)

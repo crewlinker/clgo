@@ -58,7 +58,7 @@ type Config struct {
 	// instructs the browser on how long the access token cookie should be stored.
 	AccessTokenCookieMaxAgeSeconds int `env:"ACCESS_TOKEN_COOKIE_MAX_AGE_SECONDS" envDefault:"34560000"`
 	// allow username/password auth only for certain (system) users.
-	BasicAuthWhitelist []string `env:"BASIC_AUTH_WHITELIST" envDefault:"admin+system1@crewlinker.com"`
+	BasicAuthWhitelist []string `env:"BASIC_AUTH_WHITELIST"`
 }
 
 // Keys hold our own private keys, and the WorkOS public keys.
