@@ -77,6 +77,59 @@ func (_c *MockUserManagement_AuthenticateWithCode_Call) RunAndReturn(run func(co
 	return _c
 }
 
+// AuthenticateWithPassword provides a mock function with given fields: ctx, opts
+func (_m *MockUserManagement) AuthenticateWithPassword(ctx context.Context, opts usermanagement.AuthenticateWithPasswordOpts) (usermanagement.AuthenticateResponse, error) {
+	ret := _m.Called(ctx, opts)
+
+	var r0 usermanagement.AuthenticateResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, usermanagement.AuthenticateWithPasswordOpts) (usermanagement.AuthenticateResponse, error)); ok {
+		return rf(ctx, opts)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, usermanagement.AuthenticateWithPasswordOpts) usermanagement.AuthenticateResponse); ok {
+		r0 = rf(ctx, opts)
+	} else {
+		r0 = ret.Get(0).(usermanagement.AuthenticateResponse)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, usermanagement.AuthenticateWithPasswordOpts) error); ok {
+		r1 = rf(ctx, opts)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockUserManagement_AuthenticateWithPassword_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AuthenticateWithPassword'
+type MockUserManagement_AuthenticateWithPassword_Call struct {
+	*mock.Call
+}
+
+// AuthenticateWithPassword is a helper method to define mock.On call
+//   - ctx context.Context
+//   - opts usermanagement.AuthenticateWithPasswordOpts
+func (_e *MockUserManagement_Expecter) AuthenticateWithPassword(ctx interface{}, opts interface{}) *MockUserManagement_AuthenticateWithPassword_Call {
+	return &MockUserManagement_AuthenticateWithPassword_Call{Call: _e.mock.On("AuthenticateWithPassword", ctx, opts)}
+}
+
+func (_c *MockUserManagement_AuthenticateWithPassword_Call) Run(run func(ctx context.Context, opts usermanagement.AuthenticateWithPasswordOpts)) *MockUserManagement_AuthenticateWithPassword_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(usermanagement.AuthenticateWithPasswordOpts))
+	})
+	return _c
+}
+
+func (_c *MockUserManagement_AuthenticateWithPassword_Call) Return(_a0 usermanagement.AuthenticateResponse, _a1 error) *MockUserManagement_AuthenticateWithPassword_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockUserManagement_AuthenticateWithPassword_Call) RunAndReturn(run func(context.Context, usermanagement.AuthenticateWithPasswordOpts) (usermanagement.AuthenticateResponse, error)) *MockUserManagement_AuthenticateWithPassword_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // AuthenticateWithRefreshToken provides a mock function with given fields: ctx, opts
 func (_m *MockUserManagement) AuthenticateWithRefreshToken(ctx context.Context, opts usermanagement.AuthenticateWithRefreshTokenOpts) (usermanagement.RefreshAuthenticationResponse, error) {
 	ret := _m.Called(ctx, opts)

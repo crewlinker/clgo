@@ -9,6 +9,7 @@ import (
 
 	"github.com/gobwas/glob"
 	"github.com/lestrrat-go/jwx/v2/jwt"
+	"github.com/samber/lo"
 	"github.com/sourcegraph/conc/iter"
 	"github.com/workos/workos-go/v4/pkg/organizations"
 	"github.com/workos/workos-go/v4/pkg/usermanagement"
@@ -27,6 +28,10 @@ type UserManagement interface {
 	AuthenticateWithRefreshToken(
 		ctx context.Context,
 		opts usermanagement.AuthenticateWithRefreshTokenOpts) (usermanagement.RefreshAuthenticationResponse, error)
+	AuthenticateWithPassword(
+		ctx context.Context,
+		opts usermanagement.AuthenticateWithPasswordOpts,
+	) (usermanagement.AuthenticateResponse, error)
 	GetUser(ctx context.Context, opts usermanagement.GetUserOpts) (usermanagement.User, error)
 	ListUsers(ctx context.Context, opts usermanagement.ListUsersOpts) (usermanagement.ListUsersResponse, error)
 	CreateOrganizationMembership(
@@ -200,6 +205,28 @@ func (e Engine) HandleSignInCallback(ctx context.Context, w http.ResponseWriter,
 	}
 
 	return redirectTo, nil
+}
+
+// ErrBasicAuthNotAllowed is returned when a user is not allowed to use basic auth.
+var ErrBasicAuthNotAllowed = errors.New("basic auth is not allowed")
+
+// AuthenticateUsernamePassword is used to authenticate a user with a username and password. This method is only allowed
+// for certain white-listed usernames since it is generally considered insure when used wrongly.
+func (e Engine) AuthenticateUsernamePassword(ctx context.Context, uname, passwd string) (idn Identity, err error) {
+	if !lo.Contains(e.cfg.BasicAuthWhitelist, uname) {
+		return idn, ErrBasicAuthNotAllowed
+	}
+
+	resp, err := e.um.AuthenticateWithPassword(ctx, usermanagement.AuthenticateWithPasswordOpts{
+		ClientID: e.cfg.MainClientID,
+		Email:    uname,
+		Password: passwd,
+	})
+	if err != nil {
+		return idn, fmt.Errorf("failed to authenticate with password: %w", err)
+	}
+
+	return e.identityFromAccessToken(ctx, resp.AccessToken)
 }
 
 // ContinueSession will continue the user's session, potentially by refreshing it. It is expected to be called

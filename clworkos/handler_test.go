@@ -155,6 +155,24 @@ var _ = Describe("handler", func() {
 			}))
 		})
 	})
+
+	Describe("api key", func() {
+		It("should authenticate with authorization header", func() {
+			umm.EXPECT().AuthenticateWithPassword(mock.Anything, mock.Anything).Return(usermanagement.AuthenticateResponse{
+				AccessToken: AccessToken1ValidFor06_46_08,
+			}, nil)
+
+			var idn clworkos.Identity
+			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/foo", nil)
+			req.SetBasicAuth("admin+system1@crewlinker.com", "bar")
+
+			hdlr.Authenticate()(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				idn = clworkos.IdentityFromContext(r.Context())
+			})).ServeHTTP(rec, req)
+
+			Expect(idn.IsValid).To(BeTrue())
+		})
+	})
 })
 
 func Provide(clockAt int64) fx.Option {

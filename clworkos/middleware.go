@@ -30,9 +30,25 @@ func IdentityFromContext(ctx context.Context) Identity {
 func (h Handler) Authenticate() bhttp.StdMiddleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			idn, err := h.engine.ContinueSession(r.Context(), w, r)
-			if err != nil && !errors.Is(err, ErrNoAuthentication) {
-				clzap.Log(r.Context(), h.logs).Warn("middleware failed to continue session", zap.Error(err))
+			var (
+				idn Identity
+				err error
+			)
+
+			uname, passwd, ok := r.BasicAuth()
+			if ok {
+				idn, err = h.engine.AuthenticateUsernamePassword(r.Context(), uname, passwd)
+				if err != nil {
+					clzap.Log(r.Context(), h.logs).
+						Error("failed to authenticate with usename and password",
+							zap.Error(err),
+							zap.String("username", uname))
+				}
+			} else {
+				idn, err = h.engine.ContinueSession(r.Context(), w, r)
+				if err != nil && !errors.Is(err, ErrNoAuthentication) {
+					clzap.Log(r.Context(), h.logs).Warn("middleware failed to continue session", zap.Error(err))
+				}
 			}
 
 			if idn.IsValid {

@@ -264,6 +264,28 @@ var _ = Describe("engine", func() {
 			ExpectSessionClear(rec)
 		})
 	})
+
+	Describe("username password", func() {
+		It("should not allow if not in whitelist", func(ctx context.Context) {
+			idn, err := engine.AuthenticateUsernamePassword(ctx, "foo", "bar")
+			Expect(err).To(MatchError(clworkos.ErrBasicAuthNotAllowed))
+			Expect(idn.IsValid).To(BeFalse())
+		})
+
+		It("should do if on whitelist", func(ctx context.Context) {
+			umm.EXPECT().AuthenticateWithPassword(mock.Anything, mock.Anything).
+				Return(usermanagement.AuthenticateResponse{
+					AccessToken:  AccessToken1ValidFor06_46_08,
+					RefreshToken: "some.refresh.token",
+				}, nil).
+				Once()
+
+			idn, err := engine.AuthenticateUsernamePassword(ctx, "admin+system1@crewlinker.com", "bar")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(idn.IsValid).To(BeTrue())
+			Expect(idn.UserID).To(Equal(`user_01HJTD4VS8T6DKAK5B3AZVQFCV`))
+		})
+	})
 })
 
 var _ = Describe("engine in present", func() {
