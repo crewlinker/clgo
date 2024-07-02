@@ -44,6 +44,9 @@ func (h Handler) Authenticate() bhttp.StdMiddleware {
 							zap.Error(err),
 							zap.String("username", uname))
 				}
+
+				clzap.Log(r.Context(), h.logs).Info("authenticated with username/password",
+					zap.Any("identity", idn), zap.String("username", uname), zap.Bool("is_basic_auth", ok))
 			} else {
 				idn, err = h.engine.ContinueSession(r.Context(), w, r)
 				if err != nil && !errors.Is(err, ErrNoAuthentication) {
