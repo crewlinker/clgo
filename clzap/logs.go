@@ -26,6 +26,10 @@ type Config struct {
 	FxLevel zapcore.Level `env:"FX_LEVEL" envDefault:"debug"`
 	// By default it logs to lambda format, this
 	DisableLambdaEncoding bool `env:"DISABLE_LAMBDA_ENCODING"`
+	// Enables console encoding for more developer friendly logging output
+	ConsoleEncoding bool `env:"CONSOLE_ENCODING"`
+	// DevelopmentEncodingConfig enables encoding useful for developers.
+	DevelopmentEncodingConfig bool `env:"DEVELOPMENT_ENCODING_CONFIG"`
 }
 
 // Fx is a convenient option that configures fx to use the zap logger.
@@ -46,8 +50,14 @@ type SecondaryCore = struct {
 }
 
 // newLogger can be used to create a logger from a single core or from two cores: writing to both.
-func newLogger(zc zapcore.Core, sc *SecondaryCore) *zap.Logger {
-	l := zap.New(zc)
+func newLogger(zc zapcore.Core, sc *SecondaryCore, cfg Config) *zap.Logger {
+	opts := []zap.Option{}
+
+	if cfg.DevelopmentEncodingConfig {
+		opts = append(opts, zap.Development())
+	}
+
+	l := zap.New(zc, opts...)
 	if sc == nil {
 		return l
 	} else {
@@ -56,6 +66,24 @@ func newLogger(zc zapcore.Core, sc *SecondaryCore) *zap.Logger {
 
 		return l
 	}
+}
+
+// newEncoder constructs the encoder based on the encoder config and our env config.
+func newEncoder(cfg Config, ecfg zapcore.EncoderConfig) zapcore.Encoder {
+	if cfg.ConsoleEncoding {
+		return zapcore.NewConsoleEncoder(ecfg)
+	}
+
+	return zapcore.NewJSONEncoder(ecfg)
+}
+
+// newEncoderConfig constructs the encoder configuration.
+func newEncoderConfig(cfg Config) zapcore.EncoderConfig {
+	if cfg.DevelopmentEncodingConfig {
+		return zap.NewDevelopmentEncoderConfig()
+	}
+
+	return zap.NewProductionEncoderConfig()
 }
 
 // moduleName for naming conventions.
@@ -78,7 +106,7 @@ func Provide() fx.Option {
 				return nil
 			}))),
 		// provide dependencies to build the prod logger
-		fx.Provide(zapcore.NewCore, zapcore.NewJSONEncoder, zap.NewProductionEncoderConfig),
+		fx.Provide(zapcore.NewCore, newEncoder, newEncoderConfig),
 		// customize the to fit AWS Lambda's application log format standard, as documented:
 		// https://docs.aws.amazon.com/lambda/latest/dg/monitoring-cloudwatchlogs.html#monitoring-cloudwatchlogs-advanced
 		fx.Decorate(func(cfg Config, ec zapcore.EncoderConfig) zapcore.EncoderConfig {

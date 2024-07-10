@@ -55,6 +55,36 @@ var _ = Describe("regular logging", func() {
 	})
 })
 
+var _ = Describe("development logging", func() {
+	var logs *zap.Logger
+	var tmpfp string
+
+	BeforeEach(func(ctx context.Context) {
+		tmpfp = filepath.Join(os.TempDir(), fmt.Sprintf("test_logging2_%d.log", time.Now().UnixNano()))
+		app := fx.New(clzap.Fx(), clzap.Provide(), fx.Populate(&logs),
+			fx.Decorate(func(cfg clzap.Config) clzap.Config {
+				cfg.Outputs = []string{tmpfp}
+				cfg.FxLevel = zapcore.InfoLevel
+				cfg.DevelopmentEncodingConfig = true
+				cfg.ConsoleEncoding = true
+
+				return cfg
+			}))
+		Expect(app.Start(ctx)).To(Succeed())
+		DeferCleanup(func(ctx context.Context) {
+			Expect(app.Stop(ctx)).To(Succeed())
+			Expect(os.Remove(tmpfp)).To(Succeed())
+		})
+	})
+
+	It("should see development useful logging", func() {
+		data, err := os.ReadFile(tmpfp)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(data).To(ContainSubstring("provided"))
+		Expect(data).To(ContainSubstring("\tINFO\t"))
+	})
+})
+
 var _ = Describe("test logging", func() {
 	var logs *zap.Logger
 	var obs *observer.ObservedLogs
