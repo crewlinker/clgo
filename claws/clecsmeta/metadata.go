@@ -7,12 +7,15 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 
 	"github.com/crewlinker/clgo/clconfig"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
+
+	_ "embed"
 )
 
 // Config configures this package.
@@ -78,10 +81,17 @@ func Provide() fx.Option {
 	)
 }
 
+//go:embed testdata/metadatav4_response_task.json
+var exampleResponse1 []byte
+
 // TestProvide provides the metadata for testing environment.
-func TestProvide(ecsMetadataURI string) fx.Option {
+func TestProvide() fx.Option {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write(exampleResponse1)
+	}))
+
 	return fx.Options(
-		fx.Supply(fx.Annotate(ecsMetadataURI, fx.ResultTags(`name:"ecs_metadata_uri"`))),
+		fx.Supply(fx.Annotate(srv.URL, fx.ResultTags(`name:"ecs_metadata_uri"`))),
 		shared(),
 	)
 }

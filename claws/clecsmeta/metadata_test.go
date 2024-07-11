@@ -51,11 +51,7 @@ var _ = Describe("metadata test provide", func() {
 	var meta *clecsmeta.Metadata
 
 	BeforeEach(func(ctx context.Context) {
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write(exampleResponse1)
-		}))
-
-		app := fx.New(fx.Populate(&meta), clecsmeta.TestProvide(srv.URL), fx.Supply(http.DefaultClient), clzap.TestProvide())
+		app := fx.New(fx.Populate(&meta), clecsmeta.TestProvide(), fx.Supply(http.DefaultClient), clzap.TestProvide())
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 	})
