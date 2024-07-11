@@ -31,13 +31,14 @@ func (h Handler) Authenticate() bhttp.StdMiddleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var (
-				idn Identity
-				err error
+				idn       Identity
+				err       error
+				fromCache bool
 			)
 
 			uname, passwd, ok := r.BasicAuth()
 			if ok {
-				idn, err = h.engine.AuthenticateUsernamePassword(r.Context(), uname, passwd)
+				idn, fromCache, err = h.engine.AuthenticateUsernamePassword(r.Context(), uname, passwd)
 				if err != nil {
 					clzap.Log(r.Context(), h.logs).
 						Error("failed to authenticate with usename and password",
@@ -46,7 +47,10 @@ func (h Handler) Authenticate() bhttp.StdMiddleware {
 				}
 
 				clzap.Log(r.Context(), h.logs).Info("authenticated with username/password",
-					zap.Any("identity", idn), zap.String("username", uname), zap.Bool("is_basic_auth", ok))
+					zap.Any("identity", idn),
+					zap.String("username", uname),
+					zap.Bool("from_cache", fromCache),
+					zap.Bool("is_basic_auth", ok))
 			} else {
 				idn, err = h.engine.ContinueSession(r.Context(), w, r)
 				if err != nil && !errors.Is(err, ErrNoAuthentication) {

@@ -76,7 +76,7 @@ var _ = Describe("handler", func() {
 
 		It("should serve redirect", func() {
 			umm.EXPECT().AuthenticateWithCode(mock.Anything, mock.Anything).Return(usermanagement.AuthenticateResponse{
-				AccessToken: AccessToken1ValidFor06_46_08,
+				AccessToken: AccessToken1ValidFor06_46_09GMT,
 				Impersonator: &usermanagement.Impersonator{
 					Email: "a@a.com",
 				},
@@ -110,7 +110,7 @@ var _ = Describe("handler", func() {
 			umm.EXPECT().GetLogoutURL(mock.Anything).Return(&url.URL{Scheme: "https", Host: "workos.com"}, nil)
 
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/sign-out", nil)
-			req.AddCookie(&http.Cookie{Name: "cl_access_token", Value: AccessToken1ValidFor06_46_08})
+			req.AddCookie(&http.Cookie{Name: "cl_access_token", Value: AccessToken1ValidFor06_46_09GMT})
 			hdlr.ServeHTTP(rec, req)
 
 			Expect(rec.Code).To(Equal(http.StatusFound))
@@ -156,10 +156,10 @@ var _ = Describe("handler", func() {
 		})
 	})
 
-	Describe("api key", func() {
-		It("should authenticate with authorization header", func() {
+	Describe("basic auth", func() {
+		It("should authenticate with basic auth", func() {
 			umm.EXPECT().AuthenticateWithPassword(mock.Anything, mock.Anything).Return(usermanagement.AuthenticateResponse{
-				AccessToken: AccessToken1ValidFor06_46_08,
+				AccessToken: AccessToken1ValidFor06_46_09GMT,
 			}, nil)
 
 			var idn clworkos.Identity

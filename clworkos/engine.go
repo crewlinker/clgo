@@ -2,6 +2,7 @@ package clworkos
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"net/http"
@@ -14,6 +15,8 @@ import (
 	"github.com/workos/workos-go/v4/pkg/organizations"
 	"github.com/workos/workos-go/v4/pkg/usermanagement"
 	"go.uber.org/zap"
+
+	"github.com/hashicorp/golang-lru/v2/expirable"
 )
 
 // UserManagement interface describes the interface with the WorkOS User Management API.
@@ -81,6 +84,8 @@ type Engine struct {
 	globs struct {
 		allowedRedirectTo []glob.Glob
 	}
+
+	basicAuthLRU *expirable.LRU[[32]byte, Identity]
 }
 
 // NewEngine creates a new Engine with the provided UserManagement implementation.
@@ -102,6 +107,8 @@ func NewEngine(
 		clock: clock,
 		hooks: hooks,
 	}
+
+	eng.basicAuthLRU = expirable.NewLRU[[32]byte, Identity](cfg.BasicAuthCacheSize, nil, cfg.BasicAuthCacheExpiry)
 
 	eng.globs.allowedRedirectTo, err = iter.MapErr(cfg.RedirectToAllowedHosts, func(pat *string) (glob.Glob, error) {
 		return glob.Compile(*pat)
@@ -212,9 +219,21 @@ var ErrBasicAuthNotAllowed = errors.New("basic auth is not allowed")
 
 // AuthenticateUsernamePassword is used to authenticate a user with a username and password. This method is only allowed
 // for certain white-listed usernames since it is generally considered insure when used wrongly.
-func (e Engine) AuthenticateUsernamePassword(ctx context.Context, uname, passwd string) (idn Identity, err error) {
+func (e Engine) AuthenticateUsernamePassword(
+	ctx context.Context, uname, passwd string,
+) (idn Identity, fromCache bool, err error) {
 	if !lo.Contains(e.cfg.BasicAuthWhitelist, uname) {
-		return idn, ErrBasicAuthNotAllowed
+		return idn, false, ErrBasicAuthNotAllowed
+	}
+
+	cacheKey := sha256.Sum256([]byte(uname + passwd))
+
+	// In our case, the users that authenticate via basic auth are always long-term "system" users. They are unlikely
+	// to be revoked and if they are, having a delay for the credentials to become invalid is fine. So we cache the
+	// identity in a LRU to reduce the latency. Else we would need to call WorkOS on every request.
+	cached, ok := e.basicAuthLRU.Get(cacheKey)
+	if ok && cached.ExpiresAt.After(e.clock.Now()) {
+		return cached, true, nil
 	}
 
 	resp, err := e.um.AuthenticateWithPassword(ctx, usermanagement.AuthenticateWithPasswordOpts{
@@ -223,10 +242,17 @@ func (e Engine) AuthenticateUsernamePassword(ctx context.Context, uname, passwd 
 		Password: passwd,
 	})
 	if err != nil {
-		return idn, fmt.Errorf("failed to authenticate with password: %w", err)
+		return idn, false, fmt.Errorf("failed to authenticate with password: %w", err)
 	}
 
-	return e.identityFromAccessToken(ctx, resp.AccessToken)
+	idn, err = e.identityFromAccessToken(ctx, resp.AccessToken)
+	if err != nil {
+		return idn, false, fmt.Errorf("failed to turn access token into identity: %w", err)
+	}
+
+	e.basicAuthLRU.Add(cacheKey, idn)
+
+	return idn, false, nil
 }
 
 // ContinueSession will continue the user's session, potentially by refreshing it. It is expected to be called

@@ -20,9 +20,12 @@ import (
 
 var (
 	// AccessToken for testing, valid at 06:46:08 (CET).
-	AccessToken1ValidFor06_46_08 = "eyJhbGciOiJSUzI1NiIsImtpZCI6InNzb19vaWRjX2tleV9wYWlyXzAxSEpUOFFENVdCOVdFTlZYMEE4QTM2UUFNIn0.eyJhY3QiOnsic3ViIjoiYWRtaW5AY3Jld2xpbmtlci5jb20ifSwiaXNzIjoiaHR0cHM6Ly9hcGkud29ya29zLmNvbSIsInN1YiI6InVzZXJfMDFISlRENFZTOFQ2REtBSzVCM0FaVlFGQ1YiLCJzaWQiOiJzZXNzaW9uXzAxSFhYOFZROFNORDVUQ05aQ042TkE3VkZRIiwianRpIjoiMDFIWFg4VlFRSEZOSFI5Q04xQzZOTVRZOEIiLCJvcmdfaWQiOiJvcmdfMDFISlRCUEszWVFNWlk5S0gzMEVYVjlHSE4iLCJyb2xlIjoibWVtYmVyIiwiZXhwIjoxNzE1NzQ4MzY5LCJpYXQiOjE3MTU3NDgwNjl9.DDwEWaHIabk7Uzg9VYce3eX1Kh-x99eKDGH_qbE1QOoy68U3nM9PxDEIIAxdUaT3v91nJtIn-lGa2Woq-wFZGrsd58tfWBmH5kv2SXxaojo1FL-JmDox8eu5Aw1SguVuXPU3r6PawwGScUeDqZ9pAT3qGqS7LyT-jtw_-8nns4D6QttDOF-CzAS4vi9JKujCtBPYLOR_m5axkXp4PEiWMMz5qAoKOpEWFTtfm-X7bD-Yk00hllp7sjk8m5ebpVlDDcT0uL-8Rzp-W64eyvvDfxmp6ZuEaSzvA20AvYPjTKAOGcBJ2V84Ql-5vvWLhEl2-J4IgvxUzfn9dFsUWGwh2Q"
+	AccessToken1ValidFor06_46_09GMT = "eyJhbGciOiJSUzI1NiIsImtpZCI6InNzb19vaWRjX2tleV9wYWlyXzAxSEpUOFFENVdCOVdFTlZYMEE4QTM2UUFNIn0.eyJhY3QiOnsic3ViIjoiYWRtaW5AY3Jld2xpbmtlci5jb20ifSwiaXNzIjoiaHR0cHM6Ly9hcGkud29ya29zLmNvbSIsInN1YiI6InVzZXJfMDFISlRENFZTOFQ2REtBSzVCM0FaVlFGQ1YiLCJzaWQiOiJzZXNzaW9uXzAxSFhYOFZROFNORDVUQ05aQ042TkE3VkZRIiwianRpIjoiMDFIWFg4VlFRSEZOSFI5Q04xQzZOTVRZOEIiLCJvcmdfaWQiOiJvcmdfMDFISlRCUEszWVFNWlk5S0gzMEVYVjlHSE4iLCJyb2xlIjoibWVtYmVyIiwiZXhwIjoxNzE1NzQ4MzY5LCJpYXQiOjE3MTU3NDgwNjl9.DDwEWaHIabk7Uzg9VYce3eX1Kh-x99eKDGH_qbE1QOoy68U3nM9PxDEIIAxdUaT3v91nJtIn-lGa2Woq-wFZGrsd58tfWBmH5kv2SXxaojo1FL-JmDox8eu5Aw1SguVuXPU3r6PawwGScUeDqZ9pAT3qGqS7LyT-jtw_-8nns4D6QttDOF-CzAS4vi9JKujCtBPYLOR_m5axkXp4PEiWMMz5qAoKOpEWFTtfm-X7bD-Yk00hllp7sjk8m5ebpVlDDcT0uL-8Rzp-W64eyvvDfxmp6ZuEaSzvA20AvYPjTKAOGcBJ2V84Ql-5vvWLhEl2-J4IgvxUzfn9dFsUWGwh2Q"
 	// AccessToken for testing, valid at 13:31:48 (CET).
-	AccessToken2ValidFor13_31_48 = "eyJhbGciOiJSUzI1NiIsImtpZCI6InNzb19vaWRjX2tleV9wYWlyXzAxSEpUOFFENVdCOVdFTlZYMEE4QTM2UUFNIn0.eyJpc3MiOiJodHRwczovL2FwaS53b3Jrb3MuY29tIiwic3ViIjoidXNlcl8wMUhKVEQ0VlM4VDZES0FLNUIzQVpWUUZDViIsInNpZCI6InNlc3Npb25fMDFIWFkwQVJKMEJIVDZFQ0hBQ1NLRTZLSDciLCJqdGkiOiIwMUhYWTBBUllXNE5ONFk5UzhIOU1UTUJUWCIsIm9yZ19pZCI6Im9yZ18wMUhKVEJQSzNZUU1aWTlLSDMwRVhWOUdITiIsInJvbGUiOiJtZW1iZXIiLCJleHAiOjE3MTU3NzI5NzksImlhdCI6MTcxNTc3MjY3OX0.iNot86Q5gUmbVqgIqiTuqbHSOCmgbY3XyRCnFXbe6S9kvDvYeBtf5yX9CcG7-6bi8xXmHU0Qv6yCKAcnteNCQNhSlYAZGcbh-yPhoPu_xu6t0tfPEcKRL9OE9HPu3WNt15DLKimjf9Ag0c8tX4HDocLPxn7kkBsWq_BArktM6OQgiQd1dC4jyVYnvGii_fbtiKyiPb9TaRaksKu3saWIML5KA6g4wcLdA91kre4etPWFzRoEEs4RdvSSmeZ23a6ILPHpwvE8PBtlAIXONmgrBqWduT-5Um7OAULF90by8fwZcGE7YevmpEiKcJ8l30IKJs9ymdFWZ0DenXvNGoyMFg"
+	AccessToken2ValidFor13_36_19GMT = "eyJhbGciOiJSUzI1NiIsImtpZCI6InNzb19vaWRjX2tleV9wYWlyXzAxSEpUOFFENVdCOVdFTlZYMEE4QTM2UUFNIn0.eyJpc3MiOiJodHRwczovL2FwaS53b3Jrb3MuY29tIiwic3ViIjoidXNlcl8wMUhKVEQ0VlM4VDZES0FLNUIzQVpWUUZDViIsInNpZCI6InNlc3Npb25fMDFIWFkwQVJKMEJIVDZFQ0hBQ1NLRTZLSDciLCJqdGkiOiIwMUhYWTBBUllXNE5ONFk5UzhIOU1UTUJUWCIsIm9yZ19pZCI6Im9yZ18wMUhKVEJQSzNZUU1aWTlLSDMwRVhWOUdITiIsInJvbGUiOiJtZW1iZXIiLCJleHAiOjE3MTU3NzI5NzksImlhdCI6MTcxNTc3MjY3OX0.iNot86Q5gUmbVqgIqiTuqbHSOCmgbY3XyRCnFXbe6S9kvDvYeBtf5yX9CcG7-6bi8xXmHU0Qv6yCKAcnteNCQNhSlYAZGcbh-yPhoPu_xu6t0tfPEcKRL9OE9HPu3WNt15DLKimjf9Ag0c8tX4HDocLPxn7kkBsWq_BArktM6OQgiQd1dC4jyVYnvGii_fbtiKyiPb9TaRaksKu3saWIML5KA6g4wcLdA91kre4etPWFzRoEEs4RdvSSmeZ23a6ILPHpwvE8PBtlAIXONmgrBqWduT-5Um7OAULF90by8fwZcGE7YevmpEiKcJ8l30IKJs9ymdFWZ0DenXvNGoyMFg"
+	// fixed wall time used for testing in various places.
+	WallTime06_46_08GMT int64 = 1715748368
+	WallTime11_31_48GMT int64 = 1715772708
 )
 
 var _ = Describe("engine", func() {
@@ -32,7 +35,7 @@ var _ = Describe("engine", func() {
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(
 			fx.Populate(&engine, &umm, &orgm),
-			Provide(1715748368)) // provide at a wall-clock where tokens have not expired
+			Provide(WallTime06_46_08GMT)) // provide at a wall-clock where tokens have not expired
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 	})
@@ -109,7 +112,7 @@ var _ = Describe("engine", func() {
 			umm.EXPECT().AuthenticateWithCode(mock.Anything, mock.Anything).
 				Return(usermanagement.AuthenticateResponse{
 					Impersonator: &usermanagement.Impersonator{Email: "admin@admin.com"},
-					AccessToken:  AccessToken1ValidFor06_46_08,
+					AccessToken:  AccessToken1ValidFor06_46_09GMT,
 					RefreshToken: "some.refresh.token",
 				}, nil).
 				Once()
@@ -129,7 +132,7 @@ var _ = Describe("engine", func() {
 			Expect(rec.Result().Cookies()[0].Name).To(Equal("cl_session"))
 			Expect(rec.Result().Cookies()[0].Value).To(MatchRegexp(`^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$`))
 			Expect(rec.Result().Cookies()[1].Name).To(Equal("cl_access_token"))
-			Expect(rec.Result().Cookies()[1].Value).To(Equal(AccessToken1ValidFor06_46_08))
+			Expect(rec.Result().Cookies()[1].Value).To(Equal(AccessToken1ValidFor06_46_09GMT))
 
 			Expect(loc.String()).To(Equal("http://localhost:8080/healthz"))
 		})
@@ -139,7 +142,7 @@ var _ = Describe("engine", func() {
 			BeforeEach(func(ctx context.Context) {
 				umm.EXPECT().AuthenticateWithCode(mock.Anything, mock.Anything).
 					Return(usermanagement.AuthenticateResponse{
-						AccessToken:  AccessToken1ValidFor06_46_08,
+						AccessToken:  AccessToken1ValidFor06_46_09GMT,
 						RefreshToken: "some.refresh.token",
 					}, nil).
 					Once()
@@ -188,7 +191,7 @@ var _ = Describe("engine", func() {
 				Expect(rec.Result().Cookies()[1].Value).To(MatchRegexp(`^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$`))
 				Expect(rec.Result().Cookies()[1].Path).To(Equal("/"))
 				Expect(rec.Result().Cookies()[2].Name).To(Equal("cl_access_token"))
-				Expect(rec.Result().Cookies()[2].Value).To(Equal(AccessToken1ValidFor06_46_08))
+				Expect(rec.Result().Cookies()[2].Value).To(Equal(AccessToken1ValidFor06_46_09GMT))
 				Expect(rec.Result().Cookies()[2].Path).To(Equal("/"))
 			})
 		})
@@ -214,7 +217,7 @@ var _ = Describe("engine", func() {
 
 		It("should not refresh and use valid access token", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
-			WithAccessToken(req, AccessToken1ValidFor06_46_08)
+			WithAccessToken(req, AccessToken1ValidFor06_46_09GMT)
 
 			idn, err := engine.ContinueSession(ctx, rec, req)
 			Expect(err).NotTo(HaveOccurred())
@@ -254,7 +257,7 @@ var _ = Describe("engine", func() {
 			umm.EXPECT().GetLogoutURL(mock.Anything).Return(lo.Must(url.Parse("http://localhost:8080/logout")), nil).Once()
 
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
-			WithAccessToken(req, AccessToken1ValidFor06_46_08)
+			WithAccessToken(req, AccessToken1ValidFor06_46_09GMT)
 
 			loc, err := engine.StartSignOutFlow(ctx, rec, req)
 			Expect(err).ToNot(HaveOccurred())
@@ -267,23 +270,31 @@ var _ = Describe("engine", func() {
 
 	Describe("username password", func() {
 		It("should not allow if not in whitelist", func(ctx context.Context) {
-			idn, err := engine.AuthenticateUsernamePassword(ctx, "foo", "bar")
+			idn, fromCache, err := engine.AuthenticateUsernamePassword(ctx, "foo", "bar")
 			Expect(err).To(MatchError(clworkos.ErrBasicAuthNotAllowed))
 			Expect(idn.IsValid).To(BeFalse())
+			Expect(fromCache).To(BeFalse())
 		})
 
-		It("should do if on whitelist", func(ctx context.Context) {
+		It("should do once if on whitelist and token valid", func(ctx context.Context) {
 			umm.EXPECT().AuthenticateWithPassword(mock.Anything, mock.Anything).
 				Return(usermanagement.AuthenticateResponse{
-					AccessToken:  AccessToken1ValidFor06_46_08,
+					AccessToken:  AccessToken1ValidFor06_46_09GMT, // wall time: WallTime06_46_08GMT
 					RefreshToken: "some.refresh.token",
 				}, nil).
 				Once()
 
-			idn, err := engine.AuthenticateUsernamePassword(ctx, "admin+system1@crewlinker.com", "bar")
+			idn, fromCache, err := engine.AuthenticateUsernamePassword(ctx, "admin+system1@crewlinker.com", "bar")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(idn.IsValid).To(BeTrue())
 			Expect(idn.UserID).To(Equal(`user_01HJTD4VS8T6DKAK5B3AZVQFCV`))
+			Expect(fromCache).To(BeFalse())
+
+			idn, fromCache, err = engine.AuthenticateUsernamePassword(ctx, "admin+system1@crewlinker.com", "bar")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(idn.IsValid).To(BeTrue())
+			Expect(idn.UserID).To(Equal(`user_01HJTD4VS8T6DKAK5B3AZVQFCV`))
+			Expect(fromCache).To(BeTrue())
 		})
 	})
 })
@@ -294,7 +305,7 @@ var _ = Describe("engine in present", func() {
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(
 			fx.Populate(&engine, &umm),
-			Provide(1715772708))
+			Provide(WallTime11_31_48GMT))
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
 	})
@@ -302,7 +313,7 @@ var _ = Describe("engine in present", func() {
 	Describe("continue session", func() {
 		It("should be unauthenticated with expired access token en missing refresh token", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
-			WithAccessToken(req, AccessToken1ValidFor06_46_08)
+			WithAccessToken(req, AccessToken1ValidFor06_46_09GMT)
 
 			_, err := engine.ContinueSession(ctx, rec, req)
 			Expect(err).To(MatchError(clworkos.ErrNoAuthentication))
@@ -311,7 +322,7 @@ var _ = Describe("engine in present", func() {
 		It("should fail if refresh token is invalid", func(ctx context.Context) {
 			oldSessionToken := lo.Must(engine.BuildSessionToken("some.refresh.token"))
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
-			WithAccessToken(req, AccessToken1ValidFor06_46_08)
+			WithAccessToken(req, AccessToken1ValidFor06_46_09GMT)
 			WithSession(engine, req, oldSessionToken[:8]+oldSessionToken[9:])
 
 			_, err := engine.ContinueSession(ctx, rec, req)
@@ -321,7 +332,7 @@ var _ = Describe("engine in present", func() {
 
 		It("should succeed with new access token", func(ctx context.Context) {
 			oldSessionToken := lo.Must(engine.BuildSessionToken("some.refresh.token"))
-			newAccessToken := AccessToken2ValidFor13_31_48
+			newAccessToken := AccessToken2ValidFor13_36_19GMT
 
 			umm.EXPECT().AuthenticateWithRefreshToken(mock.Anything,
 				usermanagement.AuthenticateWithRefreshTokenOpts{
@@ -334,7 +345,7 @@ var _ = Describe("engine in present", func() {
 				Once()
 
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
-			WithAccessToken(req, AccessToken1ValidFor06_46_08)
+			WithAccessToken(req, AccessToken1ValidFor06_46_09GMT)
 			WithSession(engine, req, oldSessionToken)
 
 			idn, err := engine.ContinueSession(ctx, rec, req)
@@ -344,7 +355,7 @@ var _ = Describe("engine in present", func() {
 
 		It("should refresh without access token if session token is present", func(ctx context.Context) {
 			oldSessionToken := lo.Must(engine.BuildSessionToken("some.refresh.token"))
-			newAccessToken := AccessToken2ValidFor13_31_48
+			newAccessToken := AccessToken2ValidFor13_36_19GMT
 
 			umm.EXPECT().AuthenticateWithRefreshToken(mock.Anything,
 				usermanagement.AuthenticateWithRefreshTokenOpts{
