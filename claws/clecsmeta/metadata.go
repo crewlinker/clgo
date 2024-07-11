@@ -8,10 +8,12 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
 
 	"github.com/crewlinker/clgo/clconfig"
+	"github.com/samber/lo"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
@@ -47,7 +49,9 @@ func (md Metadata) TaskV4() TaskMetadataV4 {
 }
 
 func (md *Metadata) Start(ctx context.Context) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, md.uri, nil)
+	loc := lo.Must(url.JoinPath(md.uri, "task"))
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, loc, nil)
 	if err != nil {
 		return fmt.Errorf("failed to init request: %w", err)
 	}
