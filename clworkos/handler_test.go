@@ -15,7 +15,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/mock"
-	"github.com/workos/workos-go/v4/pkg/organizations"
 	"github.com/workos/workos-go/v4/pkg/usermanagement"
 	"go.uber.org/fx"
 	"go.uber.org/zap/zaptest/observer"
@@ -81,13 +80,6 @@ var _ = Describe("handler", func() {
 					Email: "a@a.com",
 				},
 			}, nil)
-			umm.EXPECT().GetUser(mock.Anything, mock.Anything).Return(usermanagement.User{
-				FirstName: "bob",
-				LastName:  "smith",
-			}, nil).Once()
-			orgm.EXPECT().GetOrganization(mock.Anything, mock.Anything).Return(organizations.Organization{
-				Name: "ACME Corp",
-			}, nil).Once()
 
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/callback?code=123", nil)
 			hdlr.ServeHTTP(rec, req)

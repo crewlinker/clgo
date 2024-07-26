@@ -180,23 +180,11 @@ func (e Engine) HandleSignInCallback(ctx context.Context, w http.ResponseWriter,
 		return nil, fmt.Errorf("failed to get identity from access token: %w", err)
 	}
 
-	user, err := e.um.GetUser(ctx, usermanagement.GetUserOpts{User: idn.UserID})
+	// we call the v2 hook, it allow replacing the access token and refresh token since it may modify
+	// things on the WorkOS side that needs to become part of the session (such as organization membership)
+	accessToken, refreshToken, err := e.hooks.AuthenticateWithCodeDidSucceedV2(
+		ctx, idn, resp.AccessToken, resp.RefreshToken)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get user: %w", err)
-	}
-
-	var orgp *organizations.Organization
-
-	if idn.OrganizationID != "" {
-		org, err := e.orgs.GetOrganization(ctx, organizations.GetOrganizationOpts{Organization: resp.OrganizationID})
-		if err != nil {
-			return nil, fmt.Errorf("failed to get organization: %w", err)
-		}
-
-		orgp = &org
-	}
-
-	if err := e.hooks.AuthenticateWithCodeDidSucceed(ctx, idn, user, orgp); err != nil {
 		return nil, fmt.Errorf("failed to run hook: %w", err)
 	}
 
@@ -207,7 +195,7 @@ func (e Engine) HandleSignInCallback(ctx context.Context, w http.ResponseWriter,
 	}
 
 	// add the session cookie to the response, the user is now authenticated
-	if err := e.addAuthenticatedCookies(ctx, resp.AccessToken, resp.RefreshToken, w); err != nil {
+	if err := e.addAuthenticatedCookies(ctx, accessToken, refreshToken, w); err != nil {
 		return nil, fmt.Errorf("failed to add session cookie: %w", err)
 	}
 

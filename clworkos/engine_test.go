@@ -13,7 +13,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/mock"
-	"github.com/workos/workos-go/v4/pkg/organizations"
 	"github.com/workos/workos-go/v4/pkg/usermanagement"
 	"go.uber.org/fx"
 )
@@ -116,13 +115,6 @@ var _ = Describe("engine", func() {
 					RefreshToken: "some.refresh.token",
 				}, nil).
 				Once()
-			umm.EXPECT().GetUser(mock.Anything, mock.Anything).Return(usermanagement.User{
-				FirstName: "bob",
-				LastName:  "smith",
-			}, nil).Once()
-			orgm.EXPECT().GetOrganization(mock.Anything, mock.Anything).Return(organizations.Organization{
-				Name: "ACME Corp",
-			}, nil).Once()
 
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?code=foo", nil)
 			loc, err := engine.HandleSignInCallback(ctx, rec, req)
@@ -146,13 +138,6 @@ var _ = Describe("engine", func() {
 						RefreshToken: "some.refresh.token",
 					}, nil).
 					Once()
-				umm.EXPECT().GetUser(mock.Anything, mock.Anything).Return(usermanagement.User{
-					FirstName: "bob",
-					LastName:  "smith",
-				}, nil).Once()
-				orgm.EXPECT().GetOrganization(mock.Anything, mock.Anything).Return(organizations.Organization{
-					Name: "ACME Corp",
-				}, nil).Once()
 
 				stateToken = lo.Must(engine.BuildSignedStateToken("some.nonce", "http://localhost:3834/some/dst"))
 			})
