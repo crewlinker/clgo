@@ -8,7 +8,7 @@ import (
 // behavior at various points in the authentication flow.
 type Hooks interface {
 	AuthenticateWithCodeDidSucceed(
-		ctx context.Context, clientID string, accessToken, refreshToken string,
+		ctx context.Context, clientID string, idn Identity, accessToken, refreshToken string,
 	) (string, Session, error)
 }
 
@@ -21,6 +21,7 @@ type NoOpHooks struct{}
 func (NoOpHooks) AuthenticateWithCodeDidSucceed(
 	ctx context.Context,
 	clientID string,
+	idn Identity,
 	accessToken, refreshToken string,
 ) (string, Session, error) {
 	return accessToken, Session{RefreshToken: refreshToken}, nil

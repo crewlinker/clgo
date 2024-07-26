@@ -175,9 +175,14 @@ func (e Engine) HandleSignInCallback(ctx context.Context, w http.ResponseWriter,
 		return nil, fmt.Errorf("failed to authenticate with code: %w", err)
 	}
 
+	idn, err := e.identityFromAccessTokenAndSession(ctx, resp.AccessToken, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get identity from access token: %w", err)
+	}
+
 	// we call the hook, it allows defining the session, which should at least contain the refresh token.
 	accessToken, session, err := e.hooks.AuthenticateWithCodeDidSucceed(
-		ctx, e.cfg.MainClientID, resp.AccessToken, resp.RefreshToken)
+		ctx, e.cfg.MainClientID, idn, resp.AccessToken, resp.RefreshToken)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run hook: %w", err)
 	}
