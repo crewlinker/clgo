@@ -175,14 +175,14 @@ func (e Engine) HandleSignInCallback(ctx context.Context, w http.ResponseWriter,
 		return nil, fmt.Errorf("failed to authenticate with code: %w", err)
 	}
 
-	idn, err := e.identityFromAccessToken(ctx, resp.AccessToken)
+	idn, err := e.identityFromAccessToken(ctx, resp.AccessToken, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get identity from access token: %w", err)
 	}
 
 	// we call the v2 hook, it allow replacing the access token and refresh token since it may modify
 	// things on the WorkOS side that needs to become part of the session (such as organization membership)
-	accessToken, refreshToken, err := e.hooks.AuthenticateWithCodeDidSucceedV2(
+	organizationID, role, err := e.hooks.AuthenticateWithCodeDidSucceedV2(
 		ctx, e.cfg.MainClientID, idn, resp.AccessToken, resp.RefreshToken)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run hook: %w", err)
@@ -194,8 +194,15 @@ func (e Engine) HandleSignInCallback(ctx context.Context, w http.ResponseWriter,
 		return nil, fmt.Errorf("failed to verify and consume state cookie: %w", err)
 	}
 
+	// setup our session data
+	session := Session{
+		RefreshToken:            resp.RefreshToken,
+		OrganizationIDOverwrite: organizationID,
+		RoleOverwrite:           role,
+	}
+
 	// add the session cookie to the response, the user is now authenticated
-	if err := e.addAuthenticatedCookies(ctx, accessToken, refreshToken, w); err != nil {
+	if err := e.addAuthenticatedCookies(ctx, resp.AccessToken, session, w); err != nil {
 		return nil, fmt.Errorf("failed to add session cookie: %w", err)
 	}
 
@@ -233,7 +240,7 @@ func (e Engine) AuthenticateUsernamePassword(
 		return idn, false, fmt.Errorf("failed to authenticate with password: %w", err)
 	}
 
-	idn, err = e.identityFromAccessToken(ctx, resp.AccessToken)
+	idn, err = e.identityFromAccessToken(ctx, resp.AccessToken, nil)
 	if err != nil {
 		return idn, false, fmt.Errorf("failed to turn access token into identity: %w", err)
 	}
@@ -261,11 +268,22 @@ func (e Engine) ContinueSession(ctx context.Context, w http.ResponseWriter, r *h
 		return idn, InputErrorf("failed to get access token cookie: %w", err)
 	}
 
+	// we handle the error down below so we may optionally decide to use the refresh token when returning
+	// the identity early.
+	rtCookie, rtCookieExists, readSessionCookieErr := readCookie(r, e.cfg.SessionCookieName)
+
 	// if there is an access token, try to use it to get the identity. It will fail explicitedly
 	// if the token is invalid, in the specific case of an expired token we don't return so we
 	// can try the refresh token.
 	if atCookieExists {
-		idn, err = e.identityFromAccessToken(ctx, atCookie.Value)
+		// if there is a session cookie at this point, and we can read the session from it. The identity we return
+		// MAY be augmented with information from the session.
+		var oldSession *Session
+		if rtCookie != nil {
+			oldSession, _ = e.authenticatedSessionFromCookie(ctx, rtCookie)
+		}
+
+		idn, err = e.identityFromAccessToken(ctx, atCookie.Value, oldSession)
 
 		switch {
 		case err == nil:
@@ -278,9 +296,8 @@ func (e Engine) ContinueSession(ctx context.Context, w http.ResponseWriter, r *h
 	}
 
 	// to refresh we need our sesion cookie holding the refresh token
-	rtCookie, rtCookieExists, err := readCookie(r, e.cfg.SessionCookieName)
-	if err != nil && rtCookieExists {
-		return idn, fmt.Errorf("failed to get session cookie: %w", err)
+	if readSessionCookieErr != nil && rtCookieExists {
+		return idn, fmt.Errorf("failed to get session cookie: %w", readSessionCookieErr)
 	} else if !rtCookieExists {
 		// no access token, AND no refresh token. Request is not authenticated in any
 		// way so we return an error.
@@ -288,7 +305,7 @@ func (e Engine) ContinueSession(ctx context.Context, w http.ResponseWriter, r *h
 	}
 
 	// read the refresh token from the encrypted session token
-	refreshToken, err := e.authenticatedSessionFromCookie(ctx, rtCookie)
+	oldSession, err := e.authenticatedSessionFromCookie(ctx, rtCookie)
 	if err != nil {
 		return idn, fmt.Errorf("failed to get authenticated session from cookie: %w", err)
 	}
@@ -296,19 +313,26 @@ func (e Engine) ContinueSession(ctx context.Context, w http.ResponseWriter, r *h
 	// exchange the refresh token for new tokens.
 	resp, err := e.um.AuthenticateWithRefreshToken(ctx, usermanagement.AuthenticateWithRefreshTokenOpts{
 		ClientID:     e.cfg.MainClientID,
-		RefreshToken: refreshToken,
+		RefreshToken: oldSession.RefreshToken,
 	})
 	if err != nil {
 		return idn, fmt.Errorf("failed to authenticate with refresh token: %w", err)
 	}
 
+	// create a new newSession that we'll keep in the cookie.
+	newSession := Session{
+		RefreshToken:            resp.RefreshToken,
+		OrganizationIDOverwrite: oldSession.OrganizationIDOverwrite,
+		RoleOverwrite:           oldSession.RoleOverwrite,
+	}
+
 	// (re)add the session cookie to the response, the user is now authenticated
-	if err := e.addAuthenticatedCookies(ctx, resp.AccessToken, resp.RefreshToken, w); err != nil {
+	if err := e.addAuthenticatedCookies(ctx, resp.AccessToken, newSession, w); err != nil {
 		return idn, fmt.Errorf("failed to add session cookie: %w", err)
 	}
 
 	// return the new identity immediately
-	return e.identityFromAccessToken(ctx, resp.AccessToken)
+	return e.identityFromAccessToken(ctx, resp.AccessToken, &newSession)
 }
 
 // StartSignOutFlow starts the sign-out flow as the user is redirected to WorkOS.
@@ -322,7 +346,7 @@ func (e Engine) StartSignOutFlow(ctx context.Context, w http.ResponseWriter, r *
 		return nil, ErrNoAccessTokenForSignOut
 	}
 
-	idn, err := e.identityFromAccessToken(ctx, atCookie.Value)
+	idn, err := e.identityFromAccessToken(ctx, atCookie.Value, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get identity from acces token: %w", err)
 	}

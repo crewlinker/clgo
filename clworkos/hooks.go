@@ -34,5 +34,5 @@ func (NoOpHooks) AuthenticateWithCodeDidSucceedV2(
 	clientID string,
 	idn Identity, accessToken, refreshToken string,
 ) (string, string, error) {
-	return accessToken, refreshToken, nil
+	return idn.OrganizationID, idn.Role, nil
 }

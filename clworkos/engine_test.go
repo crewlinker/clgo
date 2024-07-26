@@ -284,6 +284,8 @@ var _ = Describe("engine", func() {
 	})
 })
 
+var ExampleSession1 = clworkos.Session{RefreshToken: "some.refresh.token"}
+
 var _ = Describe("engine in present", func() {
 	var engine *clworkos.Engine
 	var umm *clworkosmock.MockUserManagement
@@ -305,7 +307,7 @@ var _ = Describe("engine in present", func() {
 		})
 
 		It("should fail if refresh token is invalid", func(ctx context.Context) {
-			oldSessionToken := lo.Must(engine.BuildSessionToken("some.refresh.token"))
+			oldSessionToken := lo.Must(engine.BuildSessionToken(ExampleSession1))
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
 			WithAccessToken(req, AccessToken1ValidFor06_46_09GMT)
 			WithSession(engine, req, oldSessionToken[:8]+oldSessionToken[9:])
@@ -316,7 +318,7 @@ var _ = Describe("engine in present", func() {
 		})
 
 		It("should succeed with new access token", func(ctx context.Context) {
-			oldSessionToken := lo.Must(engine.BuildSessionToken("some.refresh.token"))
+			oldSessionToken := lo.Must(engine.BuildSessionToken(ExampleSession1))
 			newAccessToken := AccessToken2ValidFor13_36_19GMT
 
 			umm.EXPECT().AuthenticateWithRefreshToken(mock.Anything,
@@ -339,7 +341,7 @@ var _ = Describe("engine in present", func() {
 		})
 
 		It("should refresh without access token if session token is present", func(ctx context.Context) {
-			oldSessionToken := lo.Must(engine.BuildSessionToken("some.refresh.token"))
+			oldSessionToken := lo.Must(engine.BuildSessionToken(ExampleSession1))
 			newAccessToken := AccessToken2ValidFor13_36_19GMT
 
 			umm.EXPECT().AuthenticateWithRefreshToken(mock.Anything,
