@@ -24,8 +24,13 @@ func LoadSchemaTmpl(file []byte) (*openapi3.T, error) {
 // DecorateSchemaTmpl will add project specific extensions and output it as
 // go template file that needs to be executed to fill in deploy-time values.
 func DecorateSchemaTmpl(doc *openapi3.T) error {
-	for _, path := range doc.Paths {
-		for _, opr := range path.Operations() {
+	for _, path := range doc.Paths.InMatchingOrder() {
+		item := doc.Paths.Find(path)
+		for _, opr := range item.Operations() {
+			if opr.Extensions == nil {
+				opr.Extensions = map[string]any{}
+			}
+
 			// add AWS-specific integration attributes
 			opr.Extensions["x-amazon-apigateway-integration"] = map[string]any{
 				"httpMethod": http.MethodPost,

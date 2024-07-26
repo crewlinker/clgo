@@ -59,8 +59,9 @@ var _ = Describe("schema", func() {
 })
 
 func FirstOperation(doc *openapi3.T) *openapi3.Operation {
-	for _, path := range doc.Paths {
-		for _, op := range path.Operations() {
+	for _, path := range doc.Paths.InMatchingOrder() {
+		item := doc.Paths.Find(path)
+		for _, op := range item.Operations() {
 			return op
 		}
 	}
