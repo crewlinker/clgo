@@ -201,8 +201,15 @@ var _ = Describe("engine", func() {
 		})
 
 		It("should not refresh and use valid access token", func(ctx context.Context) {
+			sessionToken := lo.Must(engine.BuildSessionToken(clworkos.Session{
+				RefreshToken:            "some.refresh.token",
+				OrganizationIDOverwrite: "org_01J3PZ6T0NTYHHKJP0HVZTYJ1E",
+				RoleOverwrite:           "foo",
+			}))
+
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
 			WithAccessToken(req, AccessToken1ValidFor06_46_09GMT)
+			WithSession(req, sessionToken)
 
 			idn, err := engine.ContinueSession(ctx, rec, req)
 			Expect(err).NotTo(HaveOccurred())
@@ -210,9 +217,9 @@ var _ = Describe("engine", func() {
 				IsValid:        true,
 				ExpiresAt:      lo.Must(time.Parse(time.RFC3339, "2024-05-15T04:46:09Z")),
 				UserID:         "user_01HJTD4VS8T6DKAK5B3AZVQFCV",
-				OrganizationID: "org_01HJTBPK3YQMZY9KH30EXV9GHN",
+				OrganizationID: "org_01J3PZ6T0NTYHHKJP0HVZTYJ1E",
 				SessionID:      "session_01HXX8VQ8SND5TCNZCN6NA7VFQ",
-				Role:           "member",
+				Role:           "foo",
 				Impersonator: clworkos.Impersonator{
 					Email: "admin@crewlinker.com",
 				},
@@ -310,7 +317,7 @@ var _ = Describe("engine in present", func() {
 			oldSessionToken := lo.Must(engine.BuildSessionToken(ExampleSession1))
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
 			WithAccessToken(req, AccessToken1ValidFor06_46_09GMT)
-			WithSession(engine, req, oldSessionToken[:8]+oldSessionToken[9:])
+			WithSession(req, oldSessionToken[:8]+oldSessionToken[9:])
 
 			_, err := engine.ContinueSession(ctx, rec, req)
 			Expect(err).To(MatchError(MatchRegexp(`failed to verify`)))
@@ -333,7 +340,7 @@ var _ = Describe("engine in present", func() {
 
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
 			WithAccessToken(req, AccessToken1ValidFor06_46_09GMT)
-			WithSession(engine, req, oldSessionToken)
+			WithSession(req, oldSessionToken)
 
 			idn, err := engine.ContinueSession(ctx, rec, req)
 			Expect(err).NotTo(HaveOccurred())
@@ -355,7 +362,7 @@ var _ = Describe("engine in present", func() {
 				Once()
 
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
-			WithSession(engine, req, oldSessionToken)
+			WithSession(req, oldSessionToken)
 
 			idn, err := engine.ContinueSession(ctx, rec, req)
 			Expect(err).NotTo(HaveOccurred())
@@ -422,7 +429,7 @@ func WithState(req *http.Request, state string) {
 	})
 }
 
-func WithSession(e *clworkos.Engine, req *http.Request, sessionToken string) {
+func WithSession(req *http.Request, sessionToken string) {
 	req.AddCookie(&http.Cookie{
 		Name:  "cl_session",
 		Value: sessionToken,

@@ -2,19 +2,14 @@ package clworkos
 
 import (
 	"context"
-
-	"github.com/workos/workos-go/v4/pkg/organizations"
-	"github.com/workos/workos-go/v4/pkg/usermanagement"
 )
 
 // Hooks can be optionally provided to the engine to allow custom
 // behavior at various points in the authentication flow.
 type Hooks interface {
 	AuthenticateWithCodeDidSucceed(
-		ctx context.Context, idn Identity, usr usermanagement.User, org *organizations.Organization) error
-	AuthenticateWithCodeDidSucceedV2(
-		ctx context.Context, clientID string, idn Identity, accessToken, refreshToken string,
-	) (string, string, error)
+		ctx context.Context, clientID string, accessToken, refreshToken string,
+	) (string, Session, error)
 }
 
 var _ Hooks = NoOpHooks{}
@@ -24,15 +19,9 @@ var _ Hooks = NoOpHooks{}
 type NoOpHooks struct{}
 
 func (NoOpHooks) AuthenticateWithCodeDidSucceed(
-	ctx context.Context, idn Identity, usr usermanagement.User, org *organizations.Organization,
-) error {
-	return nil
-}
-
-func (NoOpHooks) AuthenticateWithCodeDidSucceedV2(
 	ctx context.Context,
 	clientID string,
-	idn Identity, accessToken, refreshToken string,
-) (string, string, error) {
-	return idn.OrganizationID, idn.Role, nil
+	accessToken, refreshToken string,
+) (string, Session, error) {
+	return accessToken, Session{RefreshToken: refreshToken}, nil
 }

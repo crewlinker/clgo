@@ -132,8 +132,10 @@ func (e Engine) clearSessionTokens(_ context.Context, w http.ResponseWriter) {
 	})
 }
 
-// identityFromCookie returns the identity of the user based on something carrying cookies.
-func (e Engine) identityFromAccessToken(
+// identityFromCookie returns the identity of the user based on something carrying cookies. An optional session may
+// be provided that is usually read from the session cookie. It can be used to augment the identity as we present
+// it to the rest of the software.
+func (e Engine) identityFromAccessTokenAndSession(
 	ctx context.Context, accessToken string, session *Session,
 ) (idn Identity, err error) {
 	tok, err := e.parseAccessToken(ctx, accessToken)
