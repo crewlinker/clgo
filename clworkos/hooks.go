@@ -13,7 +13,7 @@ type Hooks interface {
 	AuthenticateWithCodeDidSucceed(
 		ctx context.Context, idn Identity, usr usermanagement.User, org *organizations.Organization) error
 	AuthenticateWithCodeDidSucceedV2(
-		ctx context.Context, idn Identity, accessToken, refreshToken string,
+		ctx context.Context, clientID string, idn Identity, accessToken, refreshToken string,
 	) (string, string, error)
 }
 
@@ -30,7 +30,9 @@ func (NoOpHooks) AuthenticateWithCodeDidSucceed(
 }
 
 func (NoOpHooks) AuthenticateWithCodeDidSucceedV2(
-	ctx context.Context, idn Identity, accessToken, refreshToken string,
+	ctx context.Context,
+	clientID string,
+	idn Identity, accessToken, refreshToken string,
 ) (string, string, error) {
 	return accessToken, refreshToken, nil
 }

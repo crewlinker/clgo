@@ -183,7 +183,7 @@ func (e Engine) HandleSignInCallback(ctx context.Context, w http.ResponseWriter,
 	// we call the v2 hook, it allow replacing the access token and refresh token since it may modify
 	// things on the WorkOS side that needs to become part of the session (such as organization membership)
 	accessToken, refreshToken, err := e.hooks.AuthenticateWithCodeDidSucceedV2(
-		ctx, idn, resp.AccessToken, resp.RefreshToken)
+		ctx, e.cfg.MainClientID, idn, resp.AccessToken, resp.RefreshToken)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run hook: %w", err)
 	}
