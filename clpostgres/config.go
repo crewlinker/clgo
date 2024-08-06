@@ -44,6 +44,9 @@ type Config struct {
 
 	// PoolConnectionTimeout configures how long the pgx pool connect logic waits for the connection to establish
 	PoolConnectionTimeout time.Duration `env:"POOL_CONNECTION_TIMEOUT" envDefault:"10s"`
+
+	// Connection pool parameters
+	PoolMaxConns int32 `env:"POOL_MAX_CONNS"`
 }
 
 // NewReadOnlyConfig constructs a config for a read-only database connecion. The aws config is optional
@@ -94,6 +97,10 @@ func newPoolConfig(
 		return nil, fmt.Errorf("failed to parse config from conn string: %w", err)
 	}
 
+	if cfg.PoolMaxConns != 0 {
+		pcfg.MaxConns = cfg.PoolMaxConns
+	}
+
 	if cfg.IamAuthRegion != "" {
 		if awsc.Credentials == nil {
 			return nil, errIAMAuthWithoutAWSConfig
@@ -125,6 +132,7 @@ func newPoolConfig(
 
 	logs.Info("initialized postgres connection config",
 		zap.Any("runtime_params", pcfg.ConnConfig.RuntimeParams),
+		zap.Int32("pool_max_conns", cfg.PoolMaxConns),
 		zap.String("ssl_mode", cfg.SSLMode),
 		zap.String("iam_auth_region", cfg.IamAuthRegion),
 		zap.String("user", pcfg.ConnConfig.User),
