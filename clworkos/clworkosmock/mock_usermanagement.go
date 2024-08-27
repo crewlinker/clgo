@@ -450,6 +450,59 @@ func (_c *MockUserManagement_ListUsers_Call) RunAndReturn(run func(context.Conte
 	return _c
 }
 
+// SendInvitation provides a mock function with given fields: ctx, opts
+func (_m *MockUserManagement) SendInvitation(ctx context.Context, opts usermanagement.SendInvitationOpts) (usermanagement.Invitation, error) {
+	ret := _m.Called(ctx, opts)
+
+	var r0 usermanagement.Invitation
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, usermanagement.SendInvitationOpts) (usermanagement.Invitation, error)); ok {
+		return rf(ctx, opts)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, usermanagement.SendInvitationOpts) usermanagement.Invitation); ok {
+		r0 = rf(ctx, opts)
+	} else {
+		r0 = ret.Get(0).(usermanagement.Invitation)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, usermanagement.SendInvitationOpts) error); ok {
+		r1 = rf(ctx, opts)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockUserManagement_SendInvitation_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SendInvitation'
+type MockUserManagement_SendInvitation_Call struct {
+	*mock.Call
+}
+
+// SendInvitation is a helper method to define mock.On call
+//   - ctx context.Context
+//   - opts usermanagement.SendInvitationOpts
+func (_e *MockUserManagement_Expecter) SendInvitation(ctx interface{}, opts interface{}) *MockUserManagement_SendInvitation_Call {
+	return &MockUserManagement_SendInvitation_Call{Call: _e.mock.On("SendInvitation", ctx, opts)}
+}
+
+func (_c *MockUserManagement_SendInvitation_Call) Run(run func(ctx context.Context, opts usermanagement.SendInvitationOpts)) *MockUserManagement_SendInvitation_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(usermanagement.SendInvitationOpts))
+	})
+	return _c
+}
+
+func (_c *MockUserManagement_SendInvitation_Call) Return(_a0 usermanagement.Invitation, _a1 error) *MockUserManagement_SendInvitation_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockUserManagement_SendInvitation_Call) RunAndReturn(run func(context.Context, usermanagement.SendInvitationOpts) (usermanagement.Invitation, error)) *MockUserManagement_SendInvitation_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateUser provides a mock function with given fields: ctx, opts
 func (_m *MockUserManagement) UpdateUser(ctx context.Context, opts usermanagement.UpdateUserOpts) (usermanagement.User, error) {
 	ret := _m.Called(ctx, opts)
