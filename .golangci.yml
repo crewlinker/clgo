@@ -1,4 +1,7 @@
 linters-settings:
+  gocritic:
+    disabled-checks:
+      - unlambda
   revive:
     rules:
     - name: var-naming
@@ -28,6 +31,7 @@ linters-settings:
       - ro # read-only database connection
       - v # any value
       - r # reader or request
+      - g # gomega asserter
 linters:
   enable-all: true
   disable:
@@ -49,6 +53,8 @@ linters:
     - nonamedreturns # makes some functions way more readable
     - tagliatelle # AWS JSON often doesn't follow this convention
     - gochecknoglobals # globals are used all the time
+    - wsl # too opinionated
+    - err113 # slows us down too much
 
 issues:
   include:
