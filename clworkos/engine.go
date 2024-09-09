@@ -250,6 +250,10 @@ func (e Engine) ContinueSession(ctx context.Context, w http.ResponseWriter, r *h
 	// every request from failing if we're in a bad state. It also forces the removal of cookies when
 	// the WorkOS backend has deemed the tokens invalid.
 	defer func() {
+		e.logs.Info("continued session", zap.Error(err),
+			zap.Any("request_headers", r.Header),
+			zap.Bool("is_err_no_authentication", errors.Is(err, ErrNoAuthentication)))
+
 		if err != nil && !errors.Is(err, ErrNoAuthentication) {
 			e.clearSessionTokens(ctx, w)
 		}
