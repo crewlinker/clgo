@@ -19,6 +19,8 @@ import (
 
 // Config configures the code in this package.
 type Config struct {
+	// DatabaseURL can be specified for full control over the connection string
+	DatabaseURL string `env:"DATABASE_URL"`
 	// DatabaseName names the database the connection will be made to
 	DatabaseName string `env:"DATABASE_NAME" envDefault:"postgres"`
 	// ReadWriteHostname endpoint allows configuration of a endpoint that can read and write
@@ -88,9 +90,12 @@ func newPoolConfig(
 		applicationName += ".rw"
 	}
 
-	connString := fmt.Sprintf(`postgres://%s:%s@%s/%s?application_name=%s&sslmode=%s`,
-		cfg.Username, url.QueryEscape(cfg.Password), net.JoinHostPort(host, strconv.Itoa(cfg.Port)),
-		cfg.DatabaseName, applicationName, cfg.SSLMode)
+	connString := cfg.DatabaseURL
+	if connString == "" {
+		connString = fmt.Sprintf(`postgres://%s:%s@%s/%s?application_name=%s&sslmode=%s`,
+			cfg.Username, url.QueryEscape(cfg.Password), net.JoinHostPort(host, strconv.Itoa(cfg.Port)),
+			cfg.DatabaseName, applicationName, cfg.SSLMode)
+	}
 
 	pcfg, err := pgxpool.ParseConfig(connString)
 	if err != nil {
