@@ -55,10 +55,9 @@ var _ = Describe("template migrater", func() {
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(
 			fx.Populate(&sqldb, &dbcfg, &mig),
-			fx.Supply(testTemplateDatabaseName),
 			clzap.TestProvide(),
 			clpostgres.TestProvide(),
-			clpgmigrate.TemplateMigrated(),
+			clpgmigrate.TemplateMigrated(testTemplateDatabaseName),
 		)
 
 		Expect(app.Start(ctx)).To(Succeed())

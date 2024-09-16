@@ -162,9 +162,10 @@ func (m TemplateMigrater) Reset(ctx context.Context) error {
 }
 
 // TemplateMigrated configures the di for using template based migrations.
-func TemplateMigrated() fx.Option {
+func TemplateMigrated(templDBName TemplateDatabaseName) fx.Option {
 	return fx.Options(
 		clconfig.Provide[Config](strings.ToUpper(moduleName)+"_"),
+		fx.Supply(templDBName),
 
 		// Provide migrater which will now always run before connecting using versioned steps
 		fx.Provide(fx.Annotate(
