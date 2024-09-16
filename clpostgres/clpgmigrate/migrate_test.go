@@ -10,11 +10,9 @@ import (
 )
 
 func TestPostgres(t *testing.T) {
+	godotenv.Load(filepath.Join("..", "..", "test.env"))
+
 	t.Parallel()
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "clpostgres/clpgmigrate")
 }
-
-var _ = BeforeSuite(func() {
-	godotenv.Load(filepath.Join("..", "..", "test.env"))
-})

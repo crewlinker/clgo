@@ -6,9 +6,11 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/XSAM/otelsql"
 	"github.com/crewlinker/clgo/clconfig"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	"go.opentelemetry.io/otel/metric"
@@ -161,5 +163,27 @@ func TestProvide() fx.Option {
 		fx.Provide(fx.Annotate(func(rw *sql.DB) *sql.DB { return rw }, fx.ParamTags(`name:"rw"`))),
 		fx.Provide(fx.Annotate(func(rw *pgxpool.Pool) *pgxpool.Pool { return rw }, fx.ParamTags(`name:"rw"`))),
 		fx.Provide(fx.Annotate(func(rw *pgxpool.Config) *pgxpool.Config { return rw }, fx.ParamTags(`name:"rw"`))),
+
+		// provide test with the ability to request a read-write tx that automatically rolls back and discourages
+		// sequential scans for spotting expensive (non indexe) queries more easily.
+		fx.Provide(func(lcl fx.Lifecycle, rw *pgxpool.Pool) (pgx.Tx, error) {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+
+			tx, err := rw.Begin(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("failed to begin tx: %w", err)
+			}
+			// make it more likely to not do scans, so we can test index use more easily.
+			if _, err := tx.Exec(ctx, `SET SESSION enable_seqscan = off`); err != nil {
+				return nil, fmt.Errorf("failed to set: enable_seqscan = off: %w", err)
+			}
+
+			lcl.Append(fx.StopHook(func(ctx context.Context) error {
+				return tx.Rollback(ctx)
+			}))
+
+			return tx, nil
+		}),
 	)
 }
