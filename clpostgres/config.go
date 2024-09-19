@@ -7,10 +7,13 @@ import (
 	"net"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
+	"github.com/caarlos0/env/v10"
+	"github.com/crewlinker/clgo/clconfig"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/tracelog"
@@ -51,51 +54,71 @@ type Config struct {
 	PoolMaxConns int32 `env:"POOL_MAX_CONNS"`
 }
 
+// ConnStringFromEnvironment turns the environment config and turns it into a connection string.
+func ConnStringFromEnvironment(kind ...ConfigKind) string {
+	cfg, _ := clconfig.EnvConfigurer[Config](strings.ToUpper(moduleName) + "_")(env.Options{})
+
+	return ConnStringFromConfig(cfg, kind...)
+}
+
+// ConnStringFromConfig turns the package configuration into a connection string.
+func ConnStringFromConfig(cfg Config, kind ...ConfigKind) string {
+	connString := cfg.DatabaseURL
+
+	if connString == "" {
+		applicationName, host := cfg.ApplicationName, cfg.ReadWriteHostname
+
+		if len(kind) > 0 && kind[0] == ConfigKindReadOnly {
+			applicationName += ".ro"
+			host = cfg.ReadOnlyHostname
+		} else {
+			applicationName += ".rw"
+		}
+
+		connString = fmt.Sprintf(`postgres://%s:%s@%s/%s?application_name=%s&sslmode=%s`,
+			cfg.Username, url.QueryEscape(cfg.Password), net.JoinHostPort(host, strconv.Itoa(cfg.Port)),
+			cfg.DatabaseName, applicationName, cfg.SSLMode)
+	}
+
+	return connString
+}
+
 // NewReadOnlyConfig constructs a config for a read-only database connecion. The aws config is optional
 // and is only used when IamAuth option is set.
 func NewReadOnlyConfig(cfg Config, logs *zap.Logger, awsc aws.Config) (*pgxpool.Config, error) {
-	return newPoolConfig(cfg, logs, cfg.ReadOnlyHostname, configKindReadOnly, awsc)
+	return newPoolConfig(cfg, logs, ConfigKindReadOnly, awsc)
 }
 
 // NewReadWriteConfig constructs a config for a read-write database connecion. The aws config is optional
 // and only used when the IamAuth option is set.
 func NewReadWriteConfig(cfg Config, logs *zap.Logger, awsc aws.Config) (*pgxpool.Config, error) {
-	return newPoolConfig(cfg, logs, cfg.ReadWriteHostname, configKindReadWrite, awsc)
+	return newPoolConfig(cfg, logs, ConfigKindReadWrite, awsc)
 }
 
 // error when invalid dep combo for config.
 var errIAMAuthWithoutAWSConfig = errors.New("IAM auth requested but optional AWS config dependency not provided")
 
-// configKind is the kind of pgxpool config we are providing.
-type configKind int
+// ConfigKind is the kind of pgxpool config we are providing.
+type ConfigKind int
 
 const (
-	configKindUnknown configKind = iota
-	configKindReadOnly
-	configKindReadWrite
+	ConfigKindUnknown ConfigKind = iota
+	ConfigKindReadOnly
+	ConfigKindReadWrite
 )
 
 // newPoolConfig will turn environment configuration in a way that allows
 // database credentials to be provided.
 func newPoolConfig(
-	cfg Config, logs *zap.Logger, host string, kind configKind, awsc aws.Config,
+	cfg Config, logs *zap.Logger, kind ConfigKind, awsc aws.Config,
 ) (*pgxpool.Config, error) {
-	applicationName := cfg.ApplicationName
-
-	if kind == configKindReadOnly {
+	if kind == ConfigKindReadOnly {
 		logs = logs.Named("ro")
-		applicationName += ".ro"
-	} else if kind == configKindReadWrite {
+	} else if kind == ConfigKindReadWrite {
 		logs = logs.Named("rw")
-		applicationName += ".rw"
 	}
 
-	connString := cfg.DatabaseURL
-	if connString == "" {
-		connString = fmt.Sprintf(`postgres://%s:%s@%s/%s?application_name=%s&sslmode=%s`,
-			cfg.Username, url.QueryEscape(cfg.Password), net.JoinHostPort(host, strconv.Itoa(cfg.Port)),
-			cfg.DatabaseName, applicationName, cfg.SSLMode)
-	}
+	connString := ConnStringFromConfig(cfg, kind)
 
 	pcfg, err := pgxpool.ParseConfig(connString)
 	if err != nil {
@@ -113,7 +136,7 @@ func newPoolConfig(
 
 		// For IAM Auth we need to build a token as a password on every connection attempt
 		pcfg.BeforeConnect = func(ctx context.Context, pgc *pgx.ConnConfig) error {
-			tok, err := buildIamAuthToken(ctx, logs, cfg.Port, cfg.Username, cfg.IamAuthRegion, awsc, host)
+			tok, err := buildIamAuthToken(ctx, logs, cfg.Port, cfg.Username, cfg.IamAuthRegion, awsc, pcfg.ConnConfig.Host)
 			if err != nil {
 				return fmt.Errorf("failed to build iam token: %w", err)
 			}

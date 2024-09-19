@@ -74,4 +74,28 @@ var _ = Describe("config", func() {
 			Expect(cfgs.ReadOnly.ConnConfig.Host).To(Equal("foo.read-only"))
 		})
 	})
+
+	Describe("conn string from env", Serial, func() {
+		It("should give valid url with no env", func() {
+			Expect(clpostgres.ConnStringFromEnvironment()).To(Equal(`postgres://postgres:postgres@localhost:5435/postgres?application_name=unknown.rw&sslmode=disable`))
+		})
+
+		It("should take envs into account", func() {
+			os.Setenv("CLPOSTGRES_RW_HOSTNAME", "myrw")
+			os.Setenv("CLPOSTGRES_APPLICATION_NAME", "app")
+			defer os.Unsetenv("CLPOSTGRES_RW_HOSTNAME")
+			defer os.Unsetenv("CLPOSTGRES_APPLICATION_NAME")
+
+			Expect(clpostgres.ConnStringFromEnvironment()).To(Equal(`postgres://postgres:postgres@myrw:5435/postgres?application_name=app.rw&sslmode=disable`))
+		})
+
+		It("should take envs & kind into account", func() {
+			os.Setenv("CLPOSTGRES_RW_HOSTNAME", "myrw")
+			os.Setenv("CLPOSTGRES_RO_HOSTNAME", "myro")
+			defer os.Unsetenv("CLPOSTGRES_RW_HOSTNAME")
+			defer os.Unsetenv("CLPOSTGRES_RO_HOSTNAME")
+
+			Expect(clpostgres.ConnStringFromEnvironment(clpostgres.ConfigKindReadOnly)).To(Equal(`postgres://postgres:postgres@myro:5435/postgres?application_name=unknown.ro&sslmode=disable`))
+		})
+	})
 })
