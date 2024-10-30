@@ -4,6 +4,7 @@ package clpostgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -179,8 +180,14 @@ func TestProvide() fx.Option {
 				return nil, fmt.Errorf("failed to set: enable_seqscan = off: %w", err)
 			}
 
+			// rollback the tx after each test, we don't consider ErrTxClosed an error so test
+			// CAN commit and assert the result whitout erroring at the end of the test.
 			lcl.Append(fx.StopHook(func(ctx context.Context) error {
-				return tx.Rollback(ctx)
+				if err := tx.Rollback(ctx); !errors.Is(err, pgx.ErrTxClosed) {
+					return err //nolint: wrapcheck
+				}
+
+				return nil
 			}))
 
 			return tx, nil
