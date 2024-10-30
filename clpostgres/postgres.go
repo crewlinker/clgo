@@ -156,8 +156,10 @@ func Provide() fx.Option {
 	)
 }
 
-// TestProvide configures the DI for a test environment.
-func TestProvide() fx.Option {
+// TestProvide configures the DI for a test environment. By default it will rollback the tx at the end of every test
+// but to prevent side-effects. But it can be configured to commit as well, in case tx-level constraints need to be
+// tested.
+func TestProvide(doCommit ...bool) fx.Option {
 	return fx.Options(Provide(),
 		// we re-provide the read-write sql db as an unnamed *sql.DB and config because that is
 		// what we usually want in tests.
@@ -180,15 +182,30 @@ func TestProvide() fx.Option {
 				return nil, fmt.Errorf("failed to set: enable_seqscan = off: %w", err)
 			}
 
-			// rollback the tx after each test, we don't consider ErrTxClosed an error so test
-			// CAN commit and assert the result whitout erroring at the end of the test.
-			lcl.Append(fx.StopHook(func(ctx context.Context) error {
-				if err := tx.Rollback(ctx); !errors.Is(err, pgx.ErrTxClosed) {
-					return err //nolint: wrapcheck
-				}
+			if len(doCommit) > 0 && doCommit[0] {
+				// Commit the tx after each test. This creates a side-effect but some db constrains may be run
+				// only at the end of the tx (e.g DEFERRED CONSTRAINT TRIGGERS) so we need to commit in order to see
+				// them in our tests.
+				lcl.Append(fx.StopHook(func(ctx context.Context) error {
+					// if it's already closed it means the test has committed the tx, this is OK for tests
+					// we don't consider rollbacks an error in our tests since we might assert statement-level errors
+					if err := tx.Commit(ctx); !errors.Is(err, pgx.ErrTxClosed) && !errors.Is(err, pgx.ErrTxCommitRollback) {
+						return err //nolint: wrapcheck
+					}
 
-				return nil
-			}))
+					return nil
+				}))
+			} else {
+				// rollback the tx after each test, we don't consider ErrTxClosed an error so test
+				// CAN commit and assert the result whitout erroring at the end of the test.
+				lcl.Append(fx.StopHook(func(ctx context.Context) error {
+					if err := tx.Rollback(ctx); !errors.Is(err, pgx.ErrTxClosed) {
+						return err //nolint: wrapcheck
+					}
+
+					return nil
+				}))
+			}
 
 			return tx, nil
 		}),
