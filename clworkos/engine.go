@@ -322,8 +322,8 @@ func (e Engine) ContinueSession(ctx context.Context, w http.ResponseWriter, r *h
 		// refresh token for a new accerss token. In that case we might want to act differently so we
 		// return a specialized error. NOTE that it is currently not possible to detect this state in a more elegant
 		// fashion: https://github.com/workos/workos-go/issues/198
-		if strings.Contains(err.Error(), "invalid_grant Session has already ended") {
-			return idn, ErrSessionHasAlreadyEnded
+		if strings.Contains(err.Error(), "invalid_grant Refresh token already exchanged") {
+			return idn, ErrRefreshTokenAlreadyExchanged
 		}
 
 		return idn, fmt.Errorf("failed to authenticate with refresh token: %w", err)

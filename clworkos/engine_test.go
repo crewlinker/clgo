@@ -377,14 +377,14 @@ var _ = Describe("engine in present", func() {
 				usermanagement.AuthenticateWithRefreshTokenOpts{
 					RefreshToken: "some.refresh.token",
 				}).
-				Return(usermanagement.RefreshAuthenticationResponse{}, errors.New("400 Bad Request: request id \"23e3666d-05fe-416f-97e6-7fdb5ab0ec93\": invalid_grant Session has already ended.")).
+				Return(usermanagement.RefreshAuthenticationResponse{}, errors.New("400 Bad Request: request id \"23e3666d-05fe-416f-97e6-7fdb5ab0ec93\": invalid_grant Refresh token already exchanged.")).
 				Once()
 
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
 			WithSession(req, oldSessionToken)
 
 			_, err := engine.ContinueSession(ctx, rec, req)
-			Expect(err).To(MatchError(clworkos.ErrSessionHasAlreadyEnded))
+			Expect(err).To(MatchError(clworkos.ErrRefreshTokenAlreadyExchanged))
 		})
 	})
 })

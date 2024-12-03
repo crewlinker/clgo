@@ -22,8 +22,8 @@ var ErrStateNonceMismatch = errors.New("state nonce mismatch")
 // ErrNoAuthentication is returned when no authentication is present in the request.
 var ErrNoAuthentication = errors.New("no authentication")
 
-// ErrSessionHasAlreadyEnded is returned when the refresh-token expired, or was already used.
-var ErrSessionHasAlreadyEnded = errors.New("session already ended")
+// ErrRefreshTokenAlreadyExchanged is returned when the refresh-token expired, or was already used.
+var ErrRefreshTokenAlreadyExchanged = errors.New("refresh token already exchanged")
 
 // ErrNoAccessTokenForSignOut is returned when no access token is present for sign out.
 var ErrNoAccessTokenForSignOut = errors.New("no credentials to sign-out with")
