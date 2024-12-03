@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/gobwas/glob"
 	"github.com/lestrrat-go/jwx/v2/jwt"
@@ -307,12 +308,24 @@ func (e Engine) ContinueSession(ctx context.Context, w http.ResponseWriter, r *h
 		return idn, fmt.Errorf("failed to get authenticated session from cookie: %w", err)
 	}
 
+	e.logs.Info("authenticate with refresh token",
+		zap.String("client_id", e.cfg.MainClientID),
+		zap.String("refresh_token", oldSession.RefreshToken))
+
 	// exchange the refresh token for new tokens.
 	resp, err := e.um.AuthenticateWithRefreshToken(ctx, usermanagement.AuthenticateWithRefreshTokenOpts{
 		ClientID:     e.cfg.MainClientID,
 		RefreshToken: oldSession.RefreshToken,
 	})
 	if err != nil {
+		// Invalid grant error might just be caused because a concurrent request also tried to exchange the
+		// refresh token for a new accerss token. In that case we might want to act differently so we
+		// return a specialized error. NOTE that it is currently not possible to detect this state in a more elegant
+		// fashion: https://github.com/workos/workos-go/issues/198
+		if strings.Contains(err.Error(), "invalid_grant Session has already ended") {
+			return idn, ErrSessionHasAlreadyEnded
+		}
+
 		return idn, fmt.Errorf("failed to authenticate with refresh token: %w", err)
 	}
 
