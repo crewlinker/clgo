@@ -77,7 +77,6 @@ type Clock interface{ jwt.Clock }
 // Engine implements the core business logic for WorkOS-powered authentication.
 type Engine struct {
 	cfg   Config
-	logs  *zap.Logger
 	keys  *Keys
 	clock jwt.Clock
 	um    UserManagement
@@ -93,7 +92,6 @@ type Engine struct {
 // NewEngine creates a new Engine with the provided UserManagement implementation.
 func NewEngine(
 	cfg Config,
-	logs *zap.Logger,
 	hooks Hooks,
 	keys *Keys,
 	clock Clock,
@@ -102,7 +100,6 @@ func NewEngine(
 ) (eng *Engine, err error) {
 	eng = &Engine{
 		cfg:   cfg,
-		logs:  logs.Named("engine"),
 		keys:  keys,
 		um:    um,
 		orgs:  orgs,
@@ -157,7 +154,9 @@ func (e Engine) StartAuthenticationFlow(
 }
 
 // HandleSignInCallback handles the sign-in callback as the user returns from WorkOS.
-func (e Engine) HandleSignInCallback(ctx context.Context, w http.ResponseWriter, r *http.Request) (*url.URL, error) {
+func (e Engine) HandleSignInCallback(
+	ctx context.Context, logs *zap.Logger, w http.ResponseWriter, r *http.Request,
+) (*url.URL, error) {
 	errorCode, errorDescription := r.URL.Query().Get("error"), r.URL.Query().Get("error_description")
 	if errorCode != "" {
 		return nil, WorkOSCallbackError{code: errorCode, description: errorDescription}
@@ -177,7 +176,7 @@ func (e Engine) HandleSignInCallback(ctx context.Context, w http.ResponseWriter,
 		return nil, fmt.Errorf("failed to authenticate with code: %w", err)
 	}
 
-	idn, err := e.identityFromAccessTokenAndSession(ctx, resp.AccessToken, nil)
+	idn, err := e.identityFromAccessTokenAndSession(ctx, logs, resp.AccessToken, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get identity from access token: %w", err)
 	}
@@ -209,7 +208,7 @@ var ErrBasicAuthNotAllowed = errors.New("basic auth is not allowed")
 // AuthenticateUsernamePassword is used to authenticate a user with a username and password. This method is only allowed
 // for certain white-listed usernames since it is generally considered insure when used wrongly.
 func (e Engine) AuthenticateUsernamePassword(
-	ctx context.Context, uname, passwd string,
+	ctx context.Context, logs *zap.Logger, uname, passwd string,
 ) (idn Identity, fromCache bool, err error) {
 	if !lo.Contains(e.cfg.BasicAuthWhitelist, uname) {
 		return idn, false, ErrBasicAuthNotAllowed
@@ -234,7 +233,7 @@ func (e Engine) AuthenticateUsernamePassword(
 		return idn, false, fmt.Errorf("failed to authenticate with password: %w", err)
 	}
 
-	idn, err = e.identityFromAccessTokenAndSession(ctx, resp.AccessToken, nil)
+	idn, err = e.identityFromAccessTokenAndSession(ctx, logs, resp.AccessToken, nil)
 	if err != nil {
 		return idn, false, fmt.Errorf("failed to turn access token into identity: %w", err)
 	}
@@ -246,12 +245,14 @@ func (e Engine) AuthenticateUsernamePassword(
 
 // ContinueSession will continue the user's session, potentially by refreshing it. It is expected to be called
 // on every request as part of some middleware logic.
-func (e Engine) ContinueSession(ctx context.Context, w http.ResponseWriter, r *http.Request) (idn Identity, err error) {
+func (e Engine) ContinueSession(
+	ctx context.Context, logs *zap.Logger, w http.ResponseWriter, r *http.Request,
+) (idn Identity, err error) {
 	// if there is any unexpected error while using the session we clear the tokens. This is to prevent
 	// every request from failing if we're in a bad state. It also forces the removal of cookies when
 	// the WorkOS backend has deemed the tokens invalid.
 	defer func() {
-		e.logs.Info("continued session", zap.Error(err),
+		logs.Info("continued session", zap.Error(err),
 			zap.Any("request_headers", r.Header),
 			zap.Bool("is_err_no_authentication", errors.Is(err, ErrNoAuthentication)))
 
@@ -281,7 +282,7 @@ func (e Engine) ContinueSession(ctx context.Context, w http.ResponseWriter, r *h
 			oldSession, _ = e.authenticatedSessionFromCookie(ctx, rtCookie)
 		}
 
-		idn, err = e.identityFromAccessTokenAndSession(ctx, atCookie.Value, oldSession)
+		idn, err = e.identityFromAccessTokenAndSession(ctx, logs, atCookie.Value, oldSession)
 
 		switch {
 		case err == nil:
@@ -308,7 +309,7 @@ func (e Engine) ContinueSession(ctx context.Context, w http.ResponseWriter, r *h
 		return idn, fmt.Errorf("failed to get authenticated session from cookie: %w", err)
 	}
 
-	e.logs.Info("authenticate with refresh token",
+	logs.Info("authenticate with refresh token",
 		zap.String("client_id", e.cfg.MainClientID),
 		zap.String("refresh_token", oldSession.RefreshToken))
 
@@ -342,11 +343,13 @@ func (e Engine) ContinueSession(ctx context.Context, w http.ResponseWriter, r *h
 	}
 
 	// return the new identity immediately
-	return e.identityFromAccessTokenAndSession(ctx, resp.AccessToken, &newSession)
+	return e.identityFromAccessTokenAndSession(ctx, logs, resp.AccessToken, &newSession)
 }
 
 // StartSignOutFlow starts the sign-out flow as the user is redirected to WorkOS.
-func (e Engine) StartSignOutFlow(ctx context.Context, w http.ResponseWriter, r *http.Request) (*url.URL, error) {
+func (e Engine) StartSignOutFlow(
+	ctx context.Context, logs *zap.Logger, w http.ResponseWriter, r *http.Request,
+) (*url.URL, error) {
 	defer e.clearSessionTokens(ctx, w) // always clear the tokens
 
 	atCookie, atCookieExists, err := readCookie(r, e.cfg.AccessTokenCookieName)
@@ -356,7 +359,7 @@ func (e Engine) StartSignOutFlow(ctx context.Context, w http.ResponseWriter, r *
 		return nil, ErrNoAccessTokenForSignOut
 	}
 
-	idn, err := e.identityFromAccessTokenAndSession(ctx, atCookie.Value, nil)
+	idn, err := e.identityFromAccessTokenAndSession(ctx, logs, atCookie.Value, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get identity from acces token: %w", err)
 	}

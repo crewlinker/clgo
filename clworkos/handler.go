@@ -13,6 +13,7 @@ import (
 	"github.com/advdv/bhttp"
 	"github.com/crewlinker/clgo/clconfig"
 	"github.com/crewlinker/clgo/clworkos/clworkosmock"
+	"github.com/crewlinker/clgo/clzap"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -83,7 +84,9 @@ func (h *Handler) handleSignIn() bhttp.HandlerFunc[C] {
 // handleCallback handles the callback from WorkOS.
 func (h *Handler) handleCallback() bhttp.HandlerFunc[C] {
 	return func(ctx *bhttp.Context[C], w bhttp.ResponseWriter, r *http.Request) error {
-		loc, err := h.engine.HandleSignInCallback(ctx, w, r)
+		logs := clzap.Log(ctx, h.logs)
+
+		loc, err := h.engine.HandleSignInCallback(ctx, logs, w, r)
 		if err != nil {
 			return fmt.Errorf("failed to handle sign-in callback: %w", err)
 		}
@@ -97,7 +100,9 @@ func (h *Handler) handleCallback() bhttp.HandlerFunc[C] {
 // handleSignOut handles the sign-in flow.
 func (h *Handler) handleSignOut() bhttp.HandlerFunc[C] {
 	return func(ctx *bhttp.Context[C], w bhttp.ResponseWriter, r *http.Request) error {
-		loc, err := h.engine.StartSignOutFlow(ctx, w, r)
+		logs := clzap.Log(ctx, h.logs)
+
+		loc, err := h.engine.StartSignOutFlow(ctx, logs, w, r)
 		if err != nil {
 			return fmt.Errorf("failed to start sign-out flow: %w", err)
 		}
@@ -121,7 +126,7 @@ func Provide() fx.Option {
 		// provide the real user management client
 		fx.Provide(fx.Annotate(NewOrganizations, fx.As(new(Organizations)))),
 		// provide the engine
-		fx.Provide(fx.Annotate(NewEngine, fx.ParamTags(``, ``, `optional:"true"`))),
+		fx.Provide(fx.Annotate(NewEngine, fx.ParamTags(``, `optional:"true"`))),
 		// provide the keys
 		fx.Provide(fx.Annotate(NewKeys, fx.OnStart(func(ctx context.Context, k *Keys) error { return k.start(ctx) }))),
 		// provide time.Now as the wall-clock time

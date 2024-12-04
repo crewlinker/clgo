@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/workos/workos-go/v4/pkg/usermanagement"
 	"go.uber.org/fx"
+	"go.uber.org/zap"
 )
 
 var (
@@ -32,9 +33,10 @@ var _ = Describe("engine", func() {
 	var engine *clworkos.Engine
 	var umm *clworkosmock.MockUserManagement
 	var orgm *clworkosmock.MockOrganizations
+	var logs *zap.Logger
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(
-			fx.Populate(&engine, &umm, &orgm),
+			fx.Populate(&engine, &umm, &orgm, &logs),
 			Provide(WallTime06_46_08GMT)) // provide at a wall-clock where tokens have not expired
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
@@ -97,14 +99,14 @@ var _ = Describe("engine", func() {
 	Describe("handle callback", func() {
 		It("should return error when code is missing", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
-			_, err := engine.HandleSignInCallback(ctx, rec, req)
+			_, err := engine.HandleSignInCallback(ctx, logs, rec, req)
 			Expect(err).To(MatchError(clworkos.ErrCallbackCodeNotProvided))
 			Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
 		})
 
 		It("should return error when provider error is present", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?code=foo&error=error&error_description=description", nil)
-			_, err := engine.HandleSignInCallback(ctx, rec, req)
+			_, err := engine.HandleSignInCallback(ctx, logs, rec, req)
 			Expect(err).To(MatchError(MatchRegexp(`callback with error from WorkOS`)))
 		})
 
@@ -118,7 +120,7 @@ var _ = Describe("engine", func() {
 				Once()
 
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?code=foo", nil)
-			loc, err := engine.HandleSignInCallback(ctx, rec, req)
+			loc, err := engine.HandleSignInCallback(ctx, logs, rec, req)
 			Expect(err).To(Succeed())
 
 			Expect(rec.Result().Cookies()).To(HaveLen(2))
@@ -147,7 +149,7 @@ var _ = Describe("engine", func() {
 				rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?code=foo", nil)
 				WithState(req, "invalid.state.token")
 
-				_, err := engine.HandleSignInCallback(ctx, rec, req)
+				_, err := engine.HandleSignInCallback(ctx, logs, rec, req)
 				Expect(err).To(MatchError(MatchRegexp(`failed to parse, verify and validate the state cookie`)))
 			})
 
@@ -155,7 +157,7 @@ var _ = Describe("engine", func() {
 				rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?code=foo", nil)
 				WithState(req, stateToken)
 
-				_, err := engine.HandleSignInCallback(ctx, rec, req)
+				_, err := engine.HandleSignInCallback(ctx, logs, rec, req)
 				Expect(err).To(MatchError(clworkos.ErrStateNonceMismatch))
 				Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
 			})
@@ -164,7 +166,7 @@ var _ = Describe("engine", func() {
 				rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?code=foo&state=some.nonce", nil)
 				WithState(req, stateToken)
 
-				loc, err := engine.HandleSignInCallback(ctx, rec, req)
+				loc, err := engine.HandleSignInCallback(ctx, logs, rec, req)
 				Expect(err).To(Succeed())
 				Expect(loc.String()).To(Equal("http://localhost:3834/some/dst"))
 
@@ -186,7 +188,7 @@ var _ = Describe("engine", func() {
 	Describe("continue session", func() {
 		It("should error when neither tokens are present", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
-			_, err := engine.ContinueSession(ctx, rec, req)
+			_, err := engine.ContinueSession(ctx, logs, rec, req)
 
 			Expect(err).To(MatchError(clworkos.ErrNoAuthentication))
 			Expect(rec.Result().Cookies()).To(BeEmpty()) // no reset cookies
@@ -196,7 +198,7 @@ var _ = Describe("engine", func() {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
 			WithAccessToken(req, "invalid.access.token")
 
-			idn, err := engine.ContinueSession(ctx, rec, req)
+			idn, err := engine.ContinueSession(ctx, logs, rec, req)
 			Expect(err).To(MatchError(MatchRegexp(`failed to parse access token`)))
 			Expect(idn).To(Equal(clworkos.Identity{}))
 		})
@@ -212,7 +214,7 @@ var _ = Describe("engine", func() {
 			WithAccessToken(req, AccessToken1ValidFor06_46_09GMT)
 			WithSession(req, sessionToken)
 
-			idn, err := engine.ContinueSession(ctx, rec, req)
+			idn, err := engine.ContinueSession(ctx, logs, rec, req)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(idn).To(Equal(clworkos.Identity{
 				IsValid:        true,
@@ -233,7 +235,7 @@ var _ = Describe("engine", func() {
 	Describe("sign out", func() {
 		It("should return error when access token cookie is missing", func(ctx context.Context) {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
-			_, err := engine.StartSignOutFlow(ctx, rec, req)
+			_, err := engine.StartSignOutFlow(ctx, logs, rec, req)
 			Expect(err).To(MatchError(clworkos.ErrNoAccessTokenForSignOut))
 			Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
 		})
@@ -242,7 +244,7 @@ var _ = Describe("engine", func() {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
 			WithAccessToken(req, "invalid.access.token")
 
-			_, err := engine.StartSignOutFlow(ctx, rec, req)
+			_, err := engine.StartSignOutFlow(ctx, logs, rec, req)
 			Expect(err).To(MatchError(MatchRegexp(`failed to parse access token`)))
 		})
 
@@ -252,7 +254,7 @@ var _ = Describe("engine", func() {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
 			WithAccessToken(req, AccessToken1ValidFor06_46_09GMT)
 
-			loc, err := engine.StartSignOutFlow(ctx, rec, req)
+			loc, err := engine.StartSignOutFlow(ctx, logs, rec, req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(loc).To(Equal(lo.Must(url.Parse("http://localhost:8080/logout"))))
 
@@ -263,7 +265,7 @@ var _ = Describe("engine", func() {
 
 	Describe("username password", func() {
 		It("should not allow if not in whitelist", func(ctx context.Context) {
-			idn, fromCache, err := engine.AuthenticateUsernamePassword(ctx, "foo", "bar")
+			idn, fromCache, err := engine.AuthenticateUsernamePassword(ctx, logs, "foo", "bar")
 			Expect(err).To(MatchError(clworkos.ErrBasicAuthNotAllowed))
 			Expect(idn.IsValid).To(BeFalse())
 			Expect(fromCache).To(BeFalse())
@@ -277,13 +279,13 @@ var _ = Describe("engine", func() {
 				}, nil).
 				Once()
 
-			idn, fromCache, err := engine.AuthenticateUsernamePassword(ctx, "admin+system1@crewlinker.com", "bar")
+			idn, fromCache, err := engine.AuthenticateUsernamePassword(ctx, logs, "admin+system1@crewlinker.com", "bar")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(idn.IsValid).To(BeTrue())
 			Expect(idn.UserID).To(Equal(`user_01HJTD4VS8T6DKAK5B3AZVQFCV`))
 			Expect(fromCache).To(BeFalse())
 
-			idn, fromCache, err = engine.AuthenticateUsernamePassword(ctx, "admin+system1@crewlinker.com", "bar")
+			idn, fromCache, err = engine.AuthenticateUsernamePassword(ctx, logs, "admin+system1@crewlinker.com", "bar")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(idn.IsValid).To(BeTrue())
 			Expect(idn.UserID).To(Equal(`user_01HJTD4VS8T6DKAK5B3AZVQFCV`))
@@ -297,9 +299,10 @@ var ExampleSession1 = clworkos.Session{RefreshToken: "some.refresh.token"}
 var _ = Describe("engine in present", func() {
 	var engine *clworkos.Engine
 	var umm *clworkosmock.MockUserManagement
+	var logs *zap.Logger
 	BeforeEach(func(ctx context.Context) {
 		app := fx.New(
-			fx.Populate(&engine, &umm),
+			fx.Populate(&engine, &umm, &logs),
 			Provide(WallTime11_31_48GMT))
 		Expect(app.Start(ctx)).To(Succeed())
 		DeferCleanup(app.Stop)
@@ -310,7 +313,7 @@ var _ = Describe("engine in present", func() {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
 			WithAccessToken(req, AccessToken1ValidFor06_46_09GMT)
 
-			_, err := engine.ContinueSession(ctx, rec, req)
+			_, err := engine.ContinueSession(ctx, logs, rec, req)
 			Expect(err).To(MatchError(clworkos.ErrNoAuthentication))
 		})
 
@@ -320,7 +323,7 @@ var _ = Describe("engine in present", func() {
 			WithAccessToken(req, AccessToken1ValidFor06_46_09GMT)
 			WithSession(req, oldSessionToken[:8]+oldSessionToken[9:])
 
-			_, err := engine.ContinueSession(ctx, rec, req)
+			_, err := engine.ContinueSession(ctx, logs, rec, req)
 			Expect(err).To(MatchError(MatchRegexp(`failed to verify`)))
 			ExpectSessionClear(rec) // clear session on any error
 		})
@@ -343,7 +346,7 @@ var _ = Describe("engine in present", func() {
 			WithAccessToken(req, AccessToken1ValidFor06_46_09GMT)
 			WithSession(req, oldSessionToken)
 
-			idn, err := engine.ContinueSession(ctx, rec, req)
+			idn, err := engine.ContinueSession(ctx, logs, rec, req)
 			Expect(err).NotTo(HaveOccurred())
 			ExpectRefreshedSession(rec, newAccessToken, oldSessionToken, idn)
 		})
@@ -365,7 +368,7 @@ var _ = Describe("engine in present", func() {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
 			WithSession(req, oldSessionToken)
 
-			idn, err := engine.ContinueSession(ctx, rec, req)
+			idn, err := engine.ContinueSession(ctx, logs, rec, req)
 			Expect(err).NotTo(HaveOccurred())
 			ExpectRefreshedSession(rec, newAccessToken, oldSessionToken, idn)
 		})
@@ -383,7 +386,7 @@ var _ = Describe("engine in present", func() {
 			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
 			WithSession(req, oldSessionToken)
 
-			_, err := engine.ContinueSession(ctx, rec, req)
+			_, err := engine.ContinueSession(ctx, logs, rec, req)
 			Expect(err).To(MatchError(clworkos.ErrRefreshTokenAlreadyExchanged))
 		})
 	})

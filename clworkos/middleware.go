@@ -30,6 +30,9 @@ func IdentityFromContext(ctx context.Context) Identity {
 func (h Handler) Authenticate() bhttp.StdMiddleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			logs := clzap.Log(ctx, h.logs)
+
 			var (
 				idn       Identity
 				err       error
@@ -38,28 +41,28 @@ func (h Handler) Authenticate() bhttp.StdMiddleware {
 
 			uname, passwd, ok := r.BasicAuth()
 			if ok {
-				idn, fromCache, err = h.engine.AuthenticateUsernamePassword(r.Context(), uname, passwd)
+				idn, fromCache, err = h.engine.AuthenticateUsernamePassword(ctx, logs, uname, passwd)
 				if err != nil {
-					clzap.Log(r.Context(), h.logs).
+					logs.
 						Error("failed to authenticate with usename and password",
 							zap.Error(err),
 							zap.String("username", uname))
 				}
 
-				clzap.Log(r.Context(), h.logs).Info("authenticated with username/password",
+				logs.Info("authenticated with username/password",
 					zap.Any("identity", idn),
 					zap.String("username", uname),
 					zap.Bool("from_cache", fromCache),
 					zap.Bool("is_basic_auth", ok))
 			} else {
-				idn, err = h.engine.ContinueSession(r.Context(), w, r)
+				idn, err = h.engine.ContinueSession(ctx, logs, w, r)
 				if err != nil && !errors.Is(err, ErrNoAuthentication) {
-					clzap.Log(r.Context(), h.logs).Warn("middleware failed to continue session", zap.Error(err))
+					logs.Warn("middleware failed to continue session", zap.Error(err))
 				}
 			}
 
 			if idn.IsValid {
-				clzap.Log(r.Context(), h.logs).Info("authenticated identity",
+				logs.Info("authenticated identity",
 					zap.String("session_id", idn.SessionID),
 					zap.String("role", idn.Role),
 					zap.String("impersonator_email", idn.Impersonator.Email),
@@ -68,7 +71,7 @@ func (h Handler) Authenticate() bhttp.StdMiddleware {
 					zap.String("user_id", idn.UserID))
 			}
 
-			next.ServeHTTP(w, r.WithContext(WithIdentity(r.Context(), idn)))
+			next.ServeHTTP(w, r.WithContext(WithIdentity(ctx, idn)))
 		})
 	}
 }
