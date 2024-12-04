@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 
 	"github.com/gobwas/glob"
@@ -307,6 +308,17 @@ func (e Engine) ContinueSession(
 	oldSession, err := e.authenticatedSessionFromCookie(ctx, rtCookie)
 	if err != nil {
 		return idn, fmt.Errorf("failed to get authenticated session from cookie: %w", err)
+	}
+
+	// It might happen that the browser, or some proxy makes requests to the server that would trigger a refresh
+	// without the browser being involved. This would cause the browser's refresh tokens to be come "used" (invalid)
+	// logging out the user. This configuration allows disabling the refresh behaviour for certain URIs.
+	if slices.Contains(e.cfg.NoRefreshRequestURIs, r.RequestURI) {
+		logs.Info("skip refreshing for this request uri",
+			zap.String("request_uri", r.RequestURI),
+			zap.Strings("no_refresh_request_uris", e.cfg.NoRefreshRequestURIs))
+
+		return idn, nil
 	}
 
 	logs.Info("authenticate with refresh token",

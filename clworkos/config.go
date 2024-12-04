@@ -63,6 +63,8 @@ type Config struct {
 	BasicAuthCacheExpiry time.Duration `env:"BASIC_AUTH_CACHE_EXPIRY" envDefault:"1h"`
 	// size of the basic auth cache, unlikely to hit this but good practice to limit memory
 	BasicAuthCacheSize int `env:"BASIC_AUTH_CACHE_SIZE" envDefault:"1000"`
+	// NoRefreshRequestURIs configures request uris for which tokens will not be refreshed
+	NoRefreshRequestURIs []string `env:"NO_REFRESH_REQUEST_URIs" envDefault:"/sse"`
 }
 
 // Keys hold our own private keys, and the WorkOS public keys.

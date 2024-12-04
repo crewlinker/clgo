@@ -389,6 +389,17 @@ var _ = Describe("engine in present", func() {
 			_, err := engine.ContinueSession(ctx, logs, rec, req)
 			Expect(err).To(MatchError(clworkos.ErrRefreshTokenAlreadyExchanged))
 		})
+
+		It("should not refresh for certain request uri", func(ctx context.Context) {
+			oldSessionToken := lo.Must(engine.BuildSessionToken(ExampleSession1))
+
+			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/sse", nil)
+			WithSession(req, oldSessionToken)
+
+			idn, err := engine.ContinueSession(ctx, logs, rec, req)
+			Expect(err).To(Succeed())
+			Expect(idn).To(Equal(clworkos.Identity{}))
+		})
 	})
 })
 
