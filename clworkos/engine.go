@@ -44,6 +44,7 @@ type UserManagement interface {
 	) (usermanagement.OrganizationMembership, error)
 	UpdateUser(ctx context.Context, opts usermanagement.UpdateUserOpts) (usermanagement.User, error)
 	SendInvitation(ctx context.Context, opts usermanagement.SendInvitationOpts) (usermanagement.Invitation, error)
+	RevokeInvitation(ctx context.Context, opts usermanagement.RevokeInvitationOpts) (usermanagement.Invitation, error)
 }
 
 // Organizations interface provides organization information from WorkOS.
