@@ -48,6 +48,9 @@ type UserManagement interface {
 	DeleteOrganizationMembership(
 		ctx context.Context, opts usermanagement.DeleteOrganizationMembershipOpts,
 	) error
+	UpdateOrganizationMembership(
+		ctx context.Context, organizationMembershipID string, opts usermanagement.UpdateOrganizationMembershipOpts,
+	) (usermanagement.OrganizationMembership, error)
 	UpdateUser(ctx context.Context, opts usermanagement.UpdateUserOpts) (usermanagement.User, error)
 	SendInvitation(ctx context.Context, opts usermanagement.SendInvitationOpts) (usermanagement.Invitation, error)
 	RevokeInvitation(ctx context.Context, opts usermanagement.RevokeInvitationOpts) (usermanagement.Invitation, error)
