@@ -652,6 +652,60 @@ func (_c *MockUserManagement_SendInvitation_Call) RunAndReturn(run func(context.
 	return _c
 }
 
+// UpdateOrganizationMembership provides a mock function with given fields: ctx, organizationMembershipID, opts
+func (_m *MockUserManagement) UpdateOrganizationMembership(ctx context.Context, organizationMembershipID string, opts usermanagement.UpdateOrganizationMembershipOpts) (usermanagement.OrganizationMembership, error) {
+	ret := _m.Called(ctx, organizationMembershipID, opts)
+
+	var r0 usermanagement.OrganizationMembership
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, usermanagement.UpdateOrganizationMembershipOpts) (usermanagement.OrganizationMembership, error)); ok {
+		return rf(ctx, organizationMembershipID, opts)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, usermanagement.UpdateOrganizationMembershipOpts) usermanagement.OrganizationMembership); ok {
+		r0 = rf(ctx, organizationMembershipID, opts)
+	} else {
+		r0 = ret.Get(0).(usermanagement.OrganizationMembership)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, usermanagement.UpdateOrganizationMembershipOpts) error); ok {
+		r1 = rf(ctx, organizationMembershipID, opts)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockUserManagement_UpdateOrganizationMembership_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateOrganizationMembership'
+type MockUserManagement_UpdateOrganizationMembership_Call struct {
+	*mock.Call
+}
+
+// UpdateOrganizationMembership is a helper method to define mock.On call
+//   - ctx context.Context
+//   - organizationMembershipID string
+//   - opts usermanagement.UpdateOrganizationMembershipOpts
+func (_e *MockUserManagement_Expecter) UpdateOrganizationMembership(ctx interface{}, organizationMembershipID interface{}, opts interface{}) *MockUserManagement_UpdateOrganizationMembership_Call {
+	return &MockUserManagement_UpdateOrganizationMembership_Call{Call: _e.mock.On("UpdateOrganizationMembership", ctx, organizationMembershipID, opts)}
+}
+
+func (_c *MockUserManagement_UpdateOrganizationMembership_Call) Run(run func(ctx context.Context, organizationMembershipID string, opts usermanagement.UpdateOrganizationMembershipOpts)) *MockUserManagement_UpdateOrganizationMembership_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(usermanagement.UpdateOrganizationMembershipOpts))
+	})
+	return _c
+}
+
+func (_c *MockUserManagement_UpdateOrganizationMembership_Call) Return(_a0 usermanagement.OrganizationMembership, _a1 error) *MockUserManagement_UpdateOrganizationMembership_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockUserManagement_UpdateOrganizationMembership_Call) RunAndReturn(run func(context.Context, string, usermanagement.UpdateOrganizationMembershipOpts) (usermanagement.OrganizationMembership, error)) *MockUserManagement_UpdateOrganizationMembership_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateUser provides a mock function with given fields: ctx, opts
 func (_m *MockUserManagement) UpdateUser(ctx context.Context, opts usermanagement.UpdateUserOpts) (usermanagement.User, error) {
 	ret := _m.Called(ctx, opts)
