@@ -333,6 +333,59 @@ func (_c *MockUserManagement_GetAuthorizationURL_Call) RunAndReturn(run func(use
 	return _c
 }
 
+// GetInvitation provides a mock function with given fields: ctx, opts
+func (_m *MockUserManagement) GetInvitation(ctx context.Context, opts usermanagement.GetInvitationOpts) (usermanagement.Invitation, error) {
+	ret := _m.Called(ctx, opts)
+
+	var r0 usermanagement.Invitation
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, usermanagement.GetInvitationOpts) (usermanagement.Invitation, error)); ok {
+		return rf(ctx, opts)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, usermanagement.GetInvitationOpts) usermanagement.Invitation); ok {
+		r0 = rf(ctx, opts)
+	} else {
+		r0 = ret.Get(0).(usermanagement.Invitation)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, usermanagement.GetInvitationOpts) error); ok {
+		r1 = rf(ctx, opts)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockUserManagement_GetInvitation_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetInvitation'
+type MockUserManagement_GetInvitation_Call struct {
+	*mock.Call
+}
+
+// GetInvitation is a helper method to define mock.On call
+//   - ctx context.Context
+//   - opts usermanagement.GetInvitationOpts
+func (_e *MockUserManagement_Expecter) GetInvitation(ctx interface{}, opts interface{}) *MockUserManagement_GetInvitation_Call {
+	return &MockUserManagement_GetInvitation_Call{Call: _e.mock.On("GetInvitation", ctx, opts)}
+}
+
+func (_c *MockUserManagement_GetInvitation_Call) Run(run func(ctx context.Context, opts usermanagement.GetInvitationOpts)) *MockUserManagement_GetInvitation_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(usermanagement.GetInvitationOpts))
+	})
+	return _c
+}
+
+func (_c *MockUserManagement_GetInvitation_Call) Return(_a0 usermanagement.Invitation, _a1 error) *MockUserManagement_GetInvitation_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockUserManagement_GetInvitation_Call) RunAndReturn(run func(context.Context, usermanagement.GetInvitationOpts) (usermanagement.Invitation, error)) *MockUserManagement_GetInvitation_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetLogoutURL provides a mock function with given fields: opts
 func (_m *MockUserManagement) GetLogoutURL(opts usermanagement.GetLogoutURLOpts) (*url.URL, error) {
 	ret := _m.Called(opts)
