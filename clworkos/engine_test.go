@@ -146,7 +146,7 @@ var _ = Describe("engine", func() {
 			})
 
 			It("with invalid state cookie", func(ctx context.Context) {
-				rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?code=foo", nil)
+				rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?code=foo&state=some.nonce", nil)
 				WithState(req, "invalid.state.token")
 
 				_, err := engine.HandleSignInCallback(ctx, logs, rec, req)
@@ -154,12 +154,30 @@ var _ = Describe("engine", func() {
 			})
 
 			It("with invalid nonce", func(ctx context.Context) {
-				rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?code=foo", nil)
+				rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?code=foo&state=other.nonce", nil)
 				WithState(req, stateToken)
 
 				_, err := engine.HandleSignInCallback(ctx, logs, rec, req)
 				Expect(err).To(MatchError(clworkos.ErrStateNonceMismatch))
 				Expect(clworkos.IsBadRequestError(err)).To(BeTrue())
+			})
+
+			It("with stale state cookie but no query state (e.g. password reset, invite)", func(ctx context.Context) {
+				// The user has a lingering state cookie from a previously abandoned sign-in attempt, but
+				// returns from a flow that WorkOS does not echo our state into (no 'state' query param).
+				// We should not error, but fall back to the default redirect and clear the stale cookie.
+				rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/?code=foo", nil)
+				WithState(req, stateToken)
+
+				loc, err := engine.HandleSignInCallback(ctx, logs, rec, req)
+				Expect(err).To(Succeed())
+				Expect(loc.String()).To(Equal("http://localhost:8080/healthz"))
+
+				Expect(rec.Result().Cookies()).To(HaveLen(3))
+				Expect(rec.Result().Cookies()[0].Name).To(Equal("cl_auth_state"))
+				Expect(rec.Result().Cookies()[0].MaxAge).To(Equal(-1))
+				Expect(rec.Result().Cookies()[1].Name).To(Equal("cl_session"))
+				Expect(rec.Result().Cookies()[2].Name).To(Equal("cl_access_token"))
 			})
 
 			It("with valid state cookie", func(ctx context.Context) {

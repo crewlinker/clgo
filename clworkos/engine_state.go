@@ -84,13 +84,28 @@ func (e Engine) checkAndConsumeStateCookie(
 	w http.ResponseWriter,
 	r *http.Request,
 ) (redirectTo *url.URL, err error) {
+	cookie, cookieExists, err := readCookie(r, e.cfg.StateCookieName)
+	if cookieExists && err != nil {
+		return nil, fmt.Errorf("failed to read state cookie: %w", err)
+	}
+
+	// If WorkOS did not echo back our state nonce, the flow was not initiated by us through
+	// StartAuthenticationFlow (e.g. password-reset, invitation or impersonation flows). There is
+	// nothing to verify in that case. We still clear any stale state cookie that might linger from a
+	// previously abandoned sign-in attempt (otherwise the nonce comparison below would fail with
+	// ErrStateNonceMismatch) and fall back to the default redirect.
+	if nonceFromQuery == "" {
+		if cookieExists {
+			e.clearStateCookie(w)
+		}
+
+		return e.cfg.DefaultRedirectTo, nil
+	}
+
 	// in case the user is impersonated, or invited. The state cookie will not be present. In that case
 	// well have to redirect the user to a default URL.
-	cookie, cookieExists, err := readCookie(r, e.cfg.StateCookieName)
 	if !cookieExists {
 		return e.cfg.DefaultRedirectTo, nil
-	} else if err != nil {
-		return nil, fmt.Errorf("failed to read state cookie: %w", err)
 	}
 
 	// check validity of the state cookie
@@ -121,6 +136,13 @@ func (e Engine) checkAndConsumeStateCookie(
 	}
 
 	// clear the state (nonce) cookie, only useful until the callback
+	e.clearStateCookie(w)
+
+	return redirectTo, nil
+}
+
+// clearStateCookie expires the state (nonce) cookie. It is only useful until the callback has been handled.
+func (e Engine) clearStateCookie(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
 		MaxAge:   -1,
 		Name:     e.cfg.StateCookieName,
@@ -129,6 +151,4 @@ func (e Engine) checkAndConsumeStateCookie(
 		SameSite: e.cfg.AllCookieSameSite,
 		Secure:   e.cfg.AllCookieSecure,
 	})
-
-	return redirectTo, nil
 }
