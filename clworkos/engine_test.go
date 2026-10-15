@@ -17,6 +17,7 @@ import (
 	"github.com/workos/workos-go/v4/pkg/usermanagement"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 var (
@@ -210,6 +211,28 @@ var _ = Describe("engine", func() {
 
 			Expect(err).To(MatchError(clworkos.ErrNoAuthentication))
 			Expect(rec.Result().Cookies()).To(BeEmpty()) // no reset cookies
+		})
+
+		It("should not log the credentials of the request", func(ctx context.Context) {
+			core, obs := observer.New(zap.InfoLevel)
+			rec, req := httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil)
+			req.Header.Set("X-Custom", "visible")
+			req.Header.Set("Authorization", "Basic c2VjcmV0LWJhc2lj")
+			WithAccessToken(req, "invalid.access.token")
+			WithSession(req, "secret-session")
+
+			_, err := engine.ContinueSession(ctx, zap.New(core), rec, req)
+			Expect(err).To(HaveOccurred())
+
+			entries := obs.FilterMessage("continued session").All()
+			Expect(entries).To(HaveLen(1))
+
+			header, ok := entries[0].ContextMap()["request_headers"].(http.Header)
+			Expect(ok).To(BeTrue())
+			Expect(header.Get("Authorization")).To(Equal("[REDACTED]"))
+			Expect(header.Get("Cookie")).To(Equal("[REDACTED]"))
+			Expect(header.Get("X-Custom")).To(Equal("visible"))
+			Expect(req.Header.Get("Cookie")).To(ContainSubstring("secret-session"))
 		})
 
 		It("should return zero identity when invalid access token", func(ctx context.Context) {

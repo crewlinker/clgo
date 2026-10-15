@@ -255,6 +255,18 @@ func (e Engine) AuthenticateUsernamePassword(
 	return idn, false, nil
 }
 
+// redactedHeaders returns a copy of the headers without the values of the headers that carry credentials.
+func redactedHeaders(header http.Header) http.Header {
+	redacted := header.Clone()
+	for _, name := range []string{"Authorization", "Cookie"} {
+		if redacted.Get(name) != "" {
+			redacted.Set(name, "[REDACTED]")
+		}
+	}
+
+	return redacted
+}
+
 // ContinueSession will continue the user's session, potentially by refreshing it. It is expected to be called
 // on every request as part of some middleware logic.
 func (e Engine) ContinueSession(
@@ -265,7 +277,7 @@ func (e Engine) ContinueSession(
 	// the WorkOS backend has deemed the tokens invalid.
 	defer func() {
 		logs.Info("continued session", zap.Error(err),
-			zap.Any("request_headers", r.Header),
+			zap.Any("request_headers", redactedHeaders(r.Header)),
 			zap.Bool("is_err_no_authentication", errors.Is(err, ErrNoAuthentication)))
 
 		if err != nil && !errors.Is(err, ErrNoAuthentication) {
