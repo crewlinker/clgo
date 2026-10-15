@@ -8,7 +8,7 @@ on:
 jobs:
   checks:
     name: Checks
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Set up Go 1.x
         uses: actions/setup-go@v4
@@ -24,14 +24,17 @@ jobs:
           mage -v checks
   lint:
     name: Lint
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v4
+      - uses: actions/checkout@v4
         with:
-          go-version: '1.22'
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
           cache: false
-      - uses: actions/checkout@v3
-      - uses: golangci/golangci-lint-action@v3
+      - uses: golangci/golangci-lint-action@v6
         with:
           args: --timeout=10m
-          version: v1.57
+          version: v1.64.8
+          only-new-issues: true
